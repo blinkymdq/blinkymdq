@@ -15,7 +15,32 @@
         .is-logged-in .precio-publico { display: none; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        select { appearance: none; -webkit-appearance: none; }
+        
+        /* Ajuste para que los selectores no se deformen en móviles */
+        select { 
+            appearance: none; 
+            -webkit-appearance: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+
+        /* Centrado óptico de imágenes */
+        .img-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 11rem; /* h-44 de tailwind */
+            width: 100%;
+            background: white;
+            overflow: hidden;
+        }
+        .img-container img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -38,17 +63,17 @@
                     <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="¿Qué buscás?" 
                            class="h-11 flex-grow md:w-48 p-4 bg-slate-100 border-none rounded-2xl text-xs focus:ring-2 focus:ring-violet-400 outline-none">
                     
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <select id="selectCat" onchange="ejecutarFiltros()" class="h-11 flex-1 md:w-[140px] px-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase outline-none text-slate-500 text-center cursor-pointer hover:border-violet-300 transition-all truncate">
+                    <div class="flex gap-2 w-full md:w-auto flex-1">
+                        <select id="selectCat" onchange="ejecutarFiltros()" class="h-11 flex-1 md:w-[140px] pl-3 pr-8 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase outline-none text-slate-500 text-center cursor-pointer hover:border-violet-300 transition-all truncate">
                             <option value="">Categorías</option>
                         </select>
-                        <select id="selectMarca" onchange="ejecutarFiltros()" class="h-11 flex-1 md:w-[140px] px-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase outline-none text-slate-500 text-center cursor-pointer hover:border-violet-300 transition-all truncate">
+                        <select id="selectMarca" onchange="ejecutarFiltros()" class="h-11 flex-1 md:w-[140px] pl-3 pr-8 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase outline-none text-slate-500 text-center cursor-pointer hover:border-violet-300 transition-all truncate">
                             <option value="">Marcas</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="flex items-center">
+                <div class="flex items-center mt-2 lg:mt-0">
                     <button onclick="mostrarLogin()" id="btn-login" class="h-11 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-violet-600 px-5 bg-slate-50 rounded-2xl border border-slate-100 transition-all">LOG IN</button>
                     <div id="user-badge" onclick="cerrarSesion()" class="hidden h-11 flex items-center gap-2 text-[9px] bg-violet-600 text-white px-5 rounded-2xl font-black uppercase shadow-lg cursor-pointer hover:bg-rose-500 transition-all">
                         </div>
@@ -78,7 +103,7 @@
 
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv'; 
-        const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; // <--- NO OLVIDES CAMBIAR ESTO
+        const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; 
         
         let productos = [];
         let baseUsuarios = [];
@@ -133,8 +158,8 @@
                     <div class="bg-white rounded-[2.5rem] p-4 border border-slate-100 shadow-sm flex flex-col justify-between fade-in hover:shadow-xl transition-all group">
                         <div class="relative">
                             ${p.esOferta ? '<span class="absolute top-0 left-0 bg-rose-500 text-white text-[8px] font-black px-2 py-1 rounded-lg z-10 shadow-lg shadow-rose-200">OFERTA</span>' : ''}
-                            <div class="h-44 flex items-center justify-center mb-4 overflow-hidden rounded-3xl bg-white group-hover:scale-105 transition-transform">
-                                <img src="${img}" class="max-h-full object-contain" onerror="this.src='https://placehold.co/400?text=Sin+Foto'">
+                            <div class="img-container mb-4 rounded-3xl group-hover:scale-105 transition-transform">
+                                <img src="${img}" onerror="this.src='https://placehold.co/400?text=Sin+Foto'">
                             </div>
                             <p class="text-[7px] font-black text-violet-500 uppercase mb-1 tracking-widest">${p.marca} • ${p.codigo}</p>
                             <h2 class="text-[11px] font-bold text-slate-800 leading-tight uppercase line-clamp-2">${p.nombre}</h2>
@@ -160,8 +185,8 @@
             const q = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
             const m = document.getElementById('selectMarca').value;
-            // Solo filtra por nombre si escribió 3 letras o más
-            const f = productos.filter(p => (q.length < 3 || p.nombre.toLowerCase().includes(q)) && (c === "" || p.cat === c) && (m === "" || p.marca === m));
+            // Solo filtra por nombre si escribió 3 letras o más, o si borró todo
+            const f = productos.filter(p => (q.length < 3 && q.length > 0 ? true : p.nombre.toLowerCase().includes(q)) && (c === "" || p.cat === c) && (m === "" || p.marca === m));
             render(f);
         }
 
