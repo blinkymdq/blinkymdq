@@ -14,7 +14,7 @@
         .is-logged-in .precio-mayorista { display: block; }
         .is-logged-in .precio-publico { display: none; }
         
-        /* FUERZA EL ANCHO DE LOS FILTROS SIEMPRE AL 50% */
+        /* BLOQUEO ESTRICTO DE FILTROS 50/50 */
         .grid-filtros {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
@@ -30,19 +30,20 @@
             background-position: right 0.5rem center;
             background-size: 1em;
             width: 100% !important;
+            min-width: 0 !important;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        /* EVITA QUE LAS CAJAS SALTEN AL CARGAR FOTOS */
+        /* RESERVA DE ESPACIO PARA IMÁGENES */
         .img-container {
             width: 100%;
-            aspect-ratio: 1 / 1; /* Reserva un cuadrado perfecto antes de que cargue la foto */
+            aspect-ratio: 1 / 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f8fafc;
+            background: #ffffff;
             overflow: hidden;
             border-radius: 1.5rem;
             margin-bottom: 0.5rem;
@@ -54,9 +55,9 @@
             object-fit: contain;
         }
 
-        /* ALTURA FIJA PARA EL NOMBRE PARA QUE LOS PRECIOS ESTÉN ALINEADOS */
+        /* ALTURA FIJA PARA EL NOMBRE DEL PRODUCTO */
         .product-title {
-            height: 2.4rem;
+            height: 2.5rem;
             overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -101,14 +102,14 @@
     </header>
 
     <main id="contenedor" class="p-4 max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <div class="col-span-full text-center py-20 text-slate-300 font-bold uppercase text-[10px] tracking-widest">Cargando productos...</div>
+        <div class="col-span-full text-center py-20 text-slate-300 font-bold uppercase text-[10px] tracking-widest">Cargando catálogo...</div>
     </main>
 
     <div id="modalLogin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-xl font-black text-slate-800 uppercase mb-6 tracking-tighter">Acceso Clientes</h3>
-            <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
-            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
+            <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none">
+            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none">
             <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-violet-600 transition-all">Entrar</button>
             <button onclick="document.getElementById('modalLogin').classList.add('hidden')" class="mt-6 text-slate-400 text-[9px] font-black uppercase">Cerrar</button>
         </div>
