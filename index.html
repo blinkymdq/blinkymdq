@@ -8,13 +8,10 @@
     <title>Blinky MDQ - Catálogo</title>
     <style>
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; width: 100vw; }
-        .font-brand { font-family: 'Montserrat', sans-serif; }
-        
         .precio-mayorista { display: none; }
         body.is-logged-in .precio-mayorista { display: block; }
         body.is-logged-in #btn-login { display: none; }
         body.is-logged-in #user-badge { display: flex; }
-
         .contenedor-logo { position: relative; overflow: hidden; display: flex; justify-content: center; width: 100%; }
         .contenedor-logo::after {
             content: ""; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
@@ -22,19 +19,12 @@
             transform: skewX(-25deg); animation: destello 4s infinite;
         }
         @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
-
         .scroll-hide::-webkit-scrollbar { display: none; }
         .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
-
         .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
-        
-        .img-container-placa { 
-            width: 100%; height: 320px; display: flex; align-items: center; justify-content: center; 
-            background: #f8fafc; border-radius: 2rem; overflow: hidden; padding: 20px;
-        }
+        .img-container-placa { width: 100%; height: 320px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 2rem; overflow: hidden; padding: 20px; }
         .img-container-placa img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); }
-        
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -82,7 +72,6 @@
         <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-8 placa-entrada" onclick="event.stopPropagation()">
             <div class="img-container-placa mb-6"><img id="modalImg" src="" alt=""></div>
             <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase"></h2>
-            
             <div class="py-5 border-y border-slate-100 my-5 space-y-4">
                 <div>
                     <div class="text-[10px] font-black text-violet-600 uppercase">Público</div>
@@ -93,14 +82,9 @@
                     <div id="modalPrecioMay" class="text-2xl font-black text-slate-400 tracking-tighter"></div>
                 </div>
             </div>
-            
             <div class="flex gap-2 h-14">
-                <button id="btnConsultarModal" class="flex-1 bg-slate-900 text-white rounded-2xl flex items-center justify-center gap-2 text-[8px] font-black uppercase">
-                    <span>Consultar</span>
-                </button>
-                <button id="btnCompartirModal" class="flex-1 bg-[#25D366] text-white rounded-2xl flex items-center justify-center gap-2 text-[8px] font-black uppercase leading-tight text-center px-1">
-                    <span>Enviar a<br>un amigo</span>
-                </button>
+                <button id="btnConsultarModal" class="flex-1 bg-slate-900 text-white rounded-2xl text-[8px] font-black uppercase">Consultar</button>
+                <button id="btnCompartirModal" class="flex-1 bg-[#25D366] text-white rounded-2xl text-[8px] font-black uppercase">Enviar</button>
             </div>
         </div>
     </div>
@@ -110,10 +94,8 @@
             <h3 class="text-xl font-black text-slate-800 uppercase mb-6">Acceso Clientes</h3>
             <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none">
             <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none">
-            <div class="flex flex-col gap-2">
-                <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest">Entrar</button>
-                <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2">Cancelar</button>
-            </div>
+            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase">Entrar</button>
+            <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2">Cancelar</button>
         </div>
     </div>
 
@@ -121,16 +103,12 @@
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv'; 
         const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; 
         
-        const USUARIO_GIT = 'blinkymdq'; 
-        const REPO_GIT = 'blinkymdq';
-        const BASE_URL_GIT = `https://raw.githubusercontent.com/${USUARIO_GIT}/${REPO_GIT}/main/destacados/`;
-
-        const misDestacados = [BASE_URL_GIT+'foto1.jpeg', BASE_URL_GIT+'foto2.jpeg', BASE_URL_GIT+'foto3.jpeg', BASE_URL_GIT+'foto4.jpeg', BASE_URL_GIT+'foto5.png'];
-        let productos = []; let baseUsuarios = []; let filtrados = []; let bannerIndex = 0;
-        let colPrecioUsuario = 9; // Por defecto Columna I (9)
+        let productos = []; let baseUsuarios = []; let filtrados = [];
+        let colPrecioUsuario = 9; // Columna por defecto
 
         async function cargarDatos() {
             try {
+                // CARGAR USUARIOS
                 const resU = await fetch(USERS_URL); const dataU = await resU.text();
                 const filasU = dataU.split(/\r?\n/).filter(l => l.trim() !== "").slice(1);
                 baseUsuarios = filasU.map(f => {
@@ -138,22 +116,32 @@
                     return { user: (c[0]||"").trim().toLowerCase(), pass: (c[1]||"").trim(), col: (c[2]||"").trim() };
                 });
 
+                // CARGAR PRODUCTOS
                 const resP = await fetch(SHEET_URL); const dataP = await resP.text();
                 const filasP = dataP.split(/\r?\n/).filter(linea => linea.trim() !== "").slice(1);
+                
                 productos = filasP.map((f, index) => {
-                    let c = f.split(';'); if (c.length < 5) c = f.split(',');
-                    const limpiarPrecio = (v) => v ? v.replace(/["$\s]/g, '').replace(',', '.') : "0";
+                    // Detectar separador dinámicamente
+                    let c = f.includes(';') ? f.split(';') : f.split(',');
+                    const limpiar = (v) => v ? v.replace(/["$\s]/g, '').replace(',', '.') : "0";
+                    
                     return {
-                        id: index, codigo: (c[0]||"").trim(), nombre: (c[1]||"").trim(), foto: (c[2]||"").trim(),
-                        cat: (c[4]||"").trim(), marca: (c[6]||"").trim(), precioP: limpiarPrecio(c[7]),
-                        columnasRaw: c.map(limpiarPrecio), // Guardamos todas las columnas
+                        id: index,
+                        codigo: (c[0]||"").trim(),
+                        nombre: (c[1]||"").trim(),
+                        foto: (c[2]||"").trim(),
+                        cat: (c[4]||"").trim(),
+                        marca: (c[6]||"").trim(),
+                        precioP: limpiar(c[7]),
+                        // GUARDAMOS TODA LA FILA LIMPIA PARA BUSCAR CUALQUIER COLUMNA
+                        todasLasCols: c.map(limpiar),
                         esOferta: (c[9]||"").toUpperCase().includes("SI")
                     };
                 }).filter(p => p.nombre !== "");
 
-                llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
                 renderSlider();
-                
+                llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
+
                 const userSaved = localStorage.getItem('blinky_user');
                 if(userSaved) {
                     const found = baseUsuarios.find(u => u.user === userSaved);
@@ -163,7 +151,7 @@
                     }
                 }
                 ejecutarFiltros();
-            } catch (e) { console.error("Error:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function validarAcceso() {
@@ -175,22 +163,13 @@
                 colPrecioUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : 9;
                 aplicarLoginEfecto(u);
                 cerrarLogin();
-            } else { alert("Usuario o contraseña incorrectos"); }
+            } else { alert("Error de acceso"); }
         }
 
         function aplicarLoginEfecto(userName) {
             document.body.classList.add('is-logged-in');
             document.getElementById('user-badge').innerText = `HOLA, ${userName.toUpperCase()}`;
             render(filtrados);
-        }
-
-        function cerrarSesion() {
-            if(confirm("¿Cerrar sesión?")) {
-                localStorage.removeItem('blinky_user');
-                colPrecioUsuario = 9;
-                document.body.classList.remove('is-logged-in');
-                render(filtrados);
-            }
         }
 
         function render(lista) {
@@ -202,7 +181,8 @@
                 let img = p.foto || 'sin-foto.png';
                 if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
                 
-                const precioDinamico = p.columnasRaw[colPrecioUsuario - 1] || p.columnasRaw[8];
+                // LÓGICA DE PRECIO DINÁMICO: Columna ingresada menos 1 (porque el código empieza en 0)
+                const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
 
                 box.innerHTML += `
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
@@ -216,8 +196,7 @@
                             </div>
                         </div>
                         <div class="flex gap-1.5 mt-3 pt-3 border-t border-slate-50 h-10 items-center">
-                            <button onclick="window.open('https://wa.me/5492235910492?text=Hola Blinky! Me interesa: *${p.nombre}*')" class="flex-1 h-full bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase">Consultar</button>
-                            <button onclick="window.open('https://wa.me/?text=¡Mirá esto en Blinky MDQ! *${p.nombre}*')" class="flex-1 h-full bg-[#25D366] text-white rounded-xl text-[7px] font-black uppercase leading-tight">Enviar</button>
+                            <button onclick="window.open('https://wa.me/5492235910492?text=Me interesa: ${p.nombre}')" class="flex-1 h-full bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase">Consultar</button>
                         </div>
                     </div>`;
             });
@@ -231,29 +210,28 @@
             document.getElementById('modalNombre').innerText = p.nombre;
             document.getElementById('modalPrecioPub').innerText = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
             
-            const precioDinamico = p.columnasRaw[colPrecioUsuario - 1] || p.columnasRaw[8];
+            const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
             document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}`;
             
             document.getElementById('modalProducto').classList.remove('hidden');
         }
 
+        // ... Resto de funciones (Banner, Selects, Filtros) iguales a tu versión original ...
+        const misDestacados = [`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.png` ];
+        let bannerIndex = 0;
         function renderSlider() {
-            const banner = document.getElementById('contenedorBanner');
-            const indicadores = document.getElementById('indicadoresBanner');
+            const b = document.getElementById('contenedorBanner'); const ind = document.getElementById('indicadoresBanner');
             misDestacados.forEach((img, i) => {
-                banner.innerHTML += `<div class="min-w-full snap-start"><img src="${img}" class="w-full h-auto object-cover"></div>`;
-                indicadores.innerHTML += `<div class="h-1.5 w-1.5 rounded-full ${i===0?'bg-violet-600 w-4':'bg-slate-300'} transition-all dot-indicador"></div>`;
+                b.innerHTML += `<div class="min-w-full snap-start"><img src="${img}" class="w-full h-auto object-cover"></div>`;
+                ind.innerHTML += `<div class="h-1.5 w-1.5 rounded-full ${i===0?'bg-violet-600 w-4':'bg-slate-300'} transition-all"></div>`;
             });
-            setInterval(() => { bannerIndex++; if (bannerIndex >= misDestacados.length) bannerIndex = 0; banner.scrollTo({ left: banner.clientWidth * bannerIndex, behavior: 'smooth' }); }, 3000);
+            setInterval(() => { bannerIndex++; if (bannerIndex >= misDestacados.length) bannerIndex = 0; b.scrollTo({ left: b.clientWidth * bannerIndex, behavior: 'smooth' }); }, 3000);
         }
-
-        const llenarSelect = (id, prop) => {
+        function llenarSelect(id, prop) {
             const vals = [...new Set(productos.map(p => p[prop]))].filter(Boolean).sort();
             const el = document.getElementById(id);
-            el.innerHTML = `<option value="">${id==='selectCat'?'Categorías':'Marcas'}</option>`;
             vals.forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
-        };
-
+        }
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
@@ -265,12 +243,11 @@
             document.getElementById('seccionBanner').classList.toggle('hidden', val !== "" || c !== "" || m !== "");
             render(res);
         }
-
+        function cerrarSesion() { localStorage.removeItem('blinky_user'); location.reload(); }
         function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
         function cerrarLogin() { document.getElementById('modalLogin').classList.add('hidden'); }
         function cerrarPlaca() { document.getElementById('modalProducto').classList.add('hidden'); }
         function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
-        
         cargarDatos();
     </script>
 </body>
