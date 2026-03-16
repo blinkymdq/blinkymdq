@@ -37,9 +37,9 @@
 
     <header class="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
         <div class="w-full bg-white flex justify-center border-b border-slate-50">
-            <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain">
+            <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
             
-            <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-5xl h-auto object-contain">
+            <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
             
             <div id="logo-backup" class="hidden flex flex-col items-center py-10">
                 <h1 class="font-brand text-4xl font-black text-slate-800 tracking-tighter">BLINKY<span class="text-violet-600">MDQ</span></h1>
@@ -160,10 +160,10 @@
                             </div>
                         </div>
                         <div class="mt-2">
-                            <div class="precio-publico text-base font-black text-slate-900 leading-none">${txtPrecioPublico}</div>
+                            <div class="precio-publico text-base font-black text-violet-600 leading-none">${txtPrecioPublico}</div>
                             <div class="precio-mayorista">
-                                <span class="text-[6px] font-black text-violet-600 uppercase">Mayorista</span>
-                                <div class="text-base font-black text-violet-600 leading-none">$${(parseFloat(p.precioM)||0).toLocaleString('es-AR')}</div>
+                                <span class="text-[6px] font-black text-slate-400 uppercase">Mayorista</span>
+                                <div class="text-base font-black text-slate-400 leading-none opacity-70">$${(parseFloat(p.precioM)||0).toLocaleString('es-AR')}</div>
                             </div>
                             <div class="flex flex-col gap-1.5 mt-3">
                                 <button onclick="CONSULTAR('${p.nombre}', '${p.codigo}')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[8px] font-black uppercase tracking-wider hover:bg-slate-800 transition-colors">
@@ -182,7 +182,8 @@
         }
 
         function compartir(nombre, precio) {
-            const palabras = nombre.split(' ').slice(0, 3).join(' ');
+            // Tomamos las 3 primeras palabras para que la búsqueda sea más precisa
+            const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join(' ');
             const urlBase = window.location.href.split('?')[0];
             const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
             const mensaje = `¡Mirá lo que encontré en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer producto acá:%0A${linkConBusqueda}`;
@@ -196,14 +197,20 @@
 
             const f = productos.filter(p => {
                 const nombreProd = p.nombre.toLowerCase();
-                let coincideTexto = false;
+                const codigoProd = p.codigo.toLowerCase();
+                let coincideTexto = true;
 
-                if (esLink && inputVal.split(' ').length >= 2) {
-                    const inicioNombre = nombreProd.split(' ').slice(0, 3).join(' ');
-                    coincideTexto = inicioNombre.includes(inputVal);
-                } else {
-                    const palabrasClave = inputVal.split(' ').filter(p => p.length > 0);
-                    coincideTexto = palabrasClave.every(palabra => nombreProd.includes(palabra));
+                if (inputVal !== "") {
+                    if (esLink) {
+                        // Si viene de un link compartido, el nombre debe empezar o contener la frase exacta
+                        coincideTexto = nombreProd.includes(inputVal);
+                    } else {
+                        // Búsqueda normal por palabras sueltas
+                        const palabrasBusqueda = inputVal.split(/\s+/);
+                        coincideTexto = palabrasBusqueda.every(palabra => 
+                            nombreProd.includes(palabra) || codigoProd.includes(palabra)
+                        );
+                    }
                 }
                 
                 const coincideCat = (c === "" || p.cat === c);
