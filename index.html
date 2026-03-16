@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
     <title>Blinky MDQ</title>
@@ -11,99 +10,103 @@
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; width: 100vw; }
         .font-brand { font-family: 'Montserrat', sans-serif; }
         .precio-mayorista { display: none; }
-        .precio-publico { display: block; }
         .is-logged-in .precio-mayorista { display: block; }
-        .is-logged-in .precio-publico { display: none; }
         
-        /* Efecto de Destello (Shine) */
+        /* Efecto de Destello */
         .contenedor-logo { position: relative; overflow: hidden; display: flex; justify-content: center; width: 100%; }
-        
         .contenedor-logo::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -150%;
-            width: 50%;
-            height: 100%;
+            content: ""; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
             background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
-            transform: skewX(-25deg);
-            animation: destello 4s infinite;
+            transform: skewX(-25deg); animation: destello 4s infinite;
         }
+        @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
 
-        @keyframes destello {
-            0% { left: -150%; }
-            30% { left: 150%; }
-            100% { left: 150%; }
-        }
-
-        .contenedor-filtros { display: flex !important; width: 100% !important; gap: 8px !important; padding: 0 16px !important; box-sizing: border-box !important; }
-        .caja-select { flex: 1 1 50% !important; width: 50% !important; min-width: 0 !important; position: relative !important; height: 44px !important; }
-        select { 
-            position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
-            appearance: none !important; -webkit-appearance: none !important; background-color: white !important;
-            border: 1px solid #e2e8f0 !important; border-radius: 1rem !important; padding: 0 25px 0 10px !important;
-            font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase !important; color: #64748b !important;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
-            background-repeat: no-repeat !important; background-position: right 8px center !important; background-size: 12px !important;
-        }
-
-        .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; margin-bottom: 0.5rem; overflow: hidden; }
-        .img-container img { width: 100%; height: 100%; object-fit: contain; }
+        /* Centrado Óptico y Contenedores */
+        .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
+        .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         
-        .bg-whatsapp { background-color: #25D366; }
+        /* Selects personalizados */
+        .contenedor-filtros { display: flex; width: 100%; gap: 8px; padding: 0 16px; box-sizing: border-box; }
+        .caja-select { flex: 1; position: relative; height: 44px; }
+        select { 
+            width: 100%; height: 100%; appearance: none; background-color: white; border: 1px solid #e2e8f0; border-radius: 1rem; 
+            padding: 0 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
-    <header class="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
+    <header class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full">
         <div class="w-full bg-white flex justify-center border-b border-slate-50">
             <div class="contenedor-logo">
                 <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
                 <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
             </div>
-            
             <div id="logo-backup" class="hidden flex flex-col items-center py-10">
                 <h1 class="font-brand text-4xl font-black text-slate-800 tracking-tighter">BLINKY<span class="text-violet-600">MDQ</span></h1>
-                <p class="font-brand text-[10px] font-black text-violet-400 tracking-[0.5em] uppercase -mt-1 ml-1">Mayorista</p>
             </div>
         </div>
 
-        <div class="max-w-7xl mx-auto py-3">
-            <div class="flex flex-col gap-3">
-                <div class="flex gap-2 w-full px-4">
-                    <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-3 rounded-2xl text-[10px] font-black uppercase flex-shrink-0 shadow-lg shadow-rose-100">🔥</button>
-                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." 
-                           class="h-11 flex-grow p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none w-full shadow-inner">
-                </div>
-
-                <div class="contenedor-filtros">
-                    <div class="caja-select">
-                        <select id="selectCat" onchange="ejecutarFiltros()"><option value="">Categorías</option></select>
-                    </div>
-                    <div class="caja-select">
-                        <select id="selectMarca" onchange="ejecutarFiltros()"><option value="">Marcas</option></select>
-                    </div>
-                </div>
-
-                <div class="px-4 pb-2">
-                    <button onclick="mostrarLogin()" id="btn-login" class="h-9 w-full text-[10px] font-black uppercase text-slate-400 px-5 bg-slate-50 rounded-2xl border border-slate-100 tracking-widest">LOG IN</button>
-                    <div id="user-badge" onclick="cerrarSesion()" class="hidden h-9 w-full flex items-center justify-center gap-2 text-[9px] bg-violet-600 text-white px-5 rounded-2xl font-black uppercase cursor-pointer"></div>
-                </div>
+        <div class="max-w-7xl mx-auto py-3 space-y-3">
+            <div class="flex gap-2 px-4">
+                <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-4 rounded-2xl shadow-lg shadow-rose-100">🔥</button>
+                <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 flex-grow p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+            </div>
+            <div class="contenedor-filtros">
+                <div class="caja-select"><select id="selectCat" onchange="ejecutarFiltros()"><option value="">Categorías</option></select></div>
+                <div class="caja-select"><select id="selectMarca" onchange="ejecutarFiltros()"><option value="">Marcas</option></select></div>
+            </div>
+            <div class="px-4 pb-1">
+                <button onclick="mostrarLogin()" id="btn-login" class="h-9 w-full text-[10px] font-black uppercase text-slate-400 bg-slate-50 rounded-2xl border border-slate-100 tracking-widest">LOG IN</button>
+                <div id="user-badge" onclick="cerrarSesion()" class="hidden h-9 w-full flex items-center justify-center gap-2 text-[9px] bg-violet-600 text-white px-5 rounded-2xl font-black uppercase cursor-pointer shadow-lg shadow-violet-200"></div>
             </div>
         </div>
     </header>
 
     <main id="contenedor" class="p-4 max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <div class="col-span-full text-center py-20 text-slate-300 font-bold uppercase text-[10px]">Cargando...</div>
+        <div class="col-span-full text-center py-20 text-slate-300 font-bold uppercase text-[10px]">Cargando catálogo...</div>
     </main>
+
+    <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-0 md:p-4">
+        <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div class="relative p-6">
+                <button onclick="cerrarPlaca()" class="absolute top-4 right-4 bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-slate-800 font-bold">✕</button>
+                <div class="img-container mb-6 !bg-slate-50">
+                    <img id="modalImg" src="" alt="">
+                </div>
+                <div class="space-y-2">
+                    <p id="modalInfo" class="text-[10px] font-black text-violet-400 uppercase tracking-widest"></p>
+                    <h2 id="modalNombre" class="text-2xl font-black text-slate-800 leading-tight uppercase"></h2>
+                    <p id="modalCodigo" class="text-[11px] font-bold text-slate-400 uppercase"></p>
+                    
+                    <div class="py-4 border-y border-slate-50 my-4">
+                        <div id="modalPrecioPub" class="text-3xl font-black text-violet-600"></div>
+                        <div id="modalPrecioMay" class="precio-mayorista mt-1">
+                            <span class="text-[10px] font-black text-slate-400 uppercase">Precio Mayorista</span>
+                            <div class="text-xl font-black text-slate-400 opacity-70"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 pt-2">
+                        <button id="btnConsultarModal" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Consultar por WhatsApp</button>
+                        <button id="btnCompartirModal" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2">
+                            Compartir con un amigo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="modalLogin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-xl font-black text-slate-800 uppercase mb-6 tracking-tighter">Acceso Clientes</h3>
             <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
             <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
-            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase hover:bg-violet-600">Entrar</button>
+            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase hover:bg-violet-600 transition-colors">Entrar</button>
             <button onclick="document.getElementById('modalLogin').classList.add('hidden')" class="mt-6 text-slate-400 text-[9px] font-black uppercase">Cerrar</button>
         </div>
     </div>
@@ -140,13 +143,10 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryBusqueda = urlParams.get('buscar');
                 if (queryBusqueda) {
-                    // Limpiamos los guiones bajos al recibir el texto para que el buscador trabaje normal
                     const textoLimpio = decodeURIComponent(queryBusqueda).replace(/_/g, ' ');
                     document.getElementById('inputBusqueda').value = textoLimpio;
-                    ejecutarFiltros(true); 
-                } else {
-                    render(productos);
-                }
+                    ejecutarFiltros(); 
+                } else { render(productos); }
             } catch (e) { console.error(e); }
         }
 
@@ -161,102 +161,90 @@
             const box = document.getElementById('contenedor'); box.innerHTML = '';
             lista.forEach(p => {
                 let img = p.foto; 
-                if(!img || img === "") {
-                    img = 'sin-foto.png';
-                } else if(img.includes('id=')) {
-                    img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=500`;
-                }
-
-                const pPub = parseFloat(p.precioP) || 0;
-                const txtPrecioPublico = `$${pPub.toLocaleString('es-AR')}`;
+                if(!img) img = 'sin-foto.png';
+                else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=500`;
 
                 box.innerHTML += `
-                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all">
+                    <div onclick='abrirPlaca(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer">
                         <div>
                             <div class="relative">
                                 ${p.esOferta ? '<span class="absolute top-1 left-1 bg-rose-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full z-10 shadow-lg">OFERTA</span>' : ''}
-                                <div class="img-container">
-                                    <img src="${img}" alt="${p.nombre}" onerror="this.src='sin-foto.png'">
-                                </div>
-                                <p class="text-[6px] font-black text-violet-400 uppercase mb-0.5 tracking-wider">${p.marca} • ${p.codigo}</p>
+                                <div class="img-container"><img src="${img}" alt="${p.nombre}" onerror="this.src='sin-foto.png'"></div>
+                                <p class="text-[6px] font-black text-violet-400 uppercase mb-0.5 tracking-wider">${p.marca}</p>
                                 <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             </div>
                         </div>
                         <div class="mt-2">
-                            <div class="precio-publico text-base font-black text-violet-600 leading-none">${txtPrecioPublico}</div>
-                            <div class="precio-mayorista">
-                                <span class="text-[6px] font-black text-slate-400 uppercase">Mayorista</span>
-                                <div class="text-base font-black text-slate-400 leading-none opacity-70">$${(parseFloat(p.precioM)||0).toLocaleString('es-AR')}</div>
-                            </div>
-                            <div class="flex flex-col gap-1.5 mt-3">
-                                <button onclick="CONSULTAR('${p.nombre}', '${p.codigo}')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[8px] font-black uppercase tracking-wider hover:bg-slate-800 transition-colors">
-                                    CONSULTAR
-                                </button>
-                                <button onclick="compartir('${p.nombre}', '${txtPrecioPublico}')" class="w-full bg-whatsapp text-white py-2.5 rounded-xl text-[8px] font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                    Enviar a un amigo
-                                </button>
-                            </div>
+                            <div class="text-sm font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
                         </div>
                     </div>`;
             });
         }
 
-        function compartir(nombre, precio) {
-            // Unimos las palabras con _ para que WhatsApp no rompa el link
-            const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('_');
-            const urlBase = window.location.href.split('?')[0];
-            const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
+        function abrirPlaca(p) {
+            let img = p.foto;
+            if(!img) img = 'sin-foto.png';
+            else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
+
+            const pPub = (parseFloat(p.precioP)||0).toLocaleString('es-AR');
+            const pMay = (parseFloat(p.precioM)||0).toLocaleString('es-AR');
+
+            document.getElementById('modalImg').src = img;
+            document.getElementById('modalNombre').innerText = p.nombre;
+            document.getElementById('modalInfo').innerText = `${p.cat} • ${p.marca}`;
+            document.getElementById('modalCodigo').innerText = `CÓDIGO: ${p.codigo}`;
+            document.getElementById('modalPrecioPub').innerText = `$${pPub}`;
+            document.querySelector('#modalPrecioMay div').innerText = `$${pMay}`;
             
-            // El mensaje de texto sigue teniendo espacios para que sea legible
-            const mensaje = `¡Mirá lo que encontré en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer producto acá:%0A${linkConBusqueda}`;
-            window.open(`https://wa.me/?text=${mensaje}`);
+            document.getElementById('btnConsultarModal').onclick = () => CONSULTAR(p.nombre, p.codigo);
+            document.getElementById('btnCompartirModal').onclick = () => compartir(p.nombre, `$${pPub}`);
+            
+            document.getElementById('modalProducto').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
 
-        function ejecutarFiltros(esLink = false) {
+        function cerrarPlaca() {
+            document.getElementById('modalProducto').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function compartir(nombre, precio) {
+            const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('_');
+            const urlBase = window.location.href.split('?')[0];
+            const link = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
+            const msj = `¡Mirá este producto en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AEnlace:%0A${link}`;
+            window.open(`https://wa.me/?text=${msj}`);
+        }
+
+        function ejecutarFiltros() {
             const inputVal = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
             const m = document.getElementById('selectMarca').value;
-
             const f = productos.filter(p => {
                 const nombreProd = p.nombre.toLowerCase();
                 const codigoProd = p.codigo.toLowerCase();
-                let coincideTexto = true;
-
-                if (inputVal !== "") {
-                    // Si viene de un link, el inputVal ya tiene los espacios restaurados por cargarDatos()
-                    const palabrasBusqueda = inputVal.split(/\s+/);
-                    coincideTexto = palabrasBusqueda.every(palabra => 
-                        nombreProd.includes(palabra) || codigoProd.includes(palabra)
-                    );
-                }
-                
-                const coincideCat = (c === "" || p.cat === c);
-                const coincideMarca = (m === "" || p.marca === m);
-                
-                return coincideTexto && coincideCat && coincideMarca;
+                const palabras = inputVal.split(/\s+/);
+                const coincideTexto = palabras.every(pal => nombreProd.includes(pal) || codigoProd.includes(pal));
+                return coincideTexto && (c === "" || p.cat === c) && (m === "" || p.marca === m);
             });
-            
             render(f);
         }
-        
-        function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
+
         function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
         function validarAcceso() {
             const u = document.getElementById('userInput').value.trim();
             const p = document.getElementById('passInput').value.trim();
-            const ok = baseUsuarios.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p);
-            if(ok || (u === "admin" && p === "blinky2024")) {
-                document.body.classList.add('is-logged-in'); document.getElementById('modalLogin').classList.add('hidden');
+            if(baseUsuarios.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p) || (u === "admin" && p === "blinky2024")) {
+                document.body.classList.add('is-logged-in'); 
+                document.getElementById('modalLogin').classList.add('hidden');
                 document.getElementById('btn-login').classList.add('hidden');
                 document.getElementById('user-badge').innerHTML = `HOLA, ${u.toUpperCase()} <span class="ml-1 opacity-50">✕</span>`;
                 document.getElementById('user-badge').classList.remove('hidden');
             } else { alert("Datos incorrectos"); }
         }
         function cerrarSesion() { document.body.classList.remove('is-logged-in'); document.getElementById('btn-login').classList.remove('hidden'); document.getElementById('user-badge').classList.add('hidden'); }
-        function CONSULTAR(n, c) { window.open(`https://wa.me/5492235910492?text=Hola Blinky! Me interesa: ${encodeURIComponent(n)} (Cód: ${c})`); }
+        function CONSULTAR(n, c) { window.open(`https://wa.me/5492235910492?text=Hola! Me interesa: ${encodeURIComponent(n)} (Cód: ${c})`); }
+        function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
         cargarDatos();
     </script>
 </body>
