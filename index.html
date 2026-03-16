@@ -32,6 +32,9 @@
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Forzar que los selects no se estiren */
+        select { max-width: 100%; min-width: 0; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -52,10 +55,16 @@
                 <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-4 rounded-2xl shadow-lg shadow-rose-100">🔥</button>
                 <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 flex-grow p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
             </div>
-            <div class="flex gap-2 px-4">
-                <select id="selectCat" onchange="ejecutarFiltros()" class="flex-1 h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none"><option value="">Categorías</option></select>
-                <select id="selectMarca" onchange="ejecutarFiltros()" class="flex-1 h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none"><option value="">Marcas</option></select>
+            
+            <div class="grid grid-cols-2 gap-2 px-4">
+                <select id="selectCat" onchange="ejecutarFiltros()" class="h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate w-full">
+                    <option value="">Categorías</option>
+                </select>
+                <select id="selectMarca" onchange="ejecutarFiltros()" class="h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate w-full">
+                    <option value="">Marcas</option>
+                </select>
             </div>
+
             <div class="px-4 pb-1">
                 <button onclick="mostrarLogin()" id="btn-login" class="h-9 w-full text-[10px] font-black uppercase text-slate-400 bg-slate-50 rounded-2xl border border-slate-100 tracking-widest">LOG IN</button>
                 <div id="user-badge" onclick="cerrarSesion()" class="hidden h-9 w-full flex items-center justify-center gap-2 text-[9px] bg-violet-600 text-white px-5 rounded-2xl font-black uppercase cursor-pointer shadow-lg shadow-violet-200"></div>
