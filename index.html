@@ -82,8 +82,7 @@
                     <div id="modalPrecioMay" class="text-2xl font-black text-slate-400 tracking-tighter"></div>
                 </div>
             </div>
-            <div id="botonesModalContenedor" class="flex gap-2 h-14">
-                </div>
+            <div id="botonesModalContenedor" class="flex gap-2 h-14"></div>
         </div>
     </div>
 
@@ -100,7 +99,8 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv'; 
         const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; 
-        
+        const NRO_TELEFONO = "5492235910492";
+
         let productos = []; let baseUsuarios = []; let filtrados = [];
         let colPrecioUsuario = 9;
 
@@ -147,6 +147,15 @@
             } catch (e) { console.error(e); }
         }
 
+        function generarLink(nombre) {
+            // Limpieza profunda para el link de búsqueda
+            const limpio = nombre.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+                .replace(/[^a-z0-9\s]/g, '') // Quitar símbolos
+                .trim().split(/\s+/).slice(0, 3).join('-');
+            return `https://www.blinkymdq.com/?q=${limpio}`;
+        }
+
         function aplicarLoginEfecto(userName) {
             document.body.classList.add('is-logged-in');
             document.getElementById('user-badge').innerText = `HOLA, ${userName.toUpperCase()}`;
@@ -161,10 +170,10 @@
             lista.forEach((p, idx) => {
                 let img = p.foto || 'sin-foto.png';
                 if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
+                
                 const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
-                const palabras = p.nombre.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 0).slice(0, 3).join('-');
-                const linkDirecto = `https://www.blinkymdq.com/?q=${palabras}`;
-                const nroTelefono = "5492235910492";
+                const precioPublicoTxt = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
+                const link = generarLink(p.nombre);
 
                 box.innerHTML += `
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
@@ -173,17 +182,17 @@
                             <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2">
-                                <div class="text-[10px] font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
+                                <div class="text-[10px] font-black text-violet-600">${precioPublicoTxt}</div>
                                 ${logueado ? `<div class="text-[8px] font-bold text-slate-400 tracking-tight">Tu Precio: $${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}</div>` : ''}
                             </div>
                         </div>
                         <div class="flex gap-1 mt-3 pt-3 border-t border-slate-50">
-                            <button onclick="window.open('https://wa.me/${nroTelefono}?text=${encodeURIComponent('Hola! Me interesa: ' + p.nombre + '\\n\\n' + linkDirecto)}')" 
+                            <button onclick="window.open('https://wa.me/${NRO_TELEFONO}?text=${encodeURIComponent('Hola! Me interesa: ' + p.nombre + '\\n\\n' + link)}')" 
                                 class="flex-[1.2] h-10 bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase flex items-center justify-center gap-1.5 px-1">
                                 <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                                 Consultar
                             </button>
-                            <button onclick="window.open('https://wa.me/?text=${encodeURIComponent('¡Mirá esto en Blinky MDQ!\\n' + p.nombre + '\\n\\n' + linkDirecto)}')" 
+                            <button onclick="window.open('https://wa.me/?text=${encodeURIComponent('¡Mirá esto en Blinky MDQ!\\n\\n' + p.nombre + '\\nPrecio: ' + precioPublicoTxt + '\\n\\n' + link)}')" 
                                 class="flex-1 h-10 bg-[#25D366] text-white rounded-xl text-[7px] font-black uppercase flex items-center justify-center gap-1.5 px-1 leading-[1.1]">
                                 <svg class="w-3 h-3 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                                 <span class="text-left font-black">Enviar a<br>un amigo</span>
@@ -194,42 +203,38 @@
         }
 
         function abrirPlacaPorIdx(idx) {
-    const p = filtrados[idx];
-    if (!p) return;
-    let img = p.foto || 'sin-foto.png';
-    if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
-    
-    document.getElementById('modalImg').src = img;
-    document.getElementById('modalNombre').innerText = p.nombre;
-    document.getElementById('modalPrecioPub').innerText = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
-    const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
-    document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}`;
+            const p = filtrados[idx];
+            if (!p) return;
+            let img = p.foto || 'sin-foto.png';
+            if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
+            
+            document.getElementById('modalImg').src = img;
+            document.getElementById('modalNombre').innerText = p.nombre;
+            const precioPublicoTxt = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
+            document.getElementById('modalPrecioPub').innerText = precioPublicoTxt;
+            
+            const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
+            document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}`;
 
-    // Variables para los botones
-    const nroTelefono = "5492235910492";
-    const precioPublicoFormateado = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
-    const palabras = p.nombre.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 0).slice(0, 3).join('-');
-    const linkDirecto = `https://www.blinkymdq.com/?q=${palabras}`;
+            const link = generarLink(p.nombre);
+            const contenedor = document.getElementById('botonesModalContenedor');
+            if (contenedor) {
+                contenedor.innerHTML = `
+                    <button onclick="window.open('https://wa.me/${NRO_TELEFONO}?text=${encodeURIComponent('Hola! Me interesa: ' + p.nombre + '\\n\\n' + link)}')" 
+                        class="flex-[1.2] bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        Consultar
+                    </button>
+                    <button onclick="window.open('https://wa.me/?text=${encodeURIComponent('¡Mirá esto en Blinky MDQ!\\n\\n' + p.nombre + '\\nPrecio: ' + precioPublicoTxt + '\\n\\n' + link)}')" 
+                        class="flex-1 bg-[#25D366] text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 leading-tight px-2">
+                        <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        <span class="text-left font-black uppercase text-[8px]">Enviar a<br>un amigo</span>
+                    </button>
+                `;
+            }
+            document.getElementById('modalProducto').classList.remove('hidden');
+        }
 
-    const contenedor = document.getElementById('botonesModalContenedor');
-    if (contenedor) {
-        contenedor.innerHTML = `
-            <button onclick="window.open('https://wa.me/${nroTelefono}?text=${encodeURIComponent('Hola! Me interesa: ' + p.nombre + '\\n\\n' + linkDirecto)}')" 
-                class="flex-[1.2] bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                Consultar
-            </button>
-
-            <button onclick="window.open('https://wa.me/?text=${encodeURIComponent('¡Mirá este producto en Blinky MDQ!\\n\\n' + p.nombre + '\\nPrecio: ' + precioPublicoFormateado + '\\n\\n' + linkDirecto)}')" 
-                class="flex-1 bg-[#25D366] text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 leading-tight px-2">
-                <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                <span class="text-left font-black uppercase text-[8px]">Enviar a<br>un amigo</span>
-            </button>
-        `;
-    }
-    document.getElementById('modalProducto').classList.remove('hidden');
-}
-        // BANNER Y OTROS
         const misDestacados = [`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpeg`,`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.png` ];
         let bannerIndex = 0;
         function renderSlider() {
