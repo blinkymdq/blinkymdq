@@ -21,20 +21,15 @@
         }
         @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
 
-        /* Centrado Óptico y Contenedores */
+        /* Centrado Óptico */
         .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         
-        /* Selects personalizados */
-        .contenedor-filtros { display: flex; width: 100%; gap: 8px; padding: 0 16px; box-sizing: border-box; }
-        .caja-select { flex: 1; position: relative; height: 44px; }
-        select { 
-            width: 100%; height: 100%; appearance: none; background-color: white; border: 1px solid #e2e8f0; border-radius: 1rem; 
-            padding: 0 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
-        }
+        /* Animación para la placa */
+        .placa-entrada { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -55,9 +50,9 @@
                 <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-4 rounded-2xl shadow-lg shadow-rose-100">🔥</button>
                 <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 flex-grow p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
             </div>
-            <div class="contenedor-filtros">
-                <div class="caja-select"><select id="selectCat" onchange="ejecutarFiltros()"><option value="">Categorías</option></select></div>
-                <div class="caja-select"><select id="selectMarca" onchange="ejecutarFiltros()"><option value="">Marcas</option></select></div>
+            <div class="flex gap-2 px-4">
+                <select id="selectCat" onchange="ejecutarFiltros()" class="flex-1 h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none"><option value="">Categorías</option></select>
+                <select id="selectMarca" onchange="ejecutarFiltros()" class="flex-1 h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none"><option value="">Marcas</option></select>
             </div>
             <div class="px-4 pb-1">
                 <button onclick="mostrarLogin()" id="btn-login" class="h-9 w-full text-[10px] font-black uppercase text-slate-400 bg-slate-50 rounded-2xl border border-slate-100 tracking-widest">LOG IN</button>
@@ -70,16 +65,18 @@
         <div class="col-span-full text-center py-20 text-slate-300 font-bold uppercase text-[10px]">Cargando catálogo...</div>
     </main>
 
-    <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-0 md:p-4">
-        <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-0 md:p-4" onclick="cerrarPlaca(event)">
+        <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl placa-entrada" onclick="event.stopPropagation()">
             <div class="relative p-6">
-                <button onclick="cerrarPlaca()" class="absolute top-4 right-4 bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-slate-800 font-bold">✕</button>
+                <button onclick="cerrarPlaca()" class="absolute top-4 right-4 bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-slate-800 font-bold z-10">✕</button>
+                
                 <div class="img-container mb-6 !bg-slate-50">
-                    <img id="modalImg" src="" alt="">
+                    <img id="modalImg" src="" alt="" onerror="this.src='sin-foto.png'">
                 </div>
+
                 <div class="space-y-2">
                     <p id="modalInfo" class="text-[10px] font-black text-violet-400 uppercase tracking-widest"></p>
-                    <h2 id="modalNombre" class="text-2xl font-black text-slate-800 leading-tight uppercase"></h2>
+                    <h2 id="modalNombre" class="text-xl font-black text-slate-800 leading-tight uppercase"></h2>
                     <p id="modalCodigo" class="text-[11px] font-bold text-slate-400 uppercase"></p>
                     
                     <div class="py-4 border-y border-slate-50 my-4">
@@ -90,10 +87,10 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-3 pt-2">
+                    <div class="grid grid-cols-1 gap-3">
                         <button id="btnConsultarModal" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Consultar por WhatsApp</button>
-                        <button id="btnCompartirModal" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2">
-                            Compartir con un amigo
+                        <button id="btnCompartirModal" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2">
+                            Enviar a un amigo
                         </button>
                     </div>
                 </div>
@@ -104,9 +101,9 @@
     <div id="modalLogin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-xl font-black text-slate-800 uppercase mb-6 tracking-tighter">Acceso Clientes</h3>
-            <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
-            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none focus:ring-2 focus:ring-violet-400">
-            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase hover:bg-violet-600 transition-colors">Entrar</button>
+            <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none">
+            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none">
+            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase transition-colors">Entrar</button>
             <button onclick="document.getElementById('modalLogin').classList.add('hidden')" class="mt-6 text-slate-400 text-[9px] font-black uppercase">Cerrar</button>
         </div>
     </div>
@@ -114,16 +111,17 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv'; 
         const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; 
-        let productos = []; let baseUsuarios = [];
+        let productos = []; let baseUsuarios = []; let filtrados = [];
 
         async function cargarDatos() {
             try {
                 const resP = await fetch(SHEET_URL); const dataP = await resP.text();
                 const filasP = dataP.split(/\r?\n/).filter(linea => linea.trim() !== "").slice(1);
-                productos = filasP.map(f => {
+                productos = filasP.map((f, index) => {
                     let c = f.split(';'); if (c.length < 5) c = f.split(',');
                     const limpiarPrecio = (v) => v ? v.replace(/["$\s]/g, '').replace(',', '.') : "0";
                     return {
+                        id: index,
                         codigo: (c[0]||"").trim(), nombre: (c[1]||"").trim(), foto: (c[2]||"").trim(),
                         cat: (c[4]||"").trim(), marca: (c[6]||"").trim(),
                         precioP: limpiarPrecio(c[7]), precioM: limpiarPrecio(c[8]),
@@ -143,10 +141,9 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryBusqueda = urlParams.get('buscar');
                 if (queryBusqueda) {
-                    const textoLimpio = decodeURIComponent(queryBusqueda).replace(/_/g, ' ');
-                    document.getElementById('inputBusqueda').value = textoLimpio;
-                    ejecutarFiltros(); 
-                } else { render(productos); }
+                    document.getElementById('inputBusqueda').value = decodeURIComponent(queryBusqueda).replace(/_/g, ' ');
+                }
+                ejecutarFiltros();
             } catch (e) { console.error(e); }
         }
 
@@ -158,21 +155,20 @@
         };
 
         function render(lista) {
+            filtrados = lista;
             const box = document.getElementById('contenedor'); box.innerHTML = '';
-            lista.forEach(p => {
+            lista.forEach((p, idx) => {
                 let img = p.foto; 
                 if(!img) img = 'sin-foto.png';
-                else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=500`;
+                else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
 
                 box.innerHTML += `
-                    <div onclick='abrirPlaca(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer">
-                        <div>
-                            <div class="relative">
-                                ${p.esOferta ? '<span class="absolute top-1 left-1 bg-rose-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full z-10 shadow-lg">OFERTA</span>' : ''}
-                                <div class="img-container"><img src="${img}" alt="${p.nombre}" onerror="this.src='sin-foto.png'"></div>
-                                <p class="text-[6px] font-black text-violet-400 uppercase mb-0.5 tracking-wider">${p.marca}</p>
-                                <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
-                            </div>
+                    <div onclick="abrirPlacaPorIdx(${idx})" class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer">
+                        <div class="relative">
+                            ${p.esOferta ? '<span class="absolute top-1 left-1 bg-rose-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full z-10">OFERTA</span>' : ''}
+                            <div class="img-container"><img src="${img}" alt="${p.nombre}" onerror="this.src='sin-foto.png'"></div>
+                            <p class="text-[6px] font-black text-violet-400 uppercase mb-0.5">${p.marca}</p>
+                            <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                         </div>
                         <div class="mt-2">
                             <div class="text-sm font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
@@ -181,7 +177,8 @@
             });
         }
 
-        function abrirPlaca(p) {
+        function abrirPlacaPorIdx(idx) {
+            const p = filtrados[idx];
             let img = p.foto;
             if(!img) img = 'sin-foto.png';
             else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
@@ -191,8 +188,8 @@
 
             document.getElementById('modalImg').src = img;
             document.getElementById('modalNombre').innerText = p.nombre;
-            document.getElementById('modalInfo').innerText = `${p.cat} • ${p.marca}`;
-            document.getElementById('modalCodigo').innerText = `CÓDIGO: ${p.codigo}`;
+            document.getElementById('modalInfo').innerText = `${p.cat} | ${p.marca}`;
+            document.getElementById('modalCodigo').innerText = `ART: ${p.codigo}`;
             document.getElementById('modalPrecioPub').innerText = `$${pPub}`;
             document.querySelector('#modalPrecioMay div').innerText = `$${pMay}`;
             
@@ -211,30 +208,26 @@
         function compartir(nombre, precio) {
             const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('_');
             const urlBase = window.location.href.split('?')[0];
-            const link = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
-            const msj = `¡Mirá este producto en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AEnlace:%0A${link}`;
+            const msj = `¡Mirá esto en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer aquí: ${urlBase}?buscar=${encodeURIComponent(palabras)}`;
             window.open(`https://wa.me/?text=${msj}`);
         }
 
         function ejecutarFiltros() {
-            const inputVal = document.getElementById('inputBusqueda').value.toLowerCase().trim();
+            const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
             const m = document.getElementById('selectMarca').value;
-            const f = productos.filter(p => {
-                const nombreProd = p.nombre.toLowerCase();
-                const codigoProd = p.codigo.toLowerCase();
-                const palabras = inputVal.split(/\s+/);
-                const coincideTexto = palabras.every(pal => nombreProd.includes(pal) || codigoProd.includes(pal));
-                return coincideTexto && (c === "" || p.cat === c) && (m === "" || p.marca === m);
+            const res = productos.filter(p => {
+                const coincideTxt = val === "" || val.split(/\s+/).every(w => p.nombre.toLowerCase().includes(w) || p.codigo.toLowerCase().includes(w));
+                return coincideTxt && (c === "" || p.cat === c) && (m === "" || p.marca === m);
             });
-            render(f);
+            render(res);
         }
 
         function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
         function validarAcceso() {
-            const u = document.getElementById('userInput').value.trim();
+            const u = document.getElementById('userInput').value.trim().toLowerCase();
             const p = document.getElementById('passInput').value.trim();
-            if(baseUsuarios.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p) || (u === "admin" && p === "blinky2024")) {
+            if(baseUsuarios.find(x => x.user.toLowerCase() === u && x.pass === p) || (u === "admin" && p === "blinky2024")) {
                 document.body.classList.add('is-logged-in'); 
                 document.getElementById('modalLogin').classList.add('hidden');
                 document.getElementById('btn-login').classList.add('hidden');
