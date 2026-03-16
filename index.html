@@ -15,6 +15,27 @@
         .is-logged-in .precio-mayorista { display: block; }
         .is-logged-in .precio-publico { display: none; }
         
+        /* Efecto de Destello (Shine) */
+        .contenedor-logo { position: relative; overflow: hidden; display: flex; justify-content: center; width: 100%; }
+        
+        .contenedor-logo::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+            transform: skewX(-25deg);
+            animation: destello 4s infinite;
+        }
+
+        @keyframes destello {
+            0% { left: -150%; }
+            30% { left: 150%; }
+            100% { left: 150%; }
+        }
+
         .contenedor-filtros { display: flex !important; width: 100% !important; gap: 8px !important; padding: 0 16px !important; box-sizing: border-box !important; }
         .caja-select { flex: 1 1 50% !important; width: 50% !important; min-width: 0 !important; position: relative !important; height: 44px !important; }
         select { 
@@ -37,9 +58,10 @@
 
     <header class="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
         <div class="w-full bg-white flex justify-center border-b border-slate-50">
-            <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
-            
-            <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
+            <div class="contenedor-logo">
+                <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
+                <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
+            </div>
             
             <div id="logo-backup" class="hidden flex flex-col items-center py-10">
                 <h1 class="font-brand text-4xl font-black text-slate-800 tracking-tighter">BLINKY<span class="text-violet-600">MDQ</span></h1>
@@ -118,8 +140,9 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryBusqueda = urlParams.get('buscar');
                 if (queryBusqueda) {
-                    const texto = decodeURIComponent(queryBusqueda);
-                    document.getElementById('inputBusqueda').value = texto;
+                    // Limpiamos los guiones bajos al recibir el texto para que el buscador trabaje normal
+                    const textoLimpio = decodeURIComponent(queryBusqueda).replace(/_/g, ' ');
+                    document.getElementById('inputBusqueda').value = textoLimpio;
                     ejecutarFiltros(true); 
                 } else {
                     render(productos);
@@ -182,10 +205,12 @@
         }
 
         function compartir(nombre, precio) {
-            // Tomamos las 3 primeras palabras para que la búsqueda sea más precisa
-            const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join(' ');
+            // Unimos las palabras con _ para que WhatsApp no rompa el link
+            const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('_');
             const urlBase = window.location.href.split('?')[0];
             const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
+            
+            // El mensaje de texto sigue teniendo espacios para que sea legible
             const mensaje = `¡Mirá lo que encontré en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer producto acá:%0A${linkConBusqueda}`;
             window.open(`https://wa.me/?text=${mensaje}`);
         }
@@ -201,16 +226,11 @@
                 let coincideTexto = true;
 
                 if (inputVal !== "") {
-                    if (esLink) {
-                        // Si viene de un link compartido, el nombre debe empezar o contener la frase exacta
-                        coincideTexto = nombreProd.includes(inputVal);
-                    } else {
-                        // Búsqueda normal por palabras sueltas
-                        const palabrasBusqueda = inputVal.split(/\s+/);
-                        coincideTexto = palabrasBusqueda.every(palabra => 
-                            nombreProd.includes(palabra) || codigoProd.includes(palabra)
-                        );
-                    }
+                    // Si viene de un link, el inputVal ya tiene los espacios restaurados por cargarDatos()
+                    const palabrasBusqueda = inputVal.split(/\s+/);
+                    coincideTexto = palabrasBusqueda.every(palabra => 
+                        nombreProd.includes(palabra) || codigoProd.includes(palabra)
+                    );
                 }
                 
                 const coincideCat = (c === "" || p.cat === c);
