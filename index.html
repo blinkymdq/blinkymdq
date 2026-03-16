@@ -10,7 +10,6 @@
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; width: 100vw; }
         .font-brand { font-family: 'Montserrat', sans-serif; }
         
-        /* Control de visualización por login */
         .precio-mayorista { display: none; }
         body.is-logged-in .precio-mayorista { display: block; }
         body.is-logged-in #btn-login { display: none; }
@@ -90,18 +89,16 @@
                     <div id="modalPrecioPub" class="text-4xl font-black text-violet-600 tracking-tighter"></div>
                 </div>
                 <div class="precio-mayorista">
-                    <div class="text-[10px] font-black text-slate-400 uppercase">Mayorista</div>
+                    <div class="text-[10px] font-black text-slate-400 uppercase">Tu Precio Especial</div>
                     <div id="modalPrecioMay" class="text-2xl font-black text-slate-400 tracking-tighter"></div>
                 </div>
             </div>
             
             <div class="flex gap-2 h-14">
                 <button id="btnConsultarModal" class="flex-1 bg-slate-900 text-white rounded-2xl flex items-center justify-center gap-2 text-[8px] font-black uppercase">
-                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     <span>Consultar</span>
                 </button>
                 <button id="btnCompartirModal" class="flex-1 bg-[#25D366] text-white rounded-2xl flex items-center justify-center gap-2 text-[8px] font-black uppercase leading-tight text-center px-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                     <span>Enviar a<br>un amigo</span>
                 </button>
             </div>
@@ -121,7 +118,6 @@
     </div>
 
     <script>
-        // URLs DE TUS PLANILLAS (IMPORTANTE)
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv'; 
         const USERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv'; 
         
@@ -131,10 +127,17 @@
 
         const misDestacados = [BASE_URL_GIT+'foto1.jpeg', BASE_URL_GIT+'foto2.jpeg', BASE_URL_GIT+'foto3.jpeg', BASE_URL_GIT+'foto4.jpeg', BASE_URL_GIT+'foto5.png'];
         let productos = []; let baseUsuarios = []; let filtrados = []; let bannerIndex = 0;
+        let colPrecioUsuario = 9; // Por defecto Columna I (9)
 
         async function cargarDatos() {
             try {
-                // Cargar Productos
+                const resU = await fetch(USERS_URL); const dataU = await resU.text();
+                const filasU = dataU.split(/\r?\n/).filter(l => l.trim() !== "").slice(1);
+                baseUsuarios = filasU.map(f => {
+                    let c = f.split(';'); if (c.length < 2) c = f.split(',');
+                    return { user: (c[0]||"").trim().toLowerCase(), pass: (c[1]||"").trim(), col: (c[2]||"").trim() };
+                });
+
                 const resP = await fetch(SHEET_URL); const dataP = await resP.text();
                 const filasP = dataP.split(/\r?\n/).filter(linea => linea.trim() !== "").slice(1);
                 productos = filasP.map((f, index) => {
@@ -142,71 +145,101 @@
                     const limpiarPrecio = (v) => v ? v.replace(/["$\s]/g, '').replace(',', '.') : "0";
                     return {
                         id: index, codigo: (c[0]||"").trim(), nombre: (c[1]||"").trim(), foto: (c[2]||"").trim(),
-                        cat: (c[4]||"").trim(), marca: (c[6]||"").trim(), precioP: limpiarPrecio(c[7]), precioM: limpiarPrecio(c[8]),
+                        cat: (c[4]||"").trim(), marca: (c[6]||"").trim(), precioP: limpiarPrecio(c[7]),
+                        columnasRaw: c.map(limpiarPrecio), // Guardamos todas las columnas
                         esOferta: (c[9]||"").toUpperCase().includes("SI")
                     };
                 }).filter(p => p.nombre !== "");
 
-                // Cargar Usuarios
-                const resU = await fetch(USERS_URL); const dataU = await resU.text();
-                const filasU = dataU.split(/\r?\n/).filter(l => l.trim() !== "").slice(1);
-                baseUsuarios = filasU.map(f => {
-                    let c = f.split(';'); if (c.length < 2) c = f.split(',');
-                    return { user: (c[0]||"").trim().toLowerCase(), pass: (c[1]||"").trim() };
-                });
-
                 llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
                 renderSlider();
                 
-                // Verificar si ya había sesión iniciada
                 const userSaved = localStorage.getItem('blinky_user');
-                if(userSaved) aplicarLoginEfecto(userSaved);
-
+                if(userSaved) {
+                    const found = baseUsuarios.find(u => u.user === userSaved);
+                    if(found) {
+                        colPrecioUsuario = found.col !== "" ? parseInt(found.col) : 9;
+                        aplicarLoginEfecto(userSaved);
+                    }
+                }
                 ejecutarFiltros();
-            } catch (e) { console.error("Error cargando datos:", e); }
+            } catch (e) { console.error("Error:", e); }
         }
-
-        function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
-        function cerrarLogin() { document.getElementById('modalLogin').classList.add('hidden'); }
 
         function validarAcceso() {
             const u = document.getElementById('userInput').value.trim().toLowerCase();
             const p = document.getElementById('passInput').value.trim();
             const encontrado = baseUsuarios.find(idx => idx.user === u && idx.pass === p);
-
             if (encontrado) {
                 localStorage.setItem('blinky_user', u);
+                colPrecioUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : 9;
                 aplicarLoginEfecto(u);
                 cerrarLogin();
-            } else {
-                alert("Usuario o contraseña incorrectos");
-            }
+            } else { alert("Usuario o contraseña incorrectos"); }
         }
 
         function aplicarLoginEfecto(userName) {
             document.body.classList.add('is-logged-in');
             document.getElementById('user-badge').innerText = `HOLA, ${userName.toUpperCase()}`;
-            render(filtrados); // Refrescar para mostrar precios mayoristas
+            render(filtrados);
         }
 
         function cerrarSesion() {
             if(confirm("¿Cerrar sesión?")) {
                 localStorage.removeItem('blinky_user');
+                colPrecioUsuario = 9;
                 document.body.classList.remove('is-logged-in');
                 render(filtrados);
             }
         }
 
-        function generarLinkProducto(nombre) {
-            const urlBase = window.location.href.split('?')[0];
-            const palabrasLimpas = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('-').toLowerCase();
-            return `${urlBase}?buscar=${encodeURIComponent(palabrasLimpas)}`;
+        function render(lista) {
+            filtrados = lista;
+            const box = document.getElementById('contenedor'); box.innerHTML = '';
+            const logueado = document.body.classList.contains('is-logged-in');
+
+            lista.forEach((p, idx) => {
+                let img = p.foto || 'sin-foto.png';
+                if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
+                
+                const precioDinamico = p.columnasRaw[colPrecioUsuario - 1] || p.columnasRaw[8];
+
+                box.innerHTML += `
+                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
+                        <div onclick="abrirPlacaPorIdx(${idx})" class="cursor-pointer">
+                            <div class="img-container"><img src="${img}" onerror="this.src='sin-foto.png'"></div>
+                            <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
+                            <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
+                            <div class="mt-2">
+                                <div class="text-[10px] font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
+                                ${logueado ? `<div class="text-[8px] font-bold text-slate-400 tracking-tight">Tu Precio: $${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-1.5 mt-3 pt-3 border-t border-slate-50 h-10 items-center">
+                            <button onclick="window.open('https://wa.me/5492235910492?text=Hola Blinky! Me interesa: *${p.nombre}*')" class="flex-1 h-full bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase">Consultar</button>
+                            <button onclick="window.open('https://wa.me/?text=¡Mirá esto en Blinky MDQ! *${p.nombre}*')" class="flex-1 h-full bg-[#25D366] text-white rounded-xl text-[7px] font-black uppercase leading-tight">Enviar</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function abrirPlacaPorIdx(idx) {
+            const p = filtrados[idx];
+            let img = p.foto || 'sin-foto.png';
+            if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
+            document.getElementById('modalImg').src = img;
+            document.getElementById('modalNombre').innerText = p.nombre;
+            document.getElementById('modalPrecioPub').innerText = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
+            
+            const precioDinamico = p.columnasRaw[colPrecioUsuario - 1] || p.columnasRaw[8];
+            document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico)||0).toLocaleString('es-AR')}`;
+            
+            document.getElementById('modalProducto').classList.remove('hidden');
         }
 
         function renderSlider() {
             const banner = document.getElementById('contenedorBanner');
             const indicadores = document.getElementById('indicadoresBanner');
-            banner.innerHTML = ''; indicadores.innerHTML = '';
             misDestacados.forEach((img, i) => {
                 banner.innerHTML += `<div class="min-w-full snap-start"><img src="${img}" class="w-full h-auto object-cover"></div>`;
                 indicadores.innerHTML += `<div class="h-1.5 w-1.5 rounded-full ${i===0?'bg-violet-600 w-4':'bg-slate-300'} transition-all dot-indicador"></div>`;
@@ -221,43 +254,6 @@
             vals.forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
         };
 
-        function render(lista) {
-            filtrados = lista;
-            const box = document.getElementById('contenedor'); box.innerHTML = '';
-            const logueado = document.body.classList.contains('is-logged-in');
-
-            lista.forEach((p, idx) => {
-                let img = p.foto || 'sin-foto.png';
-                if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
-                const linkShare = generarLinkProducto(p.nombre);
-                const msjCons = `Hola Blinky! Me interesa: *${p.nombre}*. Cód: ${p.codigo}. Ver aquí: ${linkShare}`;
-                const msjComp = `¡Mirá esto en Blinky MDQ! *${p.nombre}* - $${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}. Ver: ${linkShare}`;
-
-                box.innerHTML += `
-                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
-                        <div onclick="abrirPlacaPorIdx(${idx})" class="cursor-pointer">
-                            <div class="img-container"><img src="${img}" onerror="this.src='sin-foto.png'"></div>
-                            <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
-                            <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
-                            <div class="mt-2">
-                                <div class="text-[10px] font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
-                                ${logueado ? `<div class="text-[8px] font-bold text-slate-400">M: $${(parseFloat(p.precioM)||0).toLocaleString('es-AR')}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="flex gap-1.5 mt-3 pt-3 border-t border-slate-50 h-10 items-center">
-                            <button onclick="window.open('https://wa.me/5492235910492?text=${encodeURIComponent(msjCons)}')" class="flex-1 h-full bg-slate-900 text-white rounded-xl flex items-center justify-center gap-1.5 text-[7px] font-black uppercase leading-none px-1">
-                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                <span>Consultar</span>
-                            </button>
-                            <button onclick="window.open('https://wa.me/?text=${encodeURIComponent(msjComp)}')" class="flex-1 h-full bg-[#25D366] text-white rounded-xl flex items-center justify-center gap-1 text-[6.5px] font-black uppercase leading-[1.1] text-center px-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                                <span>Enviar a<br>un amigo</span>
-                            </button>
-                        </div>
-                    </div>`;
-            });
-        }
-
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
@@ -270,26 +266,8 @@
             render(res);
         }
 
-        function abrirPlacaPorIdx(idx) {
-            const p = filtrados[idx];
-            let img = p.foto || 'sin-foto.png';
-            if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
-            
-            document.getElementById('modalImg').src = img;
-            document.getElementById('modalNombre').innerText = p.nombre;
-            document.getElementById('modalPrecioPub').innerText = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
-            document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(p.precioM)||0).toLocaleString('es-AR')}`;
-            
-            const linkShare = generarLinkProducto(p.nombre);
-            const msjCons = `Hola Blinky! Me interesa: *${p.nombre}*. Cód: ${p.codigo}. Ver aquí: ${linkShare}`;
-            const msjComp = `¡Mirá esto en Blinky MDQ! *${p.nombre}* - $${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}. Ver: ${linkShare}`;
-            
-            document.getElementById('btnConsultarModal').onclick = () => window.open(`https://wa.me/5492235910492?text=${encodeURIComponent(msjCons)}`);
-            document.getElementById('btnCompartirModal').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(msjComp)}`);
-            
-            document.getElementById('modalProducto').classList.remove('hidden');
-        }
-        
+        function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
+        function cerrarLogin() { document.getElementById('modalLogin').classList.add('hidden'); }
         function cerrarPlaca() { document.getElementById('modalProducto').classList.add('hidden'); }
         function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
         
