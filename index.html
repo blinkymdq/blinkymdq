@@ -21,7 +21,6 @@
         .is-logged-in .precio-mayorista { display: block; }
         .is-logged-in .precio-publico { display: none; }
         
-        /* Filtros 50/50 */
         .contenedor-filtros { display: flex !important; width: 100% !important; gap: 8px !important; padding: 0 16px !important; box-sizing: border-box !important; }
         .caja-select { flex: 1 1 50% !important; width: 50% !important; min-width: 0 !important; position: relative !important; height: 44px !important; }
         select { 
@@ -31,11 +30,10 @@
             font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase !important; color: #64748b !important;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
             background-repeat: no-repeat !important; background-position: right 8px center !important; background-size: 12px !important;
-            overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
         }
 
-        .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; margin-bottom: 0.5rem; }
-        .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; margin-bottom: 0.5rem; overflow: hidden; }
+        .img-container img { width: 100%; height: 100%; object-fit: contain; }
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         
         .bg-whatsapp { background-color: #25D366; }
@@ -44,10 +42,10 @@
 <body class="bg-slate-50 min-h-screen">
 
     <header class="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
-        <div class="w-full bg-white flex flex-col items-center justify-center">
-            <img src="logo.png" alt="Blinky MDQ" class="w-full h-auto object-cover" onerror="this.parentElement.classList.add('py-10','bg-slate-50'); this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
+        <div class="w-full bg-white flex justify-center border-b border-slate-50">
+            <img src="logo.png" alt="Blinky MDQ" class="w-full md:max-w-2xl h-auto object-contain" onerror="this.parentElement.classList.add('py-10','bg-slate-50'); this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
             
-            <div id="logo-backup" class="hidden flex flex-col items-center">
+            <div id="logo-backup" class="hidden flex flex-col items-center py-10">
                 <h1 class="font-brand text-4xl font-black text-slate-800 tracking-tighter">BLINKY<span class="text-violet-600">MDQ</span></h1>
                 <p class="font-brand text-[10px] font-black text-violet-400 tracking-[0.5em] uppercase -mt-1 ml-1">Mayorista</p>
             </div>
@@ -209,7 +207,7 @@
             } else { alert("Datos incorrectos"); }
         }
         function cerrarSesion() { document.body.classList.remove('is-logged-in'); document.getElementById('btn-login').classList.remove('hidden'); document.getElementById('user-badge').classList.add('hidden'); }
-        function pedir(n, c) { window.open(`https://wa.me/5492235942444?text=Hola Blinky! Me interesa: ${encodeURIComponent(n)} (Cód: ${c})`); }
+        function pedir(n, c) { window.open(`https://wa.me/5492235910492?text=Hola Blinky! Me interesa: ${encodeURIComponent(n)} (Cód: ${c})`); }
         cargarDatos();
     </script>
 </body>
