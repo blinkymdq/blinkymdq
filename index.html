@@ -21,15 +21,32 @@
         }
         @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
 
-        /* Centrado Óptico */
+        /* Centrado Óptico en tarjetas */
         .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
         
-        .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        /* Centrado Óptico en PLACA (Mejorado) */
+        .img-container-placa { 
+            width: 100%; 
+            height: 320px; /* Altura fija para que la placa sea consistente */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: #f8fafc; /* Gris muy clarito para que resalte el blanco del producto */
+            border-radius: 2rem; 
+            overflow: hidden; 
+            padding: 20px;
+        }
+        .img-container-placa img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; /* Esto hace que la imagen se estire hasta su máximo sin deformarse */
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); /* Sombrita suave para la foto */
+        }
         
-        /* Animación para la placa */
-        .placa-entrada { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -66,30 +83,35 @@
     </main>
 
     <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-0 md:p-4" onclick="cerrarPlaca(event)">
-        <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl placa-entrada" onclick="event.stopPropagation()">
-            <div class="relative p-6">
-                <button onclick="cerrarPlaca()" class="absolute top-4 right-4 bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-slate-800 font-bold z-10">✕</button>
+        <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl placa-entrada" onclick="event.stopPropagation()">
+            <div class="relative p-6 md:p-8">
+                <button onclick="cerrarPlaca()" class="absolute top-6 right-6 bg-white/80 backdrop-blur shadow-md w-10 h-10 rounded-full flex items-center justify-center text-slate-800 font-bold z-10">✕</button>
                 
-                <div class="img-container mb-6 !bg-slate-50">
+                <div class="img-container-placa mb-6">
                     <img id="modalImg" src="" alt="" onerror="this.src='sin-foto.png'">
                 </div>
 
-                <div class="space-y-2">
-                    <p id="modalInfo" class="text-[10px] font-black text-violet-400 uppercase tracking-widest"></p>
-                    <h2 id="modalNombre" class="text-xl font-black text-slate-800 leading-tight uppercase"></h2>
-                    <p id="modalCodigo" class="text-[11px] font-bold text-slate-400 uppercase"></p>
+                <div class="space-y-1">
+                    <p id="modalInfo" class="text-[10px] font-black text-violet-500 uppercase tracking-[0.2em]"></p>
+                    <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase"></h2>
+                    <p id="modalCodigo" class="text-[11px] font-bold text-slate-400 uppercase tracking-widest"></p>
                     
-                    <div class="py-4 border-y border-slate-50 my-4">
-                        <div id="modalPrecioPub" class="text-3xl font-black text-violet-600"></div>
-                        <div id="modalPrecioMay" class="precio-mayorista mt-1">
-                            <span class="text-[10px] font-black text-slate-400 uppercase">Precio Mayorista</span>
-                            <div class="text-xl font-black text-slate-400 opacity-70"></div>
+                    <div class="py-5 border-y border-slate-100 my-5">
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-[10px] font-black text-violet-600 uppercase">Público</span>
+                            <div id="modalPrecioPub" class="text-4xl font-black text-violet-600 tracking-tighter"></div>
+                        </div>
+                        <div id="modalPrecioMay" class="precio-mayorista mt-2">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-[10px] font-black text-slate-400 uppercase">Mayorista</span>
+                                <div class="text-2xl font-black text-slate-400 opacity-60 tracking-tighter"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-3">
-                        <button id="btnConsultarModal" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Consultar por WhatsApp</button>
-                        <button id="btnCompartirModal" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2">
+                    <div class="flex flex-col gap-3">
+                        <button id="btnConsultarModal" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform">Consultar WhatsApp</button>
+                        <button id="btnCompartirModal" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform">
                             Enviar a un amigo
                         </button>
                     </div>
@@ -137,12 +159,9 @@
                 });
 
                 llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
-                
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryBusqueda = urlParams.get('buscar');
-                if (queryBusqueda) {
-                    document.getElementById('inputBusqueda').value = decodeURIComponent(queryBusqueda).replace(/_/g, ' ');
-                }
+                if (queryBusqueda) { document.getElementById('inputBusqueda').value = decodeURIComponent(queryBusqueda).replace(/_/g, ' '); }
                 ejecutarFiltros();
             } catch (e) { console.error(e); }
         }
@@ -161,7 +180,6 @@
                 let img = p.foto; 
                 if(!img) img = 'sin-foto.png';
                 else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
-
                 box.innerHTML += `
                     <div onclick="abrirPlacaPorIdx(${idx})" class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer">
                         <div class="relative">
@@ -170,9 +188,7 @@
                             <p class="text-[6px] font-black text-violet-400 uppercase mb-0.5">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                         </div>
-                        <div class="mt-2">
-                            <div class="text-sm font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
-                        </div>
+                        <div class="mt-2 text-sm font-black text-violet-600">$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}</div>
                     </div>`;
             });
         }
@@ -182,36 +198,27 @@
             let img = p.foto;
             if(!img) img = 'sin-foto.png';
             else if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
-
             const pPub = (parseFloat(p.precioP)||0).toLocaleString('es-AR');
             const pMay = (parseFloat(p.precioM)||0).toLocaleString('es-AR');
-
             document.getElementById('modalImg').src = img;
             document.getElementById('modalNombre').innerText = p.nombre;
             document.getElementById('modalInfo').innerText = `${p.cat} | ${p.marca}`;
-            document.getElementById('modalCodigo').innerText = `ART: ${p.codigo}`;
+            document.getElementById('modalCodigo').innerText = `ARTÍCULO: ${p.codigo}`;
             document.getElementById('modalPrecioPub').innerText = `$${pPub}`;
             document.querySelector('#modalPrecioMay div').innerText = `$${pMay}`;
-            
             document.getElementById('btnConsultarModal').onclick = () => CONSULTAR(p.nombre, p.codigo);
             document.getElementById('btnCompartirModal').onclick = () => compartir(p.nombre, `$${pPub}`);
-            
             document.getElementById('modalProducto').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
 
-        function cerrarPlaca() {
-            document.getElementById('modalProducto').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
+        function cerrarPlaca() { document.getElementById('modalProducto').classList.add('hidden'); document.body.style.overflow = 'auto'; }
         function compartir(nombre, precio) {
             const palabras = nombre.split(' ').filter(p => p.length > 2).slice(0, 3).join('_');
             const urlBase = window.location.href.split('?')[0];
             const msj = `¡Mirá esto en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer aquí: ${urlBase}?buscar=${encodeURIComponent(palabras)}`;
             window.open(`https://wa.me/?text=${msj}`);
         }
-
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
@@ -222,14 +229,12 @@
             });
             render(res);
         }
-
         function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
         function validarAcceso() {
             const u = document.getElementById('userInput').value.trim().toLowerCase();
             const p = document.getElementById('passInput').value.trim();
             if(baseUsuarios.find(x => x.user.toLowerCase() === u && x.pass === p) || (u === "admin" && p === "blinky2024")) {
-                document.body.classList.add('is-logged-in'); 
-                document.getElementById('modalLogin').classList.add('hidden');
+                document.body.classList.add('is-logged-in'); document.getElementById('modalLogin').classList.add('hidden');
                 document.getElementById('btn-login').classList.add('hidden');
                 document.getElementById('user-badge').innerHTML = `HOLA, ${u.toUpperCase()} <span class="ml-1 opacity-50">✕</span>`;
                 document.getElementById('user-badge').classList.remove('hidden');
