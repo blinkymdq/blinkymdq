@@ -113,15 +113,13 @@
 
                 llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
                 
-                // --- LÓGICA DE BÚSQUEDA POR LINK ---
+                // Lógica de carga con parámetro de búsqueda
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryBusqueda = urlParams.get('buscar');
-                
                 if (queryBusqueda) {
                     const texto = decodeURIComponent(queryBusqueda);
                     document.getElementById('inputBusqueda').value = texto;
-                    const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(texto.toLowerCase()));
-                    render(filtrados);
+                    ejecutarFiltros(); // Usa la misma lógica de filtrado
                 } else {
                     render(productos);
                 }
@@ -177,9 +175,11 @@
         }
 
         function compartir(nombre, precio) {
-            // Genera un link que incluye el nombre del producto como parámetro de búsqueda
+            // Toma las primeras 3 palabras para un link más limpio y efectivo
+            const palabras = nombre.split(' ').slice(0, 3).join(' ');
+            
             const urlBase = window.location.href.split('?')[0];
-            const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(nombre)}`;
+            const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(palabras)}`;
             
             const mensaje = `¡Mirá lo que encontré en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer producto acá:%0A${linkConBusqueda}`;
             
@@ -190,9 +190,23 @@
             const q = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c = document.getElementById('selectCat').value;
             const m = document.getElementById('selectMarca').value;
-            const f = productos.filter(p => (q.length < 3 && q.length > 0 ? true : p.nombre.toLowerCase().includes(q)) && (c === "" || p.cat === c) && (m === "" || p.marca === m));
+            
+            // Si el texto viene de un link (o tiene varias palabras), buscamos que coincidan las palabras clave
+            const palabrasBusqueda = q.split(' ').filter(p => p.length > 0);
+
+            const f = productos.filter(p => {
+                const nombreProd = p.nombre.toLowerCase();
+                // Coincidencia de texto: si hay palabras, todas deben estar en el nombre
+                const coincideTexto = palabrasBusqueda.every(palabra => nombreProd.includes(palabra));
+                const coincideCat = (c === "" || p.cat === c);
+                const coincideMarca = (m === "" || p.marca === m);
+                
+                return coincideTexto && coincideCat && coincideMarca;
+            });
+            
             render(f);
         }
+        
         function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
         function mostrarLogin() { document.getElementById('modalLogin').classList.remove('hidden'); }
         function validarAcceso() {
