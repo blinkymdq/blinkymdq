@@ -37,7 +37,7 @@
 
     <header class="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm w-full">
         <div class="w-full bg-white flex justify-center border-b border-slate-50">
-            <img src="logo.png" alt="Blinky MDQ" class="w-full md:max-w-2xl h-auto object-contain" onerror="this.parentElement.classList.add('py-10','bg-slate-50'); this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
+            <img src="logo.png" alt="Blinky MDQ" class="w-full md:max-w-xs h-auto object-contain" onerror="this.parentElement.classList.add('py-10','bg-slate-50'); this.style.display='none'; document.getElementById('logo-backup').classList.remove('hidden')">
             
             <div id="logo-backup" class="hidden flex flex-col items-center py-10">
                 <h1 class="font-brand text-4xl font-black text-slate-800 tracking-tighter">BLINKY<span class="text-violet-600">MDQ</span></h1>
@@ -112,7 +112,19 @@
                 });
 
                 llenarSelect('selectCat', 'cat'); llenarSelect('selectMarca', 'marca');
-                render(productos);
+                
+                // --- LÓGICA DE BÚSQUEDA POR LINK ---
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryBusqueda = urlParams.get('buscar');
+                
+                if (queryBusqueda) {
+                    const texto = decodeURIComponent(queryBusqueda);
+                    document.getElementById('inputBusqueda').value = texto;
+                    const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(texto.toLowerCase()));
+                    render(filtrados);
+                } else {
+                    render(productos);
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -156,7 +168,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                                     </svg>
-                                    Compartir
+                                    Enviar a un amigo
                                 </button>
                             </div>
                         </div>
@@ -165,8 +177,12 @@
         }
 
         function compartir(nombre, precio) {
-            const linkProducto = `https://www.blinkymdq.com/?buscar=${encodeURIComponent(nombre)}`;
-            const mensaje = `¡Mirá este producto en Blinky MDQ!%0A%0A*${nombre}*%0APrecio: *${precio}*%0A%0AVer detalle acá:%0A${linkProducto}`;
+            // Genera un link que incluye el nombre del producto como parámetro de búsqueda
+            const urlBase = window.location.href.split('?')[0];
+            const linkConBusqueda = `${urlBase}?buscar=${encodeURIComponent(nombre)}`;
+            
+            const mensaje = `¡Mirá lo que encontré en *Blinky MDQ*!%0A%0A🛍️ *${nombre}*%0A💰 Precio: *${precio}*%0A%0AVer producto acá:%0A${linkConBusqueda}`;
+            
             window.open(`https://wa.me/?text=${mensaje}`);
         }
 
