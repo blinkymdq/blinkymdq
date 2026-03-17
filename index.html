@@ -27,7 +27,27 @@
         .img-container-placa img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); }
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        @keyframes slideUp { 
+            from { transform: translateY(100%); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+
+        /* --- ESTILOS DEL SHIMMER --- */
+        .shimmer {
+            background: #f6f7f8;
+            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 100%;
+            display: block;
+            position: relative;
+            animation: placeholderShimmer 1.2s linear infinite forwards;
+        }
+
+        @keyframes placeholderShimmer {
+            0% { background-position: -468px 0; }
+            100% { background-position: 468px 0; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -104,9 +124,28 @@
         let productos = []; let baseUsuarios = []; let filtrados = [];
         let colPrecioUsuario = 9;
 
-        // Iconos SVG
         const iconWA = `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
         const iconShare = `<svg class="w-3.5 h-3.5 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
+
+        // --- FUNCIÓN MOSTRAR SHIMMER ---
+        function mostrarShimmer() {
+            const box = document.getElementById('contenedor');
+            let shimmerHtml = '';
+            for (let i = 0; i < 8; i++) {
+                shimmerHtml += `
+                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm">
+                        <div class="w-full aspect-square bg-slate-100 rounded-[1.5rem] mb-3 shimmer"></div>
+                        <div class="h-2 w-1/3 bg-slate-100 rounded mb-2 shimmer"></div>
+                        <div class="h-3 w-full bg-slate-100 rounded mb-1 shimmer"></div>
+                        <div class="h-3 w-2/3 bg-slate-100 rounded mb-4 shimmer"></div>
+                        <div class="flex gap-1">
+                            <div class="h-10 flex-1 bg-slate-50 rounded-xl shimmer"></div>
+                            <div class="h-10 flex-1 bg-slate-50 rounded-xl shimmer"></div>
+                        </div>
+                    </div>`;
+            }
+            box.innerHTML = shimmerHtml;
+        }
 
         async function cargarDatos() {
             try {
@@ -189,16 +228,25 @@
             const res = productos.filter(p => {
                 const nombreLimpio = p.nombre.toLowerCase();
                 const codigoLimpio = p.codigo.toLowerCase();
-                return val === "" || val.split(/\s+/).every(palabra => nombreLimpio.includes(palabra) || codigoLimpio.includes(palabra));
+                const matchTexto = val === "" || val.split(/\s+/).every(palabra => nombreLimpio.includes(palabra) || codigoLimpio.includes(palabra));
+                const matchCat = c === "" || p.cat === c;
+                const matchMarca = m === "" || p.marca === m;
+                return matchTexto && matchCat && matchMarca;
             });
             render(res);
         }
 
         function render(lista) {
             filtrados = lista;
-            const box = document.getElementById('contenedor'); box.innerHTML = '';
+            const box = document.getElementById('contenedor');
             const logueado = document.body.classList.contains('is-logged-in');
+            
+            if (lista.length === 0) {
+                box.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">No se encontraron productos</div>`;
+                return;
+            }
 
+            let htmlTemporal = '';
             lista.forEach((p, idx) => {
                 let img = p.foto || 'sin-foto.png';
                 if(img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
@@ -206,8 +254,8 @@
                 const precioPublicoTxt = `$${(parseFloat(p.precioP)||0).toLocaleString('es-AR')}`;
                 const link = generarLink(p.nombre);
 
-                box.innerHTML += `
-                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
+                htmlTemporal += `
+                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between placa-entrada">
                         <div onclick="abrirPlacaPorIdx(${idx})" class="cursor-pointer">
                             <div class="img-container"><img src="${img}" onerror="this.src='sin-foto.png'"></div>
                             <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
@@ -229,6 +277,7 @@
                         </div>
                     </div>`;
             });
+            box.innerHTML = htmlTemporal;
         }
 
         function abrirPlacaPorIdx(idx) {
@@ -262,6 +311,7 @@
         let bannerIndex = 0;
         function renderSlider() {
             const b = document.getElementById('contenedorBanner'); const ind = document.getElementById('indicadoresBanner');
+            if(!b || !ind) return;
             b.innerHTML = ''; ind.innerHTML = '';
             misDestacados.forEach((img, i) => {
                 b.innerHTML += `<div class="min-w-full snap-start"><img src="${img}" class="w-full h-auto object-cover"></div>`;
@@ -288,6 +338,9 @@
         function cerrarLogin() { document.getElementById('modalLogin').classList.add('hidden'); }
         function cerrarPlaca() { document.getElementById('modalProducto').classList.add('hidden'); }
         function filtrarOfertas() { render(productos.filter(p => p.esOferta)); }
+        
+        // --- LLAMADAS INICIALES ---
+        mostrarShimmer();
         cargarDatos();
     </script>
 </body>
