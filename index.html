@@ -7,7 +7,7 @@
     <!-- PapaParse para CSV robusto -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
-    <title>Blinky MDQ - Catálogo</title>
+    <title>Blinky - Mar del Plata </title>
     <style>
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; width: 100vw; }
 
@@ -35,8 +35,29 @@
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
 
         /* ─── Imagen en modal ─── */
-        .img-container-placa { width: 100%; height: 320px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 2rem; overflow: hidden; padding: 20px; }
+        .img-container-placa { width: 100%; height: 320px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 2rem; overflow: hidden; padding: 20px; position: relative; }
         .img-container-placa img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); }
+
+        /* ─── Cartel sin stock en modal ─── */
+        .badge-sin-stock-modal {
+            position: absolute;
+            top: 18px;
+            left: -22px;
+            width: 110px;
+            background: #ef4444;
+            color: white;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 5px 0;
+            transform: rotate(-45deg);
+            transform-origin: center;
+            box-shadow: 0 2px 6px rgba(239,68,68,0.35);
+            z-index: 5;
+            pointer-events: none;
+        }
 
         /* ─── Título producto truncado ─── */
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -157,6 +178,50 @@
             scrollbar-width: none;
         }
         #modalProductoInner::-webkit-scrollbar { display: none; }
+
+        /* ─── Logo clickeable — centrado correcto en desktop ─── */
+        .logo-link {
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .logo-link:hover { opacity: 0.92; transition: opacity 0.15s; }
+
+        /* ─── Lupa en buscador ─── */
+        .search-wrapper { position: relative; flex-grow: 1; }
+        .search-wrapper input { padding-right: 2.75rem; }
+        .search-icon {
+            position: absolute;
+            right: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+            transition: color 0.15s;
+        }
+        .search-wrapper:focus-within .search-icon { color: #7c3aed; }
+
+        /* ─── Etiqueta SIN STOCK en grilla ─── */
+        .badge-sin-stock {
+            position: absolute;
+            top: 18px;
+            left: -22px;
+            width: 110px;
+            background: #ef4444;
+            color: white;
+            font-size: 7px;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 4px 0;
+            transform: rotate(-45deg);
+            transform-origin: center;
+            box-shadow: 0 2px 6px rgba(239,68,68,0.35);
+            z-index: 5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -166,16 +231,20 @@
     ════════════════════════════════════════ -->
     <header class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full">
         <div class="w-full bg-white flex justify-center border-b border-slate-50">
-            <div class="contenedor-logo">
-                <!-- ✅ FIX LOGO: mobile usa logo-mobile.png, PC usa logo-desktop.png con ancho máximo igual al slider -->
+            <a href="/" class="logo-link contenedor-logo" title="Volver al inicio">
                 <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain">
                 <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain px-4">
-            </div>
+            </a>
         </div>
         <div class="max-w-7xl mx-auto py-3 space-y-3">
             <div class="flex gap-2 px-4">
                 <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-4 rounded-2xl shadow-lg shadow-rose-100">🔥</button>
-                <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 flex-grow p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+                <div class="search-wrapper">
+                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 w-full p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+                    <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-2 px-4">
                 <select id="selectCat" onchange="ejecutarFiltros()" class="h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
@@ -207,13 +276,9 @@
     ════════════════════════════════════════ -->
     <main class="max-w-7xl mx-auto">
 
-        <!-- Banner slider ÚNICO (mobile + desktop, misma imagen 16:5) -->
         <div id="seccionBanner" class="mt-4 px-4">
             <div class="relative overflow-hidden rounded-[2rem] shadow-xl shadow-slate-200 bg-black" style="aspect-ratio: 16/5; min-height: 90px;">
-                <!-- Track de slides -->
                 <div id="contenedorBanner" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-hide" style="height: 100%;"></div>
-
-                <!-- Flechas — solo en md+ -->
                 <button onclick="sliderNav(-1)"
                     class="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/25 backdrop-blur-sm border border-white/20 items-center justify-center text-white hover:bg-black/40 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -222,14 +287,10 @@
                     class="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/25 backdrop-blur-sm border border-white/20 items-center justify-center text-white hover:bg-black/40 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
-
-                <!-- Barra de progreso -->
                 <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-black/10 z-20">
                     <div id="sliderProgress" class="h-full bg-white/70" style="width: 0%; transition: width 4s linear;"></div>
                 </div>
             </div>
-
-            <!-- Indicadores -->
             <div id="indicadoresBanner" class="flex justify-center gap-1.5 mt-3"></div>
         </div>
 
@@ -255,9 +316,11 @@
     ════════════════════════════════════════ -->
     <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm" onclick="cerrarPlaca()">
         <div id="modalProductoInner" class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-8 placa-entrada relative" onclick="event.stopPropagation()">
-            <!-- Botón cerrar visible -->
             <button id="btnCerrarModal" onclick="cerrarPlaca()" aria-label="Cerrar">✕</button>
-            <div class="img-container-placa mb-6"><img id="modalImg" src="" alt="" loading="lazy"></div>
+            <div class="img-container-placa mb-6">
+                <img id="modalImg" src="" alt="" loading="lazy">
+                <div id="modalBadgeSinStock" class="badge-sin-stock-modal hidden">Sin Stock</div>
+            </div>
             <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase pr-10"></h2>
             <div class="py-5 border-y border-slate-100 my-5 space-y-4">
                 <div>
@@ -293,14 +356,19 @@
         // ════════════════════════════════════════
         // CONFIGURACIÓN
         // ════════════════════════════════════════
-        const SHEET_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=1607701576&single=true&output=csv';
+        const SHEET_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=0&single=true&output=csv';
         const USERS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQsX_fc7ypz3mVNMQcI8boTIzligB9QblZP6pcnVrvKciX2xCl3XYpejlHOa3vz4AgmIXOEzkG1TjQZ/pub?gid=100151244&single=true&output=csv';
+
         const NRO_TELEFONO = "5492235910492";
 
         let productos      = [];
         let baseUsuarios   = [];
         let filtrados      = [];
-        let colPrecioUsuario = 9;
+
+        // Columna de precio por defecto (número de columna Excel, base-1)
+        const COL_DEFAULT = 21;
+        let colUsuario = COL_DEFAULT;
+
         let paginaActual   = 1;
         const productosPorPagina = 12;
 
@@ -342,9 +410,9 @@
                 const dataU  = await resU.text();
                 const parsedU = Papa.parse(dataU, { header: false, skipEmptyLines: true });
                 baseUsuarios = parsedU.data.slice(1).map(c => ({
-                    user: (c[0] || "").trim().toLowerCase(),
+                    user:     (c[0] || "").trim().toLowerCase(),
                     passHash: simpleHash((c[1] || "").trim()),
-                    col:  (c[2] || "").trim()
+                    col:      (c[2] || "").trim()
                 }));
 
                 // — Productos —
@@ -355,17 +423,30 @@
                 productos = parsedP.data.slice(1).map((c, index) => {
                     const limpiar = v => v ? String(v).replace(/[$\s"]/g, '').replace(',', '.') : "0";
                     return {
-                        id:          index,
-                        codigo:      (c[0]  || "").trim(),
-                        nombre:      (c[1]  || "").trim(),
-                        foto:        (c[2]  || "").trim(),
-                        cat:         (c[4]  || "").trim(),
-                        marca:       (c[6]  || "").trim(),
-                        precioP:     limpiar(c[7]),
+                        id:           index,
+                        codigo:       (c[1]  || "").trim(),
+                        nombre:       (c[2]  || "").trim(),
+                        foto:         (c[3]  || "").trim(),
+                        cat:          (c[5]  || "").trim(),
+                        marca:        (c[7]  || "").trim(),
+                        precioP:      limpiar(c[15]),
                         todasLasCols: c.map(limpiar),
-                        esOferta:    (c[9]  || "").toUpperCase().includes("SI")
+                        esOferta:     (c[27] || "").toUpperCase().includes("SI"),
+                        sinStock:     String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO")
                     };
                 }).filter(p => p.nombre !== "");
+
+                // ─── Primero con foto (random), después sin foto (random) ───
+                function shuffle(arr) {
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                }
+                const conFoto = shuffle(productos.filter(p => p.foto && p.foto.trim() !== ""));
+                const sinFoto = shuffle(productos.filter(p => !p.foto || p.foto.trim() === ""));
+                productos = [...conFoto, ...sinFoto];
 
                 renderSlider();
                 llenarSelect('selectCat',   'cat');
@@ -376,7 +457,7 @@
                 if (userSaved) {
                     const found = baseUsuarios.find(u => u.user === userSaved);
                     if (found) {
-                        colPrecioUsuario = found.col !== "" ? parseInt(found.col) : 9;
+                        colUsuario = found.col !== "" ? parseInt(found.col) : COL_DEFAULT;
                         document.body.classList.add('is-logged-in');
                         document.getElementById('user-badge-name').innerText = `HOLA, ${userSaved.toUpperCase()}`;
                     }
@@ -424,6 +505,17 @@
         }
 
         // ════════════════════════════════════════
+        // HELPER: precio del usuario logueado
+        // ════════════════════════════════════════
+        function getPrecioUsuario(p) {
+            const val = p.todasLasCols[colUsuario - 1];
+            if (!val || parseFloat(val) === 0) {
+                return p.todasLasCols[COL_DEFAULT - 1] || "0";
+            }
+            return val;
+        }
+
+        // ════════════════════════════════════════
         // FILTROS
         // ════════════════════════════════════════
         function ejecutarFiltros() {
@@ -453,7 +545,7 @@
         }
 
         // ════════════════════════════════════════
-        // RENDER — ✅ FIX BOTONES WA: <a> en lugar de window.open()
+        // RENDER
         // ════════════════════════════════════════
         function render(lista) {
             filtrados = lista;
@@ -484,7 +576,7 @@
                 let img = p.foto || 'sin-foto.png';
                 if (img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=400`;
 
-                const precioDinamico   = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
+                const precioDinamico   = getPrecioUsuario(p);
                 const precioPublicoTxt = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
                 const link             = generarLink(p.nombre);
                 const realIdx          = inicio + idx;
@@ -492,15 +584,21 @@
                 const msgConsulta = encodeURIComponent(`Hola! Me interesa: ${p.nombre}\n\n${link}`);
                 const msgAmigo    = encodeURIComponent(`¡Mirá esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
 
+                const badgeSinStock = p.sinStock
+                    ? `<div class="badge-sin-stock">Sin Stock</div>`
+                    : '';
+
                 return `
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
                         <div onclick="abrirPlacaPorIdx(${realIdx})" class="cursor-pointer">
-                            <div class="img-container"><img src="${img}" loading="lazy" onerror="this.src='sin-foto.png'"></div>
+                            <div class="relative overflow-hidden rounded-[1.5rem]">
+                                <div class="img-container">${badgeSinStock}<img src="${img}" loading="lazy" onerror="this.src='sin-foto.png'" ${p.sinStock ? 'style="opacity:0.55;filter:grayscale(40%)"' : ''}></div>
+                            </div>
                             <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2">
-                                <div class="text-[10px] font-black text-violet-600">${precioPublicoTxt}</div>
-                                ${logueado ? `<div class="text-[8px] font-bold text-slate-400">Tu Precio: $${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}</div>` : ''}
+                                <div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
+                                ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: $${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}</div>` : ''}
                             </div>
                         </div>
                         <div class="flex gap-1 mt-3 pt-3 border-t border-slate-50">
@@ -530,22 +628,32 @@
         }
 
         // ════════════════════════════════════════
-        // MODAL PRODUCTO — ✅ FIX BOTONES WA: <a> en lugar de window.open()
+        // MODAL PRODUCTO
         // ════════════════════════════════════════
         function abrirPlacaPorIdx(idx) {
             const p = filtrados[idx];
             if (!p) return;
 
+            // Imagen con fallback a sin-foto.png
             let img = p.foto || 'sin-foto.png';
             if (img.includes('id=')) img = `https://drive.google.com/thumbnail?id=${img.split('id=')[1].split('&')[0]}&sz=800`;
 
-            document.getElementById('modalImg').src         = img;
+            const modalImg = document.getElementById('modalImg');
+            modalImg.src = img;
+            modalImg.onerror = () => { modalImg.src = 'sin-foto.png'; };
+            modalImg.style.opacity = p.sinStock ? '0.5' : '1';
+            modalImg.style.filter  = p.sinStock ? 'grayscale(50%)' : 'drop-shadow(0 10px 15px rgba(0,0,0,0.05))';
+
+            // Cartel agotado
+            const badge = document.getElementById('modalBadgeSinStock');
+            badge.classList.toggle('hidden', !p.sinStock);
+
             document.getElementById('modalNombre').innerText = p.nombre;
 
             const precioPublicoTxt = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
             document.getElementById('modalPrecioPub').innerText = precioPublicoTxt;
 
-            const precioDinamico = p.todasLasCols[colPrecioUsuario - 1] || p.todasLasCols[8];
+            const precioDinamico = getPrecioUsuario(p);
             document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}`;
 
             const link = generarLink(p.nombre);
@@ -571,7 +679,6 @@
             document.body.style.overflow = '';
         }
 
-        // Cerrar modal con tecla Escape
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
                 cerrarPlaca();
@@ -580,7 +687,7 @@
         });
 
         // ════════════════════════════════════════
-        // SLIDER UNIFICADO (mobile + desktop)
+        // SLIDER
         // ════════════════════════════════════════
         const misDestacados = [
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto6.jpg`,
@@ -589,7 +696,6 @@
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`,
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg`,
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg`
-            
         ];
         let bannerIndex     = 0;
         let bannerTimer     = null;
@@ -687,8 +793,7 @@
 
             if (encontrado) {
                 localStorage.setItem('blinky_user', u);
-                colPrecioUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : 9;
-
+                colUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : COL_DEFAULT;
                 document.body.classList.add('is-logged-in');
                 document.getElementById('user-badge-name').innerText = `HOLA, ${u.toUpperCase()}`;
                 document.getElementById('loginError').classList.add('hidden');
@@ -701,7 +806,7 @@
 
         function cerrarSesion() {
             localStorage.removeItem('blinky_user');
-            colPrecioUsuario = 9;
+            colUsuario = COL_DEFAULT;
             document.body.classList.remove('is-logged-in');
             render(filtrados.length > 0 ? filtrados : productos);
         }
