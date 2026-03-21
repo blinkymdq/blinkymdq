@@ -839,11 +839,13 @@
         function cerrarBienvenida() {
     document.getElementById('modalBienvenida').classList.add('hidden');
     }
-    
+
         mostrarShimmer();
        
         cargarDatos();
-    </script><div id="modalBienvenida" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+    </script>
+    
+    <div id="modalBienvenida" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
     <div class="relative w-full max-w-sm mx-4 rounded-[2.rem] overflow-hidden shadow-2xl" style="animation: bienvenidaZoom 0.4s cubic-bezier(0.34,1.56,0.64,1) both;">
         <!-- Destello de luz -->
         <div style="position:absolute;inset:0;z-index:10;pointer-events:none;animation:bienvenidaFlash 1.2s ease-out 0.3s both;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,0.55) 50%,transparent 100%);transform:skewX(-20deg);"></div>
@@ -853,6 +855,5 @@
         </button>
         <img src="INICIO.jpg" alt="Promoción" class="w-full h-auto block">
     </div>
-</div>
     </body>
 </html>
