@@ -10,7 +10,6 @@ export default async (request, context) => {
     const res = await fetch(SHEET_URL);
     const csv = await res.text();
 
-    // Parser CSV que maneja comillas
     function parseCSVRow(row) {
       const cols = [];
       let col = '';
