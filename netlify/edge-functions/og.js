@@ -47,7 +47,7 @@ export default async (request, context) => {
     let imgUrl = producto.foto;
     if (imgUrl.includes('id=')) {
       const id = imgUrl.split('id=')[1].split('&')[0];
-      imgUrl = `https://drive.google.com/thumbnail?id=${id}&sz=800`;
+      imgUrl = `https://drive.google.com/thumbnail?id=${id}&sz=1200`;
     }
 
     const precioNum = parseFloat(producto.precio) || 0;
