@@ -44,11 +44,17 @@ export default async (request, context) => {
 
     if (!producto) return context.next();
 
-    let imgUrl = producto.foto;
-    if (imgUrl.includes('id=')) {
-      const id = imgUrl.split('id=')[1].split('&')[0];
-      imgUrl = `https://drive.google.com/thumbnail?id=${id}&sz=1200`;
-    }
+   let imgUrl = 'https://blinkymdq.com/logo.png';
+   if (producto.foto) {
+   if (producto.foto.includes('id=')) {
+    // Google Drive
+    const id = producto.foto.split('id=')[1].split('&')[0];
+    imgUrl = `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+    } else if (producto.foto.trim() !== '') {
+    // GitHub/Netlify
+    imgUrl = `https://blinkymdq.com/Productos/${producto.foto}.jpg`;
+  }
+}
 
     const precioNum = parseFloat(producto.precio) || 0;
     const precioTxt = `$${precioNum.toLocaleString('es-AR')}`;
