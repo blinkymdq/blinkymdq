@@ -1,0 +1,12 @@
+[[edge_functions]]
+path = "/*"
+function = "og"
+```
+
+**3.** Creá la carpeta `netlify` → dentro otra carpeta `edge-functions` → dentro el archivo `og.js` con el código que te pasé arriba.
+
+Cuando los tengas creados, subí los cambios a GitHub con:
+```
+git add .
+git commit -m "agregar edge function og"
+git push
