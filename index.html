@@ -249,6 +249,9 @@
             0%   { left: -100%; opacity: 1; }
             100% { left: 200%;  opacity: 0; }
         }
+        #main-header {
+         transition: transform 0.8s ease !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -832,24 +835,29 @@
     </script>
 
     <script>
-      (function() {
-     const header = document.getElementById('main-header');
-     let lastScrollY = window.scrollY;
+(function() {
+  const header = document.getElementById('main-header');
+  if (!header) return;
+  let lastScrollY = 0;
+  let ticking = false;
 
-     window.addEventListener('scroll', () => {
-     const currentScrollY = window.scrollY;
-
-     if (currentScrollY > lastScrollY && currentScrollY > 80) {
-      // Scrolleando hacia abajo → ocultar
-      header.style.transform = 'translateY(-100%)';
-     } else {
-      // Scrolleando hacia arriba → mostrar
-      header.style.transform = 'translateY(0)';
-A  }
-
-    lastScrollY = currentScrollY;
-  });
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(function() {
+        const currentScrollY = window.scrollY;
+        if (currentScrollY > lastScrollY && currentScrollY > 80) {
+          header.style.transform = 'translateY(-100%)';
+        } else {
+          header.style.transform = 'translateY(0)';
+        }
+        lastScrollY = currentScrollY;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
 })();
+</script>
 
 </body>
 </html>
