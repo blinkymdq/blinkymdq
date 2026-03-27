@@ -32,8 +32,10 @@
         /* ─── Precios mayoristas ocultos por defecto ─── */
         .precio-mayorista { display: none; }
         body.is-logged-in .precio-mayorista { display: block; }
-        body.is-logged-in #btn-login { display: none; }
-        body.is-logged-in #user-badge { display: flex; }
+        body.is-logged-in #btn-login        { display: none; }
+        body.is-logged-in #user-badge       { display: flex; }
+        body.is-logged-in #btn-login-mobile  { display: none; }
+        body.is-logged-in #user-badge-mobile { display: flex; }
 
         /* ─── Logo con destello ─── */
         .contenedor-logo { position: relative; overflow: hidden; display: flex; justify-content: center; width: 100%; }
@@ -197,12 +199,10 @@
         }
         #modalProductoInner::-webkit-scrollbar { display: none; }
 
-        /* ─── Logo clickeable — centrado correcto en desktop ─── */
+        /* ─── Logo clickeable ─── */
         .logo-link {
             cursor: pointer;
             display: flex;
-            justify-content: center;
-            width: 100%;
         }
         .logo-link:hover { opacity: 0.92; transition: opacity 0.15s; }
 
@@ -256,46 +256,92 @@
 </head>
 <body class="bg-slate-50 min-h-screen">
 
-<header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">        <div class="w-full bg-white flex justify-center border-b border-slate-50">
-            <a href="/" class="logo-link contenedor-logo" title="Volver al inicio">
-                <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain">
-                <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain px-4">
-            </a>
-        </div>
-        <div class="max-w-7xl mx-auto py-3 space-y-3">
-            <div class="flex gap-2 px-4">
-                <button onclick="filtrarOfertas()" class="h-11 bg-rose-500 text-white px-4 rounded-2xl shadow-lg shadow-rose-100">🔥</button>
-                <div class="search-wrapper">
-                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-11 w-full p-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+<header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">
+
+    <!-- ── DESKTOP ── -->
+    <div class="hidden md:flex max-w-7xl mx-auto px-4 items-center gap-3" style="height:104px;">
+        <a href="/" title="Volver al inicio" class="logo-link flex-shrink-0">
+            <img src="logo-desktop.png" alt="Blinky MDQ" class="object-contain" style="width:300px;height:100px;">
+        </a>
+        <div class="flex-1 flex flex-col gap-2 justify-center">
+            <div class="flex gap-2">
+                <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl shadow-lg shadow-rose-100 flex-shrink-0">🔥</button>
+                <div class="search-wrapper flex-1">
+                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
                     <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 px-4">
-                <select id="selectCat" onchange="ejecutarFiltros()" class="h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
+            <div class="flex gap-2">
+                <select id="selectCat" onchange="ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
                     <option value="">Categorías</option>
                 </select>
-                <select id="selectMarca" onchange="ejecutarFiltros()" class="h-11 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
+                <select id="selectMarca" onchange="ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
                     <option value="">Marcas</option>
                 </select>
             </div>
-            <div class="px-4 pb-1">
-                <button onclick="mostrarLogin()" id="btn-login" class="w-full flex items-center justify-center gap-2">
+        </div>
+        <div class="flex-shrink-0" style="width:155px;">
+            <button onclick="mostrarLogin()" id="btn-login" class="w-full flex items-center justify-center gap-1.5">
+                <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 20 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Acceso Clientes</span>
+            </button>
+            <div id="user-badge" onclick="cerrarSesion()" class="hidden w-full items-center justify-between gap-2 text-[9px] text-white px-4 font-black uppercase cursor-pointer shadow-lg shadow-violet-300">
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                    <span id="user-badge-name"></span>
+                </div>
+                <span class="text-[7px] opacity-60 font-bold normal-case tracking-normal border border-white/20 rounded-lg px-2 py-0.5">Cerrar sesión</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MOBILE ── -->
+    <div class="md:hidden px-3 pt-2 pb-2 flex flex-col gap-2">
+        <!-- Fila 1: logo + botón acceso -->
+        <div class="flex items-center justify-between">
+            <a href="/" title="Volver al inicio" class="logo-link">
+                <img src="logo-mobile.png" alt="Blinky MDQ" class="object-contain" style="width:160px;height:53px;">
+            </a>
+            <div class="flex-shrink-0" style="width:130px;">
+                <button onclick="mostrarLogin()" id="btn-login-mobile" class="w-full flex items-center justify-center gap-1.5 h-9 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                    style="background:linear-gradient(135deg,#a5399c,#4d17a3,#270447);color:white;">
                     <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 20 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    <span>Acceso Clientes</span>
-                    <span class="opacity-600 text-[10px] font-bold normal-case tracking-normal">→ precios especiales</span>
+                    <span>Acceso</span>
                 </button>
-                <div id="user-badge" onclick="cerrarSesion()" class="hidden w-full items-center justify-between gap-2 text-[9px] text-white px-4 font-black uppercase cursor-pointer shadow-lg shadow-violet-300">
+                <div id="user-badge-mobile" onclick="cerrarSesion()" class="hidden w-full items-center justify-between gap-2 text-[9px] text-white px-3 h-9 font-black uppercase cursor-pointer rounded-2xl shadow-lg shadow-violet-300"
+                    style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
                     <div class="flex items-center gap-1.5">
                         <svg class="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
-                        <span id="user-badge-name"></span>
+                        <span id="user-badge-name-mobile"></span>
                     </div>
-                    <span class="text-[7px] opacity-60 font-bold normal-case tracking-normal border border-white/20 rounded-lg px-2 py-0.5">Cerrar sesión</span>
+                    <span class="text-[7px] opacity-60">Salir</span>
                 </div>
             </div>
         </div>
-    </header>
+        <!-- Fila 2: buscador -->
+        <div class="flex gap-2">
+            <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl shadow-lg shadow-rose-100 flex-shrink-0">🔥</button>
+            <div class="search-wrapper flex-1">
+                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+                <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+        </div>
+        <!-- Fila 3: desplegables -->
+        <div class="flex gap-2">
+            <select id="selectCatMobile" onchange="document.getElementById('selectCat').value=this.value;ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
+                <option value="">Categorías</option>
+            </select>
+            <select id="selectMarcaMobile" onchange="document.getElementById('selectMarca').value=this.value;ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
+                <option value="">Marcas</option>
+            </select>
+        </div>
+    </div>
+
+</header>
 
     <main class="max-w-7xl mx-auto">
         <div id="seccionBanner" class="mt-4 px-4">
@@ -457,8 +503,10 @@
                 productos = [...conFoto, ...sinFoto];
 
                 renderSlider();
-                llenarSelect('selectCat',   'cat');
-                llenarSelect('selectMarca', 'marca');
+                llenarSelect('selectCat',        'cat');
+                llenarSelect('selectMarca',     'marca');
+                llenarSelect('selectCatMobile',   'cat');
+                llenarSelect('selectMarcaMobile', 'marca');
 
                 const userSaved = localStorage.getItem('blinky_user');
                 if (userSaved) {
@@ -466,7 +514,8 @@
                     if (found) {
                         colUsuario = found.col !== "" ? parseInt(found.col) : COL_DEFAULT;
                         document.body.classList.add('is-logged-in');
-                        document.getElementById('user-badge-name').innerText = `HOLA, ${userSaved.toUpperCase()}`;
+                        document.getElementById('user-badge-name').innerText        = `HOLA, ${userSaved.toUpperCase()}`;
+                        document.getElementById('user-badge-name-mobile').innerText  = `HOLA, ${userSaved.toUpperCase()}`;
                     }
                 }
 
@@ -799,7 +848,8 @@
                 localStorage.setItem('blinky_user', u);
                 colUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : COL_DEFAULT;
                 document.body.classList.add('is-logged-in');
-                document.getElementById('user-badge-name').innerText = `HOLA, ${u.toUpperCase()}`;
+                document.getElementById('user-badge-name').innerText        = `HOLA, ${u.toUpperCase()}`;
+                document.getElementById('user-badge-name-mobile').innerText  = `HOLA, ${u.toUpperCase()}`;
                 document.getElementById('loginError').classList.add('hidden');
                 cerrarLogin();
                 render(filtrados.length > 0 ? filtrados : productos);
