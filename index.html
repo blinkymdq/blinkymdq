@@ -46,6 +46,29 @@
         }
         @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
 
+        /* ─── Fuego animado ─── */
+        .btn-fuego {
+            animation: fuegoPulso 1.2s ease-in-out infinite;
+            box-shadow: 0 0 8px 2px rgba(251,113,33,0.5);
+        }
+        .btn-fuego:hover {
+            box-shadow: 0 0 16px 6px rgba(251,113,33,0.7);
+        }
+        .btn-fuego span {
+            display: inline-block;
+            animation: fuegoLlama 0.6s ease-in-out infinite alternate;
+            transform-origin: bottom center;
+        }
+        @keyframes fuegoPulso {
+            0%   { box-shadow: 0 0 6px 2px rgba(251,113,33,0.4); }
+            50%  { box-shadow: 0 0 14px 5px rgba(239,68,68,0.6); }
+            100% { box-shadow: 0 0 6px 2px rgba(251,113,33,0.4); }
+        }
+        @keyframes fuegoLlama {
+            0%   { transform: scaleY(1)    scaleX(1)    rotate(-3deg); }
+            100% { transform: scaleY(1.2)  scaleX(0.9)  rotate(3deg); }
+        }
+
         /* ─── Scroll invisible ─── */
         .scroll-hide::-webkit-scrollbar { display: none; }
         .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
@@ -262,10 +285,13 @@
         </a>
         <div class="flex-1 flex flex-col gap-2 justify-center">
             <div class="flex gap-2">
-                <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl shadow-lg shadow-rose-100 flex-shrink-0">🔥</button>
+                <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
                 <div class="search-wrapper flex-1">
-                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
-                    <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
+                    <button id="btnLimpiar" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                        <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    <svg id="iconLupa" class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                 </div>
@@ -298,15 +324,18 @@
     <div class="md:hidden px-3 pt-2 pb-2 flex flex-col gap-2">
         <!-- Fila 1: logo full width -->
         <div class="-mx-3">
-            <a href="/" title="Volver al inicio" style="display:block;width:100%;">
+            <a href="/" title="Volver al inicio" class="contenedor-logo" style="display:block;width:100%;">
                 <img src="mobilenew.png" alt="Blinky MDQ" style="width:100%;height:auto;display:block;">
             </a>
         </div>
         <!-- Fila 2: buscador + botón acceso -->
         <div class="flex gap-2">
-            <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl shadow-lg shadow-rose-100 flex-shrink-0">🔥</button>
+            <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
             <div class="search-wrapper flex-1">
-                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner">
+                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
+                <button id="btnLimpiarMobile" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                    <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
                 <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
@@ -633,6 +662,20 @@
         // ════════════════════════════════════════
         // FILTROS
         // ════════════════════════════════════════
+        function toggleBtnLimpiar() {
+            const val = document.getElementById('inputBusqueda').value || document.getElementById('inputBusquedaMobile').value;
+            const tiene = val.length > 0;
+            document.getElementById('btnLimpiar').classList.toggle('hidden', !tiene);
+            document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !tiene);
+            document.getElementById('iconLupa').classList.toggle('hidden', tiene);
+        }
+        function limpiarBusqueda() {
+            document.getElementById('inputBusqueda').value = '';
+            document.getElementById('inputBusquedaMobile').value = '';
+            toggleBtnLimpiar();
+            ejecutarFiltros();
+        }
+
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c   = document.getElementById('selectCat').value;
