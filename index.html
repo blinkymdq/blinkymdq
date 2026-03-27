@@ -253,8 +253,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen">
 
-    <header class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full">
-        <div class="w-full bg-white flex justify-center border-b border-slate-50">
+<header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">        <div class="w-full bg-white flex justify-center border-b border-slate-50">
             <a href="/" class="logo-link contenedor-logo" title="Volver al inicio">
                 <img src="logo-mobile.png" alt="Blinky MDQ" class="block md:hidden w-full h-auto object-contain">
                 <img src="logo-desktop.png" alt="Blinky MDQ" class="hidden md:block w-full max-w-7xl h-auto object-contain px-4">
@@ -831,6 +830,26 @@
         mostrarShimmer();
         cargarDatos();
     </script>
+
+    <script>
+      (function() {
+     const header = document.getElementById('main-header');
+     let lastScrollY = window.scrollY;
+
+     window.addEventListener('scroll', () => {
+     const currentScrollY = window.scrollY;
+
+     if (currentScrollY > lastScrollY && currentScrollY > 80) {
+      // Scrolleando hacia abajo → ocultar
+      header.style.transform = 'translateY(-100%)';
+     } else {
+      // Scrolleando hacia arriba → mostrar
+      header.style.transform = 'translateY(0)';
+A  }
+
+    lastScrollY = currentScrollY;
+  });
+})();
 
 </body>
 </html>
