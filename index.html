@@ -356,21 +356,84 @@
 
         <div id="contenedor" class="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
 
-        <div id="navegacionContenedor" class="flex flex-col items-center gap-4 pb-12 mt-6">
+        <div id="navegacionContenedor" class="flex flex-col items-center gap-3 pb-12 mt-6">
             <div id="contadorProductos" class="text-[10px] font-black uppercase text-slate-400 tracking-widest"></div>
-            <div class="flex items-center gap-2">
-                <button id="btnAnterior" onclick="paginaAnterior()" class="h-11 px-6 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm">Anterior</button>
-                <button id="btnSiguiente" onclick="paginaSiguiente()" class="h-11 px-6 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm hover:border-violet-300 transition-all">Siguiente</button>
-            </div>
+            <div id="infoPagina" class="text-[10px] font-black uppercase text-slate-400 tracking-widest"></div>
+            <div id="botonesNumerados" class="flex items-center gap-1.5 flex-wrap justify-center"></div>
         </div>
     </main>
+
+    <footer class="bg-slate-900 text-white mt-10">
+        <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 items-center">
+
+            <!-- Logo -->
+            <div class="flex items-center justify-center col-span-2 md:col-span-1">
+                <img src="blinky_sin_fdo.svg" alt="Blinky MDQ" class="w-36 h-auto object-contain">
+            </div>
+
+            <!-- Dirección -->
+            <div class="flex items-start gap-3">
+                <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación</div>
+                    <div class="text-xs font-bold text-white leading-snug">Buenos Aires<br>Mar del Plata 7600</div>
+                </div>
+            </div>
+
+            <!-- WhatsApp -->
+            <a href="https://wa.me/5492236997308" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+                <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-[#25D366]/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 fill-[#25D366]" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                </div>
+                <div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">WhatsApp</div>
+                    <div class="text-xs font-bold text-white">+54 9 223 6 997308</div>
+                </div>
+            </a>
+
+            <!-- Instagram -->
+            <a href="https://instagram.com/blinkymdq" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+                <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 fill-pink-400" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                </div>
+                <div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Instagram</div>
+                    <div class="text-xs font-bold text-white">@blinkymdq</div>
+                </div>
+            </a>
+
+            <!-- Envíos -->
+            <div class="flex items-start gap-3">
+                <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 stroke-violet-400" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Envíos</div>
+                    <div class="text-xs font-bold text-white leading-snug">Envíos en Mar del Plata<br>en el día</div>
+                </div>
+            </div>
+
+        </div>
+        <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
+            © 2025 Blinky MDQ — Todos los derechos reservados
+        </div>
+    </footer>
 
     <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm" onclick="cerrarPlaca()">
         <div id="modalProductoInner" class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-8 placa-entrada relative" onclick="event.stopPropagation()">
             <button id="btnCerrarModal" onclick="cerrarPlaca()" aria-label="Cerrar">✕</button>
-            <div class="img-container-placa mb-6">
-                <img id="modalImg" src="" alt="" loading="lazy">
+            <div id="modalCarrusel" class="img-container-placa mb-6 relative">
+                <img id="modalImg" src="" alt="" loading="lazy" style="transition:opacity 0.15s;">
                 <div id="modalBadgeSinStock" class="badge-sin-stock-modal hidden">Sin Stock</div>
+                <button id="carruselPrev" onclick="carruselNav(-1)" class="hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">‹</button>
+                <button id="carruselNext" onclick="carruselNav(1)"  class="hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">›</button>
+                <div id="carruselDots" class="hidden absolute bottom-2 left-0 right-0 flex justify-center gap-1.5"></div>
             </div>
             <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase pr-10"></h2>
             <div class="py-5 border-y border-slate-100 my-5 space-y-4">
@@ -413,7 +476,10 @@
         let colUsuario = COL_DEFAULT;
 
         let paginaActual = 1;
-        const productosPorPagina = 12;
+        const productosPorPagina = 20;
+
+        let carruselFotos  = [];
+        let carruselActual = 0;
 
         const iconWA = `<svg class="w-3.5 h-3.5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
         const iconShare = `<svg class="w-3.5 h-3.5 fill-none stroke-current flex-shrink-0" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
@@ -588,6 +654,14 @@
             render(res);
         }
 
+        function filtrarPorMarca(marca) {
+            document.getElementById('selectMarca').value = marca;
+            if (document.getElementById('selectMarcaMobile'))
+                document.getElementById('selectMarcaMobile').value = marca;
+            ejecutarFiltros();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function filtrarOfertas() {
             paginaActual = 1;
             render(productos.filter(p => p.esOferta));
@@ -602,8 +676,8 @@
             const logueado      = document.body.classList.contains('is-logged-in');
             const navContenedor = document.getElementById('navegacionContenedor');
             const contador      = document.getElementById('contadorProductos');
-            const btnAnt        = document.getElementById('btnAnterior');
-            const btnSig        = document.getElementById('btnSiguiente');
+            const infoPagina    = document.getElementById('infoPagina');
+            const botones       = document.getElementById('botonesNumerados');
 
             if (lista.length === 0) {
                 box.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">No se encontraron productos</div>`;
@@ -612,14 +686,27 @@
             }
             navContenedor.classList.remove('hidden');
 
-            const total  = lista.length;
-            const inicio = (paginaActual - 1) * productosPorPagina;
-            const fin    = inicio + productosPorPagina;
-            const pagina = lista.slice(inicio, fin);
+            const total      = lista.length;
+            const totalPags  = Math.ceil(total / productosPorPagina);
+            const inicio     = (paginaActual - 1) * productosPorPagina;
+            const fin        = Math.min(inicio + productosPorPagina, total);
+            const pagina     = lista.slice(inicio, fin);
 
-            contador.innerText = `Mostrando ${Math.min(fin, total)} de ${total} productos`;
-            btnAnt.disabled    = paginaActual === 1;
-            btnSig.disabled    = fin >= total;
+            contador.innerText  = `${fin} de ${total} productos`;
+            infoPagina.innerText = `Página ${paginaActual} de ${totalPags}`;
+
+            // Botones numerados
+            let botonesHtml = '';
+            for (let i = 1; i <= totalPags; i++) {
+                const activo = i === paginaActual;
+                botonesHtml += `<button onclick="irAPagina(${i})"
+                    class="w-9 h-9 rounded-xl text-[10px] font-black uppercase transition-all
+                    ${activo
+                        ? 'bg-violet-600 text-white shadow-md shadow-violet-200'
+                        : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300'}"
+                    ${activo ? 'disabled' : ''}>${i}</button>`;
+            }
+            botones.innerHTML = botonesHtml;
 
             box.innerHTML = pagina.map((p, idx) => {
                 const img              = getImgUrl(p.foto, '400');
@@ -639,9 +726,9 @@
                             <div class="relative overflow-hidden rounded-[1.5rem]">
                                 <div class="img-container">${badgeSinStock}<img src="${img}" loading="lazy" onerror="this.src='sin-foto.png'" ></div>
                             </div>
-                            <p class="text-[6px] font-black text-violet-400 uppercase mt-1">${p.marca}</p>
+                            <p class="text-[8px] font-black text-violet-400 uppercase mt-1 cursor-pointer hover:text-violet-600 transition-colors" onclick="event.stopPropagation();filtrarPorMarca('${p.marca}')">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
-                            <div class="mt-2">
+                            <div class="mt-2 text-center">
                                 <div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
                                 ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: $${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}</div>` : ''}
                             </div>
@@ -663,34 +750,58 @@
         // ════════════════════════════════════════
         // PAGINACIÓN
         // ════════════════════════════════════════
-        function paginaSiguiente() {
-            paginaActual++;
+        function irAPagina(n) {
+            paginaActual = n;
             render(filtrados);
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function paginaAnterior() {
-            if (paginaActual > 1) {
-                paginaActual--;
-                render(filtrados);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
         }
 
         // ════════════════════════════════════════
         // MODAL PRODUCTO
         // ════════════════════════════════════════
+        function carruselNav(dir) {
+            carruselActual = (carruselActual + dir + carruselFotos.length) % carruselFotos.length;
+            actualizarCarrusel();
+        }
+        function actualizarCarrusel() {
+            const img = document.getElementById('modalImg');
+            img.style.opacity = '0';
+            setTimeout(() => {
+                img.src = getImgUrl(carruselFotos[carruselActual], '800');
+                img.onerror = () => { img.src = 'sin-foto.png'; };
+                img.style.opacity = '1';
+            }, 150);
+            const dots = document.getElementById('carruselDots').children;
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].className = `h-1.5 rounded-full transition-all cursor-pointer ${i === carruselActual ? 'bg-violet-600 w-4' : 'bg-black/30 w-1.5'}`;
+            }
+        }
+
         function abrirPlacaPorIdx(idx) {
             const p = filtrados[idx];
             if (!p) return;
 
-            const img = getImgUrl(p.foto, '800');
+            // Carrusel: separar fotos por coma
+            carruselFotos  = p.foto ? p.foto.split(',').map(f => f.trim()).filter(Boolean) : [];
+            carruselActual = 0;
+            if (carruselFotos.length === 0) carruselFotos = [''];
 
             const modalImg = document.getElementById('modalImg');
-            modalImg.src = img;
+            modalImg.src = getImgUrl(carruselFotos[0], '800');
             modalImg.onerror = () => { modalImg.src = 'sin-foto.png'; };
             modalImg.style.opacity = '1';
             modalImg.style.filter  = 'drop-shadow(0 10px 15px rgba(0,0,0,0.05))';
+
+            const tieneMultiple = carruselFotos.length > 1;
+            document.getElementById('carruselPrev').classList.toggle('hidden', !tieneMultiple);
+            document.getElementById('carruselNext').classList.toggle('hidden', !tieneMultiple);
+            const dotsEl = document.getElementById('carruselDots');
+            dotsEl.classList.toggle('hidden', !tieneMultiple);
+            if (tieneMultiple) {
+                dotsEl.innerHTML = carruselFotos.map((_, i) =>
+                    `<div onclick="carruselActual=${i};actualizarCarrusel()" class="h-1.5 rounded-full transition-all cursor-pointer ${i===0?'bg-violet-600 w-4':'bg-black/30 w-1.5'}"></div>`
+                ).join('');
+            }
 
             const badge = document.getElementById('modalBadgeSinStock');
             badge.classList.toggle('hidden', !p.sinStock);
