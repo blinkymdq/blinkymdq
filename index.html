@@ -610,10 +610,10 @@
                     return arr;
                 }
                 const conStockConFoto = shuffle(productos.filter(p => !p.sinStock && p.foto && p.foto.trim() !== ""));
-                const conStockSinFoto = shuffle(productos.filter(p => !p.sinStock && (!p.foto || p.foto.trim() === "")));
                 const sinStockConFoto = shuffle(productos.filter(p =>  p.sinStock && p.foto && p.foto.trim() !== ""));
+                const conStockSinFoto = shuffle(productos.filter(p => !p.sinStock && (!p.foto || p.foto.trim() === "")));
                 const sinStockSinFoto = shuffle(productos.filter(p =>  p.sinStock && (!p.foto || p.foto.trim() === "")));
-                productos = [...conStockConFoto, ...conStockSinFoto, ...sinStockConFoto, ...sinStockSinFoto];
+                productos = [...conStockConFoto, ...sinStockConFoto, ...conStockSinFoto, ...sinStockSinFoto];
 
                 renderSlider();
                 llenarSelect('selectCat',        'cat');
