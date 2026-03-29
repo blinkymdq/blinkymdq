@@ -383,6 +383,27 @@
             <div id="indicadoresBanner" class="flex justify-center gap-1.5 mt-3"></div>
         </div>
 
+        <!-- ── LOS MÁS BUSCADOS ── -->
+        <div id="seccionMasVistos" class="hidden px-4 mt-6">
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div class="flex items-center justify-between px-5 pt-5 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-sm">🔍</div>
+                        <h2 class="text-[13px] font-black uppercase tracking-widest text-slate-800">Los más buscados</h2>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="scrollCarrusel('contenedorMasVistos',-1)" class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:border-rose-400 hover:text-rose-500 transition-all">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <button onclick="scrollCarrusel('contenedorMasVistos',1)" class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:border-rose-400 hover:text-rose-500 transition-all">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="contenedorMasVistos" class="flex gap-3 overflow-x-auto px-5 pb-5" style="-ms-overflow-style:none;scrollbar-width:none;scroll-behavior:smooth;"></div>
+            </div>
+        </div>
+
         <div id="contenedor" class="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
 
         <div id="navegacionContenedor" class="flex flex-col items-center gap-3 pb-12 mt-6">
@@ -575,8 +596,9 @@
                         marca:        (c[7]  || "").trim(),
                         precioP:      limpiar(c[15]),
                         todasLasCols: c.map(limpiar),
-                        esOferta:     (c[27] || "").toUpperCase().includes("SI"),
-                        sinStock:     String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO")
+                        esOferta:    (c[27] || "").toUpperCase().trim() === "OFERTA",
+                        esMasVisto:  (c[27] || "").toUpperCase().trim() === "LM",
+                        sinStock:    String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO")
                     };
                 }).filter(p => p.nombre !== "");
 
@@ -587,15 +609,19 @@
                     }
                     return arr;
                 }
-                const conFoto = shuffle(productos.filter(p => p.foto && p.foto.trim() !== ""));
-                const sinFoto = shuffle(productos.filter(p => !p.foto || p.foto.trim() === ""));
-                productos = [...conFoto, ...sinFoto];
+                const conStockConFoto = shuffle(productos.filter(p => !p.sinStock && p.foto && p.foto.trim() !== ""));
+                const conStockSinFoto = shuffle(productos.filter(p => !p.sinStock && (!p.foto || p.foto.trim() === "")));
+                const sinStockConFoto = shuffle(productos.filter(p =>  p.sinStock && p.foto && p.foto.trim() !== ""));
+                const sinStockSinFoto = shuffle(productos.filter(p =>  p.sinStock && (!p.foto || p.foto.trim() === "")));
+                productos = [...conStockConFoto, ...conStockSinFoto, ...sinStockConFoto, ...sinStockSinFoto];
 
                 renderSlider();
                 llenarSelect('selectCat',        'cat');
                 llenarSelect('selectMarca',     'marca');
                 llenarSelect('selectCatMobile',   'cat');
                 llenarSelect('selectMarcaMobile', 'marca');
+
+                renderMasVistos();
 
                 const userSaved = localStorage.getItem('blinky_user');
                 if (userSaved) {
@@ -676,13 +702,15 @@
             ejecutarFiltros();
         }
 
+        let _gaSearchTimer = null;
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c   = document.getElementById('selectCat').value;
             const m   = document.getElementById('selectMarca').value;
 
-            document.getElementById('seccionBanner').style.display =
-                (val || c || m) ? 'none' : 'block';
+            const hayFiltro = val || c || m;
+            document.getElementById('seccionBanner').style.display    = hayFiltro ? 'none' : 'block';
+            document.getElementById('seccionMasVistos').style.display = hayFiltro ? 'none' : '';
 
             const res = productos.filter(p => {
                 const nombreLimpio = p.nombre.toLowerCase();
@@ -693,8 +721,62 @@
                 return matchTexto && matchCat && matchMarca;
             });
 
+            // Enviar evento a GA4 (con debounce de 1s para no spamear)
+            if (val.length >= 2) {
+                clearTimeout(_gaSearchTimer);
+                _gaSearchTimer = setTimeout(() => {
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'search', {
+                            search_term: val,
+                            results_count: res.length
+                        });
+                    }
+                }, 1000);
+            }
+
             paginaActual = 1;
             render(res);
+        }
+
+        function scrollCarrusel(id, dir) {
+            const el = document.getElementById(id);
+            if (el) el.scrollBy({ left: dir * 300, behavior: 'smooth' });
+        }
+
+        function cardCarrusel(p) {
+            const img    = getImgUrl(p.foto, '400');
+            const precio = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
+            const idx    = productos.indexOf(p);
+            return `
+            <div onclick="filtrados=productos;abrirPlacaPorIdx(${idx})" class="cursor-pointer flex-shrink-0 flex flex-col rounded-[1.25rem] border border-slate-100 hover:border-violet-200 hover:shadow-md transition-all bg-white" style="width:150px;">
+                <div class="w-full rounded-t-[1.25rem] overflow-hidden bg-slate-50" style="height:150px;">
+                    <img src="${img}" loading="lazy" onerror="this.src='sin-foto.png'" class="w-full h-full object-contain p-2">
+                </div>
+                <div class="p-2.5 flex flex-col flex-1">
+                    <p class="text-[7px] font-black text-violet-400 uppercase truncate">${p.marca}</p>
+                    <p class="text-[8.5px] font-bold text-slate-700 uppercase leading-tight mt-0.5 mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.nombre}</p>
+                    <p class="text-[15px] font-black text-violet-600 mt-auto">${precio}</p>
+                </div>
+            </div>`;
+        }
+
+        function renderMasVistos() {
+            const lista = productos.filter(p => p.esMasVisto);
+            const sec   = document.getElementById('seccionMasVistos');
+            const box   = document.getElementById('contenedorMasVistos');
+            if (lista.length === 0) { sec.classList.add('hidden'); return; }
+            sec.classList.remove('hidden');
+            box.innerHTML = lista.map(p => cardCarrusel(p)).join('');
+            // Autoplay cada 3 segundos
+            clearInterval(window._masVistosTimer);
+            window._masVistosTimer = setInterval(() => {
+                const maxScroll = box.scrollWidth - box.clientWidth;
+                if (box.scrollLeft >= maxScroll - 10) {
+                    box.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    box.scrollBy({ left: 160, behavior: 'smooth' });
+                }
+            }, 3000);
         }
 
         function filtrarPorMarca(marca) {
