@@ -744,7 +744,7 @@
         }
 
         function cardCarrusel(p) {
-            const img    = getImgUrl(p.foto, '400');
+            const img    = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
             const precio = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
             const idx    = productos.indexOf(p);
             return `
@@ -834,7 +834,7 @@
             botones.innerHTML = botonesHtml;
 
             box.innerHTML = pagina.map((p, idx) => {
-                const img              = getImgUrl(p.foto, '400');
+                const img              = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
                 const precioDinamico   = getPrecioUsuario(p);
                 const precioPublicoTxt = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
                 const link             = generarLink(p.nombre);
