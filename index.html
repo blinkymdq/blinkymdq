@@ -471,7 +471,7 @@
 
         </div>
         <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
-            © 2025 Blinky MDQ — Todos los derechos reservados
+            © 2026 Blinky MDQ — Todos los derechos reservados
         </div>
     </footer>
 
@@ -598,9 +598,10 @@
                         todasLasCols: c.map(limpiar),
                         esOferta:    (c[27] || "").toUpperCase().trim() === "OFERTA",
                         esMasVisto:  (c[27] || "").toUpperCase().trim() === "LM",
-                        sinStock:    String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO")
+                        sinStock:    String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO"),
+                        oculto:      (c[27] || "").toUpperCase().trim() === "X"
                     };
-                }).filter(p => p.nombre !== "");
+                }).filter(p => p.nombre !== "" && !p.oculto);
 
                 function shuffle(arr) {
                     for (let i = arr.length - 1; i > 0; i--) {
