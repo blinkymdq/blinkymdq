@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Preview Patrón Blinky</title>
+  <style>
+    body { margin: 0; background: #f0f0f0; }
+    .demo { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+<svg class="demo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <symbol id="logo" viewBox="0 0 15161.95 6751.6" preserveAspectRatio="xMidYMid meet">
+      <path fill="#E6E7E8" fill-rule="nonzero" d="M2772.97 5294.47l-46.72 175.25 -856.56 983.44 -1869.69 298.43 0 -3856.9 132.14 -495.86 1855.02 -296.07 785.81 505.85 0 -156.47 132.14 -495.86 1390.08 -221.87 0 2599 1020.75 -162.91 0 -2124.24 132.14 -495.86 1390.09 -221.87 0 899.52 913 -1045.24 1864.85 -297.66 0 167.68 46.67 -175.15 2721.42 -434.38 0 185.29 51.55 -193.47 2726.3 -435.14 0 1556.48 -132.19 495.86 -597.13 682.7 0 1238.29 -132.14 495.81 -1390.08 221.87 0 -1453.68 -526.32 84.02 0 978.87 -132.19 495.86 -9478.94 1512.96 0 -1014.57zm12178.48 -3790.88l0 -1259.55 -969.09 154.67 0 1145.37 -362.24 57.84 0 -1145.37 -969.09 154.67 0 1982.32 606.91 -96.89 0 1453.68 964.24 -153.91 0 -1452.85 729.26 -839.99zm-2777.85 2619.78l0 -1737.55 -533.48 85.16 533.48 -623.57 0 -1160.04 -969.14 154.72 0 1042.56 -362.19 419.97 0 -1404.76 -964.2 153.91 0 3436 964.2 -153.9 0 -1380.26 362.19 -57.79 0 1380.26 969.14 -154.72zm-2768.08 441.83l0 -3436 -1561.38 249.2 -739.03 839.11 0 2714.88 964.2 -153.91 0 -2599 362.19 -57.78 0 2599 974.02 -155.5zm-2777.85 443.38l0 -3436 -964.2 153.9 0 3436.01 964.2 -153.91zm-1441.69 230.1l0 -836.95 -1101.27 175.76 0 -2599.05 -964.2 153.91 0 3436 2065.48 -329.67zm-2538.03 -319.32l0 -1018.07 -538.36 85.93 538.36 -620.29 0 -568.56 -734.98 -473.33 -1565.44 249.86 0 3436 1567.86 -250.21 732.55 -841.33zm-974.03 -1170.95l-362.18 57.79 0 -548.19 362.18 -57.79 0 548.19zm0 1213.86l-362.18 57.79 0 -616.73 362.18 -57.79 0 616.73z"/>
+    </symbol>
+
+    <pattern id="pattern" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse">
+      <g transform="translate(60,60) scale(0.7) rotate(-10)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(300,40) scale(0.35) rotate(30)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(200,180) scale(0.5) rotate(-25)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(80,260) scale(0.4) rotate(45)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(240,300) scale(0.6) rotate(-35)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(180,340) scale(0.3) rotate(15)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+      <g transform="translate(10,180) scale(0.25) rotate(-50)">
+        <use href="#logo" width="200" height="89"/>
+      </g>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#pattern)" />
+</svg>
+</body>
+</html>
