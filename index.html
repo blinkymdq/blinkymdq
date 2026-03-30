@@ -609,11 +609,22 @@
                     }
                     return arr;
                 }
-                const conStockConFoto = shuffle(productos.filter(p => !p.sinStock && p.foto && p.foto.trim() !== ""));
-                const sinStockConFoto = shuffle(productos.filter(p =>  p.sinStock && p.foto && p.foto.trim() !== ""));
-                const conStockSinFoto = shuffle(productos.filter(p => !p.sinStock && (!p.foto || p.foto.trim() === "")));
-                const sinStockSinFoto = shuffle(productos.filter(p =>  p.sinStock && (!p.foto || p.foto.trim() === "")));
-                productos = [...conStockConFoto, ...sinStockConFoto, ...conStockSinFoto, ...sinStockSinFoto];
+                const ordenCat = ['perfumes','body splash','cosmeticos','body lotion','desodorantes','electro','varios','decant'];
+                function catOrder(p) {
+                    const idx = ordenCat.indexOf(p.cat.toLowerCase());
+                    return idx === -1 ? ordenCat.length : idx;
+                }
+                function stockFotoOrder(p) {
+                    if (!p.sinStock && p.foto && p.foto.trim() !== "") return 0;
+                    if ( p.sinStock && p.foto && p.foto.trim() !== "") return 1;
+                    if (!p.sinStock && (!p.foto || p.foto.trim() === "")) return 2;
+                    return 3;
+                }
+                productos = shuffle(productos).sort((a, b) => {
+                    const catDiff = catOrder(a) - catOrder(b);
+                    if (catDiff !== 0) return catDiff;
+                    return stockFotoOrder(a) - stockFotoOrder(b);
+                });
 
                 renderSlider();
                 llenarSelect('selectCat',        'cat');
