@@ -664,12 +664,13 @@
             }
         }
 
-        // u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550
+        // ════════════════════════════════════════
         // FORMATO DE PRECIO (redondeo a centena)
-        // u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550
+        // ════════════════════════════════════════
         function formatPrecio(valor) {
-            const redondeado = Math.round(parseFloat(valor) / 100) * 100;
-            return `$${(redondeado || 0).toLocaleString('es-AR')}`;\n        }
+            const redondeado = Math.round(parseFloat(valor) / 100) * 100 - 1;
+            return `$${(redondeado || 0).toLocaleString('es-AR')}`;
+        }
         // ════════════════════════════════════════
         // HASH SIMPLE
         // ════════════════════════════════════════
@@ -1135,6 +1136,7 @@
 
 </body>
 </html>
+
 
 
 
