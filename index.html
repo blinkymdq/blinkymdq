@@ -664,6 +664,12 @@
             }
         }
 
+        // u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550
+        // FORMATO DE PRECIO (redondeo a centena)
+        // u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550u2550
+        function formatPrecio(valor) {
+            const redondeado = Math.round(parseFloat(valor) / 100) * 100;
+            return `$${(redondeado || 0).toLocaleString('es-AR')}`;\n        }
         // ════════════════════════════════════════
         // HASH SIMPLE
         // ════════════════════════════════════════
@@ -757,7 +763,7 @@
 
         function cardCarrusel(p) {
             const img    = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
-            const precio = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
+            const precio = formatPrecio(p.precioP);
             const idx    = productos.indexOf(p);
             return `
             <div onclick="filtrados=productos;abrirPlacaPorIdx(${idx})" class="cursor-pointer flex-shrink-0 flex flex-col rounded-[1.25rem] border border-slate-100 hover:border-violet-200 hover:shadow-md transition-all bg-white" style="width:150px;">
@@ -848,7 +854,7 @@
             box.innerHTML = pagina.map((p, idx) => {
                 const img              = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
                 const precioDinamico   = getPrecioUsuario(p);
-                const precioPublicoTxt = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
+                const precioPublicoTxt = formatPrecio(p.precioP);
                 const link             = generarLink(p.nombre);
                 const realIdx          = inicio + idx;
 
@@ -867,7 +873,7 @@
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
                                 <div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
-                                ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: $${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}</div>` : ''}
+                                ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}
                             </div>
                         </div>
                         <div class="flex gap-1 mt-3 pt-3 border-t border-slate-50">
@@ -945,11 +951,11 @@
 
             document.getElementById('modalNombre').innerText = p.nombre;
 
-            const precioPublicoTxt = `$${(parseFloat(p.precioP) || 0).toLocaleString('es-AR')}`;
+            const precioPublicoTxt = formatPrecio(p.precioP);
             document.getElementById('modalPrecioPub').innerText = precioPublicoTxt;
 
             const precioDinamico = getPrecioUsuario(p);
-            document.getElementById('modalPrecioMay').innerText = `$${(parseFloat(precioDinamico) || 0).toLocaleString('es-AR')}`;
+            document.getElementById('modalPrecioMay').innerText = formatPrecio(precioDinamico);
 
             const link = generarLink(p.nombre);
             const msgC = encodeURIComponent(`Hola! Me interesa: ${p.nombre}\n\n${link}`);
