@@ -287,7 +287,7 @@
             <div class="flex gap-2">
                 <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
                 <div class="search-wrapper flex-1">
-                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
+                    <input type="text" id="inputBusqueda" oninput="ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
                     <button id="btnLimpiar" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
                         <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -332,7 +332,7 @@
         <div class="flex gap-2">
             <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
             <div class="search-wrapper flex-1">
-                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
+                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
                 <button id="btnLimpiarMobile" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
                     <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -1129,3 +1129,7 @@
 
 </body>
 </html>
+
+
+
+
