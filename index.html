@@ -589,17 +589,17 @@
                     const limpiar = v => v ? String(v).replace(/[$\s"]/g, '').replace(',', '.') : "0";
                     return {
                         id:           index,
-                        codigo:       (c[1]  || "").trim(),
-                        nombre:       (c[2]  || "").trim(),
-                        foto:         (c[3]  || "").trim(),
-                        cat:          (c[5]  || "").trim(),
-                        marca:        (c[7]  || "").trim(),
-                        precioP:      limpiar(c[15]),
+                        codigo:       (c[0]  || "").trim(),
+                        nombre:       (c[1]  || "").trim(),
+                        foto:         (c[2]  || "").trim(),
+                        cat:          (c[3]  || "").trim(),
+                        marca:        (c[4]  || "").trim(),
+                        precioP:      limpiar(c[5]),
                         todasLasCols: c.map(limpiar),
-                        esOferta:    (c[27] || "").toUpperCase().trim() === "OFERTA",
-                        esMasVisto:  (c[27] || "").toUpperCase().trim() === "LM",
-                        sinStock:    String(c[25] || "").trim() === "0" || String(c[10] || "").toUpperCase().includes("NO"),
-                        oculto:      (c[27] || "").toUpperCase().trim() === "X"
+                        esOferta:    (c[8] || "").toUpperCase().trim() === "OFERTA",
+                        esMasVisto:  (c[8] || "").toUpperCase().trim() === "LM",
+                        sinStock:    String(c[7] || "").trim() === "0",
+                        oculto:      (c[8] || "").toUpperCase().trim() === "X"
                     };
                 }).filter(p => p.nombre !== "" && !p.oculto);
 
@@ -690,9 +690,9 @@
         // PRECIO USUARIO
         // ════════════════════════════════════════
         function getPrecioUsuario(p) {
-            const val = p.todasLasCols[colUsuario - 1];
+            const val = p.todasLasCols[6]; // columna G = Precio MAYORISTA
             if (!val || parseFloat(val) === 0) {
-                return p.todasLasCols[COL_DEFAULT - 1] || "0";
+                return p.todasLasCols[5] || "0"; // fallback al precio público
             }
             return val;
         }
