@@ -1465,26 +1465,13 @@
         function enviarPedidoWP() {
             if (carrito.length === 0) return;
             const logueado = document.body.classList.contains('is-logged-in');
-            const usuario  = document.getElementById('user-badge-name')?.innerText || '';
-
-            let lineas = carrito.map(i => {
-                const subtotal = formatPrecio(i.precio * i.cantidad);
-                return `• ${i.cantidad}x ${i.nombre} - ${subtotal}`;
-            }).join('
-');
-
-            const total = formatPrecio(carrito.reduce((s, i) => s + i.precio * i.cantidad, 0));
+            const lineas   = carrito.map(function(i) {
+                return '• ' + i.cantidad + 'x ' + i.nombre + ' - ' + formatPrecio(i.precio * i.cantidad);
+            }).join('\n');
+            const total       = formatPrecio(carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0));
             const tipoPrecios = logueado ? '_(precios especiales)_' : '';
-
-            const msg = `🛒 *Pedido Blinky MDQ* ${tipoPrecios}
-
-${lineas}
-
-💰 *Total: ${total}*
-
-Hola! Me gustaría hacer este pedido 😊`;
-
-            window.open(`https://wa.me/${NRO_TELEFONO}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+            const msg = '\u{1F6D2} *Pedido Blinky MDQ* ' + tipoPrecios + '\n\n' + lineas + '\n\n\uD83D\uDCB0 *Total: ' + total + '*\n\nHola! Me gustaria hacer este pedido';
+            window.open('https://wa.me/' + NRO_TELEFONO + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
         }
 
         // ════════════════════════════════════════
