@@ -1166,7 +1166,7 @@
         }
 
         function renderMasVistos() {
-            const lista = productos.filter(p => p.esMasVisto);
+            const lista = shuffle(productos.filter(p => p.esMasVisto));
             const sec   = document.getElementById('seccionMasVistos');
             const box   = document.getElementById('contenedorMasVistos');
             if (lista.length === 0) { sec.classList.add('hidden'); return; }
@@ -1381,12 +1381,11 @@
         // SLIDER
         // ════════════════════════════════════════
         const misDestacados = [
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto6.jpg`,
+            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`,
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpg`,
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg`
+            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg`,
+            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg`
         ];
         let bannerIndex     = 0;
         let bannerTimer     = null;
