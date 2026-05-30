@@ -950,7 +950,13 @@
             }
             return `https://blinkymdq.com/Productos/${foto}.jpg`;
         }
-
+        function shuffle(arr) {
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                }
         // ════════════════════════════════════════
         // CARGA DE DATOS
         // ════════════════════════════════════════
@@ -987,13 +993,6 @@
                     };
                 }).filter(p => p.nombre !== "" && !p.oculto);
 
-                function shuffle(arr) {
-                    for (let i = arr.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [arr[i], arr[j]] = [arr[j], arr[i]];
-                    }
-                    return arr;
-                }
                 const ordenCat = ['perfume','body splash','cosmeticos','body lotion','desodorante','electro','varios','decant'];
                 function catOrder(p) {
                     const idx = ordenCat.indexOf(p.cat.toLowerCase());
