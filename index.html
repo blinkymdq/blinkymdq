@@ -862,6 +862,20 @@
                     <input id="checkout-direccion" type="text" class="checkout-input" placeholder="Calle, número, piso/depto, barrio" autocomplete="street-address">
                 </div>
 
+                <!-- Preparar para regalo -->
+                <div>
+                    <label onclick="toggleRegalo(this)" class="flex items-center gap-3 cursor-pointer select-none p-3 rounded-2xl border-2 border-slate-200 hover:border-violet-300 transition-all" id="labelRegalo">
+                        <div id="checkboxRegalo" class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center transition-all flex-shrink-0" style="background:white;">
+                            <svg id="checkRegaloIcon" class="w-3.5 h-3.5 hidden" fill="none" stroke="white" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 12 4 10"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-black uppercase text-slate-700 tracking-wide">🎁 Preparar para regalo</p>
+                            <p class="text-[9px] text-slate-400 font-medium mt-0.5">Empaquetamos el pedido para regalo</p>
+                        </div>
+                    </label>
+                    <input type="hidden" id="checkout-regalo" value="">
+                </div>
+
                 <!-- Aclaración extra -->
                 <div>
                     <label class="checkout-label" for="checkout-nota">Aclaración Extra</label>
@@ -1522,7 +1536,7 @@
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
             const val = logueado ? getPrecioUsuario(p) : p.precioP;
-            return parseFloat(val) || 0;
+            return Math.round(parseFloat(val) / 100) * 100 - 1;
         }
 
         function agregarAlCarrito(idx) {
@@ -1676,6 +1690,14 @@
             document.querySelectorAll('.checkout-opcion').forEach(function(el){ el.classList.remove('seleccionado'); });
             document.getElementById('checkout-direccion-wrap').classList.remove('visible');
             document.getElementById('checkoutError').classList.add('hidden');
+            // Reset regalo
+            document.getElementById('checkout-regalo').value = '';
+            var box = document.getElementById('checkboxRegalo');
+            var icon = document.getElementById('checkRegaloIcon');
+            var label = document.getElementById('labelRegalo');
+            if (box) { box.style.background='white'; box.style.borderColor='#cbd5e1'; }
+            if (icon) icon.classList.add('hidden');
+            if (label) { label.style.borderColor=''; label.classList.remove('border-violet-500'); }
 
             // Tip de precios
             if (logueado) {
@@ -1711,6 +1733,27 @@
                 wrap.classList.remove('visible');
                 document.getElementById('checkout-direccion').value = '';
                 document.getElementById('checkout-direccion').classList.remove('error');
+            }
+        }
+
+        function toggleRegalo(el) {
+            var box   = document.getElementById('checkboxRegalo');
+            var icon  = document.getElementById('checkRegaloIcon');
+            var inp   = document.getElementById('checkout-regalo');
+            var label = document.getElementById('labelRegalo');
+            var activo = inp.value === 'si';
+            if (activo) {
+                inp.value = '';
+                box.style.background = 'white';
+                box.style.borderColor = '#cbd5e1';
+                icon.classList.add('hidden');
+                label.style.borderColor = '#e2e8f0';
+            } else {
+                inp.value = 'si';
+                box.style.background = '#7c3aed';
+                box.style.borderColor = '#7c3aed';
+                icon.classList.remove('hidden');
+                label.style.borderColor = '#7c3aed';
             }
         }
 
@@ -1767,6 +1810,8 @@
             msg += '💳 *Forma de pago:* ' + pago + '\n';
             msg += '🚚 *Entrega:* ' + entrega + '\n';
             if (direccion) msg += '📍 *Dirección:* ' + direccion + '\n';
+            var regalo = document.getElementById('checkout-regalo').value;
+            if (regalo)    msg += '🎁 *Preparar para regalo*\n';
             if (nota)      msg += '📝 *Aclaración:* ' + nota + '\n';
 
             document.getElementById('modalCheckout').classList.remove('visible');
