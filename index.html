@@ -1,7 +1,8 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">`n    <!-- Google tag (gtag.js) -->
+    <meta charset="UTF-8">
+    <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRGPWP84GL"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -19,7 +20,6 @@
     })(window, document, "clarity", "script", "w19mbfpj4l");
 </script>
 
-    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para CSV robusto -->
@@ -29,7 +29,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; width: 100vw; }
 
-        /* â”€â”€â”€ Precios mayoristas ocultos por defecto â”€â”€â”€ */
+        /* ─── Precios mayoristas ocultos por defecto ─── */
         .precio-mayorista { display: none; }
         body.is-logged-in .precio-mayorista { display: block; }
         body.is-logged-in #btn-login        { display: none; }
@@ -37,7 +37,7 @@
         body.is-logged-in #btn-login-mobile  { display: none; }
         body.is-logged-in #user-badge-mobile { display: flex; }
 
-        /* â”€â”€â”€ Logo con destello â”€â”€â”€ */
+        /* ─── Logo con destello ─── */
         .contenedor-logo { position: relative; overflow: hidden; display: flex; justify-content: center; width: 100%; }
         .contenedor-logo::after {
             content: ""; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
@@ -46,7 +46,7 @@
         }
         @keyframes destello { 0% { left: -150%; } 30% { left: 150%; } 100% { left: 150%; } }
 
-        /* â”€â”€â”€ Fuego animado â”€â”€â”€ */
+        /* ─── Fuego animado ─── */
         .btn-fuego {
             animation: fuegoPulso 1.2s ease-in-out infinite;
             box-shadow: 0 0 8px 2px rgba(251,113,33,0.5);
@@ -69,19 +69,19 @@
             100% { transform: scaleY(1.2)  scaleX(0.9)  rotate(3deg); }
         }
 
-        /* â”€â”€â”€ Scroll invisible â”€â”€â”€ */
+        /* ─── Scroll invisible ─── */
         .scroll-hide::-webkit-scrollbar { display: none; }
         .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
 
-        /* â”€â”€â”€ Imagen producto â”€â”€â”€ */
+        /* ─── Imagen producto ─── */
         .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
 
-        /* â”€â”€â”€ Imagen en modal â”€â”€â”€ */
+        /* ─── Imagen en modal ─── */
 .img-container-placa { width: 100%; height: 320px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 2rem; overflow: hidden; padding: 20px; position: relative; }
         .img-container-placa img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); }
 
-        /* â”€â”€â”€ Cartel sin stock en modal â”€â”€â”€ */
+        /* ─── Cartel sin stock en modal ─── */
         .badge-sin-stock-modal {
             position: absolute;
             top: 18px;
@@ -102,14 +102,14 @@
             pointer-events: none;
         }
 
-        /* â”€â”€â”€ TÃ­tulo producto truncado â”€â”€â”€ */
+        /* ─── Título producto truncado ─── */
         .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
-        /* â”€â”€â”€ AnimaciÃ³n de entrada â”€â”€â”€ */
+        /* ─── Animación de entrada ─── */
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* â”€â”€â”€ Shimmer skeleton â”€â”€â”€ */
+        /* ─── Shimmer skeleton ─── */
         .shimmer {
             background: #f6f7f8;
             background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
@@ -124,7 +124,7 @@
             100% { background-position: 468px 0; }
         }
 
-        /* â”€â”€â”€ BotÃ³n LOGIN animado â”€â”€â”€ */
+        /* ─── Botón LOGIN animado ─── */
         #btn-login {
             position: relative;
             overflow: hidden;
@@ -172,7 +172,7 @@
             100% { left: 150%; }
         }
 
-        /* â”€â”€â”€ Badge de usuario logueado â”€â”€â”€ */
+        /* ─── Badge de usuario logueado ─── */
         #user-badge {
             position: relative;
             overflow: hidden;
@@ -192,7 +192,7 @@
         }
         #user-badge:active { opacity: 0.85; }
 
-        /* â”€â”€â”€ BotÃ³n cerrar modal â”€â”€â”€ */
+        /* ─── Botón cerrar modal ─── */
         #btnCerrarModal {
             position: absolute;
             top: 1.25rem;
@@ -213,7 +213,7 @@
         }
         #btnCerrarModal:hover { background: #e2e8f0; }
 
-        /* â”€â”€â”€ Modal interno con scroll en mobile â”€â”€â”€ */
+        /* ─── Modal interno con scroll en mobile ─── */
         #modalProductoInner {
             max-height: 92vh;
             overflow-y: auto;
@@ -222,14 +222,14 @@
         }
         #modalProductoInner::-webkit-scrollbar { display: none; }
 
-        /* â”€â”€â”€ Logo clickeable â”€â”€â”€ */
+        /* ─── Logo clickeable ─── */
         .logo-link {
             cursor: pointer;
             display: flex;
         }
         .logo-link:hover { opacity: 0.92; transition: opacity 0.15s; }
 
-        /* â”€â”€â”€ Lupa en buscador â”€â”€â”€ */
+        /* ─── Lupa en buscador ─── */
         .search-wrapper { position: relative; flex-grow: 1; }
         .search-wrapper input { padding-right: 2.75rem; }
         .search-icon {
@@ -243,7 +243,7 @@
         }
         .search-wrapper:focus-within .search-icon { color: #7c3aed; }
 
-        /* â”€â”€â”€ Etiqueta SIN STOCK en grilla â”€â”€â”€ */
+        /* ─── Etiqueta SIN STOCK en grilla ─── */
         .badge-sin-stock {
             position: absolute;
             top: 18px;
@@ -273,7 +273,7 @@
             100% { left: 200%;  opacity: 0; }
         }
 
-        /* â”€â”€â”€ Cards destacados en llamas â”€â”€â”€ */
+        /* ─── Cards destacados en llamas ─── */
         @keyframes fireGlow {
             0%   { box-shadow: 0 0 8px 2px rgba(251,113,33,0.5), 0 0 20px 6px rgba(234,179,8,0.2); }
             50%  { box-shadow: 0 0 16px 6px rgba(239,68,68,0.6), 0 0 30px 10px rgba(251,113,33,0.3); }
@@ -283,7 +283,7 @@
             animation: fireGlow 1.8s ease-in-out infinite;
         }
 
-        /* â”€â”€â”€ Carrito flotante â”€â”€â”€ */
+        /* ─── Carrito flotante ─── */
         #btnCarritoFlotante {
             position: fixed;
             bottom: 1.5rem;
@@ -322,7 +322,7 @@
         }
         @keyframes carritoPopIn { from { transform: scale(0); } to { transform: scale(1); } }
 
-        /* â”€â”€â”€ Panel carrito â”€â”€â”€ */
+        /* ─── Panel carrito ─── */
         #panelCarrito {
             position: fixed;
             top: 0; right: 0; bottom: 0;
@@ -349,7 +349,7 @@
         }
         #overlayCarrito.visible { opacity: 1; pointer-events: all; }
 
-        /* â”€â”€â”€ Items del carrito â”€â”€â”€ */
+        /* ─── Items del carrito ─── */
         .carrito-item {
             display: flex;
             align-items: center;
@@ -385,7 +385,7 @@
         }
         .qty-btn:hover { border-color: #7c3aed; color: #7c3aed; }
 
-        /* â”€â”€â”€ BotÃ³n agregar al carrito en cards â”€â”€â”€ */
+        /* ─── Botón agregar al carrito en cards ─── */
         .btn-agregar-carrito {
             flex: 1;
             height: 2.5rem;
@@ -410,7 +410,7 @@
             background: linear-gradient(135deg, #16a34a, #15803d);
         }
 
-        /* â”€â”€â”€ Modal checkout / datos del pedido â”€â”€â”€ */
+        /* ─── Modal checkout / datos del pedido ─── */
         #modalCheckout {
             position: fixed;
             inset: 0;
@@ -513,14 +513,14 @@
 
 <header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">
 
-    <!-- â”€â”€ DESKTOP â”€â”€ -->
+    <!-- ── DESKTOP ── -->
     <div class="hidden md:flex max-w-7xl mx-auto px-4 items-center gap-3" style="height:104px;">
         <a href="/" title="Volver al inicio" class="logo-link flex-shrink-0">
             <img src="logo-desktop.png" alt="Blinky MDQ" class="object-contain" style="width:300px;height:100px;">
         </a>
         <div class="flex-1 flex flex-col gap-2 justify-center">
             <div class="flex gap-2">
-                <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>ðŸ”¥</span></button>
+                <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
                 <div class="search-wrapper flex-1">
                     <input type="text" id="inputBusqueda" oninput="ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
                     <button id="btnLimpiar" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
@@ -533,7 +533,7 @@
             </div>
             <div class="flex gap-2">
                 <select id="selectCat" onchange="ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
-                    <option value="">CategorÃ­as</option>
+                    <option value="">Categorías</option>
                 </select>
                 <select id="selectMarca" onchange="ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
                     <option value="">Marcas</option>
@@ -550,12 +550,12 @@
                     <svg class="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
                     <span id="user-badge-name"></span>
                 </div>
-                <span class="text-[7px] opacity-60 font-bold normal-case tracking-normal border border-white/20 rounded-lg px-2 py-0.5">Cerrar sesiÃ³n</span>
+                <span class="text-[7px] opacity-60 font-bold normal-case tracking-normal border border-white/20 rounded-lg px-2 py-0.5">Cerrar sesión</span>
             </div>
         </div>
     </div>
 
-    <!-- â”€â”€ MOBILE â”€â”€ -->
+    <!-- ── MOBILE ── -->
     <div class="md:hidden px-3 pt-2 pb-2 flex flex-col gap-2">
         <!-- Fila 1: logo full width -->
         <div class="-mx-3">
@@ -563,9 +563,9 @@
                 <img src="mobilenew.png" alt="Blinky MDQ" style="width:100%;height:auto;display:block;">
             </a>
         </div>
-        <!-- Fila 2: buscador + botÃ³n acceso -->
+        <!-- Fila 2: buscador + botón acceso -->
         <div class="flex gap-2">
-            <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>ðŸ”¥</span></button>
+            <button onclick="filtrarOfertas()" class="h-9 bg-rose-500 text-white px-3 rounded-2xl flex-shrink-0 btn-fuego"><span>🔥</span></button>
             <div class="search-wrapper flex-1">
                 <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" class="h-9 w-full px-4 bg-slate-100 border-none rounded-2xl text-xs outline-none shadow-inner" style="padding-right:2.5rem;">
                 <button id="btnLimpiarMobile" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
@@ -591,7 +591,7 @@
         <!-- Fila 3: desplegables -->
         <div class="flex gap-2">
             <select id="selectCatMobile" onchange="document.getElementById('selectCat').value=this.value;ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
-                <option value="">CategorÃ­as</option>
+                <option value="">Categorías</option>
             </select>
             <select id="selectMarcaMobile" onchange="document.getElementById('selectMarca').value=this.value;ejecutarFiltros()" class="flex-1 h-9 bg-white border border-slate-200 rounded-2xl px-3 text-[10px] font-bold uppercase text-slate-500 outline-none truncate">
                 <option value="">Marcas</option>
@@ -618,12 +618,12 @@
             <div id="indicadoresBanner" class="flex justify-center gap-1.5 mt-3"></div>
         </div>
 
-        <!-- â”€â”€ LOS MÃS BUSCADOS â”€â”€ -->
+        <!-- ── LOS MÁS BUSCADOS ── -->
         <div id="seccionMasVistos" class="hidden px-4 mt-6">
             <div class="rounded-[1.5rem] overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #1e1b4b 100%);">
                 <div class="flex items-center justify-between px-5 pt-5 pb-3">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base" style="background:rgba(255,255,255,0.15);">ðŸ”¥</div>
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base" style="background:rgba(255,255,255,0.15);">🔥</div>
                         <div>
                             <h2 class="text-[14px] font-black uppercase tracking-widest text-white leading-none">Destacados</h2>
                             
@@ -659,7 +659,7 @@
                 <img src="blinky_sin_fdo.svg" alt="Blinky MDQ" class="w-36 h-auto object-contain">
             </div>
 
-            <!-- DirecciÃ³n -->
+            <!-- Dirección -->
             <div class="flex items-start gap-3">
                 <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
                     <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
@@ -667,7 +667,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">UbicaciÃ³n</div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación</div>
                     <div class="text-xs font-bold text-white leading-snug">Buenos Aires<br>Mar del Plata 7600</div>
                 </div>
             </div>
@@ -694,7 +694,7 @@
                 </div>
             </a>
 
-            <!-- EnvÃ­os -->
+            <!-- Envíos -->
             <div class="flex items-start gap-3">
                 <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center">
                     <svg class="w-4 h-4 stroke-violet-400" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
@@ -702,31 +702,31 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">EnvÃ­os</div>
-                    <div class="text-xs font-bold text-white leading-snug">EnvÃ­os en Mar del Plata<br>en el dÃ­a</div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Envíos</div>
+                    <div class="text-xs font-bold text-white leading-snug">Envíos en Mar del Plata<br>en el día</div>
                 </div>
             </div>
 
         </div>
         <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
-            Â© 2026 Blinky MDQ â€” Todos los derechos reservados
+            © 2026 Blinky MDQ — Todos los derechos reservados
         </div>
     </footer>
 
     <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm" onclick="cerrarPlaca()">
         <div id="modalProductoInner" class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-8 placa-entrada relative" onclick="event.stopPropagation()">
-            <button id="btnCerrarModal" onclick="cerrarPlaca()" aria-label="Cerrar">âœ•</button>
+            <button id="btnCerrarModal" onclick="cerrarPlaca()" aria-label="Cerrar">✕</button>
             <div id="modalCarrusel" class="img-container-placa mb-6 relative">
                 <img id="modalImg" src="" alt="" loading="lazy" style="transition:opacity 0.15s;">
                 <div id="modalBadgeSinStock" class="badge-sin-stock-modal hidden">Sin Stock</div>
-                <button id="carruselPrev" onclick="carruselNav(-1)" class="hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">â€¹</button>
-                <button id="carruselNext" onclick="carruselNav(1)"  class="hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">â€º</button>
+                <button id="carruselPrev" onclick="carruselNav(-1)" class="hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">‹</button>
+                <button id="carruselNext" onclick="carruselNav(1)"  class="hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/25 backdrop-blur-sm text-white text-xl font-black flex items-center justify-center">›</button>
                 <div id="carruselDots" class="hidden absolute bottom-2 left-0 right-0 flex justify-center gap-1.5"></div>
             </div>
             <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase pr-10"></h2>
             <div class="py-5 border-y border-slate-100 my-5 space-y-4">
                 <div>
-                    <div class="text-[10px] font-black text-violet-600 uppercase">PÃºblico</div>
+                    <div class="text-[10px] font-black text-violet-600 uppercase">Público</div>
                     <div id="modalPrecioPub" class="text-4xl font-black text-violet-600 tracking-tighter"></div>
                 </div>
                 <div class="precio-mayorista">
@@ -738,9 +738,9 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    <!-- ══════════════════════════════════════════
          CARRITO FLOTANTE
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    ══════════════════════════════════════════ -->
     <div id="overlayCarrito" onclick="cerrarCarrito()"></div>
 
     <button id="btnCarritoFlotante" onclick="abrirCarrito()" class="hidden" aria-label="Ver carrito">
@@ -762,7 +762,7 @@
                 <h2 class="text-sm font-black uppercase tracking-widest text-slate-800">Mi Pedido</h2>
                 <span id="panelContador" class="bg-violet-100 text-violet-700 text-[9px] font-black px-2 py-0.5 rounded-full"></span>
             </div>
-            <button onclick="cerrarCarrito()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors text-base font-bold">âœ•</button>
+            <button onclick="cerrarCarrito()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors text-base font-bold">✕</button>
         </div>
         <div id="carritoLista" class="flex-1 overflow-y-auto" style="-ms-overflow-style:none;scrollbar-width:none;"></div>
         <div id="carritoFooter" class="hidden border-t border-slate-100 p-5 space-y-3">
@@ -786,15 +786,15 @@
                 </svg>
             </div>
             <div>
-                <p class="text-sm font-black uppercase text-slate-400 tracking-widest">Tu carrito estÃ¡ vacÃ­o</p>
-                <p class="text-xs text-slate-300 mt-1">AgregÃ¡ productos para armar tu pedido</p>
+                <p class="text-sm font-black uppercase text-slate-400 tracking-widest">Tu carrito está vacío</p>
+                <p class="text-xs text-slate-300 mt-1">Agregá productos para armar tu pedido</p>
             </div>
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         MODAL CHECKOUT â€” DATOS DEL PEDIDO
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ══════════════════════════════════════════
+         MODAL CHECKOUT — DATOS DEL PEDIDO
+    ══════════════════════════════════════════ -->
     <div id="modalCheckout" onclick="cerrarCheckout(event)">
         <div id="modalCheckoutInner" onclick="event.stopPropagation()">
 
@@ -805,9 +805,9 @@
             <div class="flex items-center justify-between mb-5">
                 <div>
                     <h3 class="text-base font-black uppercase tracking-widest text-slate-800">Datos del pedido</h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">CompletÃ¡ tus datos para enviar el pedido</p>
+                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">Completá tus datos para enviar el pedido</p>
                 </div>
-                <button onclick="cerrarCheckout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold hover:bg-slate-200 transition-colors">âœ•</button>
+                <button onclick="cerrarCheckout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold hover:bg-slate-200 transition-colors">✕</button>
             </div>
 
             <!-- Resumen del pedido -->
@@ -833,33 +833,33 @@
                     <label class="checkout-label">Forma de Pago *</label>
                     <div class="checkout-opciones">
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this)">
-                            ðŸ’³ Transferencia
+                            💳 Transferencia
                         </div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Coordinar por WhatsApp', this)">
-                            ðŸ’¬ Coordinar<br>por WP
+                            💬 Coordinar<br>por WP
                         </div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
                 </div>
 
-                <!-- MÃ©todo de entrega -->
+                <!-- Método de entrega -->
                 <div>
-                    <label class="checkout-label">MÃ©todo de Entrega *</label>
+                    <label class="checkout-label">Método de Entrega *</label>
                     <div class="checkout-opciones">
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'EnvÃ­o a domicilio', this); mostrarDireccion(true)">
-                            ðŸšš EnvÃ­o a<br>domicilio
+                        <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Envío a domicilio', this); mostrarDireccion(true)">
+                            🚚 Envío a<br>domicilio
                         </div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Coordinar por WhatsApp', this); mostrarDireccion(false)">
-                            ðŸ’¬ Coordinar<br>por WP
+                            💬 Coordinar<br>por WP
                         </div>
                     </div>
                     <input type="hidden" id="checkout-entrega" value="">
                 </div>
 
-                <!-- DirecciÃ³n (solo si elige envÃ­o) -->
+                <!-- Dirección (solo si elige envío) -->
                 <div id="checkout-direccion-wrap">
-                    <label class="checkout-label" for="checkout-direccion">DirecciÃ³n de EnvÃ­o *</label>
-                    <input id="checkout-direccion" type="text" class="checkout-input" placeholder="Calle, nÃºmero, piso/depto, barrio" autocomplete="street-address">
+                    <label class="checkout-label" for="checkout-direccion">Dirección de Envío *</label>
+                    <input id="checkout-direccion" type="text" class="checkout-input" placeholder="Calle, número, piso/depto, barrio" autocomplete="street-address">
                 </div>
 
                 <!-- Preparar para regalo -->
@@ -869,16 +869,16 @@
                             <svg id="checkRegaloIcon" class="w-3.5 h-3.5 hidden" fill="none" stroke="white" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 12 4 10"/></svg>
                         </div>
                         <div>
-                            <p class="text-[11px] font-black uppercase text-slate-700 tracking-wide">ðŸŽ Preparar para regalo</p>
+                            <p class="text-[11px] font-black uppercase text-slate-700 tracking-wide">🎁 Preparar para regalo</p>
                             <p class="text-[9px] text-slate-400 font-medium mt-0.5">Empaquetamos el pedido para regalo</p>
                         </div>
                     </label>
                     <input type="hidden" id="checkout-regalo" value="">
                 </div>
 
-                <!-- AclaraciÃ³n extra -->
+                <!-- Aclaración extra -->
                 <div>
-                    <label class="checkout-label" for="checkout-nota">AclaraciÃ³n Extra</label>
+                    <label class="checkout-label" for="checkout-nota">Aclaración Extra</label>
                     <textarea id="checkout-nota" class="checkout-input" rows="2" placeholder="Horario de entrega, instrucciones, etc." style="resize:none;"></textarea>
                 </div>
 
@@ -887,7 +887,7 @@
             <!-- Error -->
             <div id="checkoutError" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
 
-            <!-- BotÃ³n enviar -->
+            <!-- Botón enviar -->
             <button onclick="confirmarYEnviar()"
                 class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]"
                 style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
@@ -903,9 +903,9 @@
             <h3 class="text-xl font-black text-slate-800 uppercase mb-6">Acceso Clientes</h3>
             <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none"
                 onkeydown="if(event.key==='Enter') document.getElementById('passInput').focus()">
-            <input type="password" id="passInput" placeholder="ContraseÃ±a" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none"
+            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none"
                 onkeydown="if(event.key==='Enter') validarAcceso()">
-            <div id="loginError" class="hidden text-xs text-rose-500 font-bold mb-3 -mt-3">Usuario o contraseÃ±a incorrectos</div>
+            <div id="loginError" class="hidden text-xs text-rose-500 font-bold mb-3 -mt-3">Usuario o contraseña incorrectos</div>
             <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase">Entrar</button>
             <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2 mt-1">Cancelar</button>
         </div>
@@ -932,9 +932,9 @@
         const iconWA = `<svg class="w-3.5 h-3.5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
         const iconShare = `<svg class="w-3.5 h-3.5 fill-none stroke-current flex-shrink-0" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // SHIMMER
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function mostrarShimmer() {
             const box = document.getElementById('contenedor');
             let html = '';
@@ -954,9 +954,9 @@
             box.innerHTML = html;
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // HELPER: URL de imagen
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function getImgUrl(foto, sz) {
             if (!foto || foto.trim() === '') return 'sin-foto.png';
             if (foto.includes('id=')) {
@@ -971,9 +971,9 @@
                     }
                     return arr;
                 }
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // CARGA DE DATOS
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         async function cargarDatos() {
             try {
                 const resU   = await fetch(USERS_URL);
@@ -1056,21 +1056,21 @@
                 console.error('Error cargando datos:', e);
                 document.getElementById('contenedor').innerHTML = `
                     <div class="col-span-full py-20 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">
-                        Error al cargar el catÃ¡logo. RevisÃ¡ tu conexiÃ³n.
+                        Error al cargar el catálogo. Revisá tu conexión.
                     </div>`;
             }
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // FORMATO DE PRECIO (redondeo a centena)
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function formatPrecio(valor) {
             const redondeado = Math.round(parseFloat(valor) / 100) * 100 - 1;
             return `$${(redondeado || 0).toLocaleString('es-AR')}`;
         }
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // HASH SIMPLE
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function simpleHash(str) {
             let h = 0;
             for (let i = 0; i < str.length; i++) {
@@ -1079,9 +1079,9 @@
             return h;
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // LINK COMPARTIBLE
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function generarLink(nombre) {
             const limpio = nombre.toLowerCase()
                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -1090,20 +1090,20 @@
             return `${location.protocol}//${location.host}${location.pathname}?q=${limpio}`;
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // PRECIO USUARIO
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function getPrecioUsuario(p) {
             const val = p.todasLasCols[6]; // columna G = Precio MAYORISTA
             if (!val || parseFloat(val) === 0) {
-                return p.todasLasCols[5] || "0"; // fallback al precio pÃºblico
+                return p.todasLasCols[5] || "0"; // fallback al precio público
             }
             return val;
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // FILTROS
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function toggleBtnLimpiar() {
             const val = document.getElementById('inputBusqueda').value || document.getElementById('inputBusquedaMobile').value;
             const tiene = val.length > 0;
@@ -1168,7 +1168,7 @@
             <div onclick="filtrados=productos;abrirPlacaPorIdx(${idx})" class="card-fuego cursor-pointer flex-shrink-0 flex flex-col rounded-[1.25rem] overflow-hidden transition-all hover:scale-[1.03] bg-white" style="width:160px;">
                 <div class="relative w-full overflow-hidden bg-white" style="height:160px;">
                     <img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" class="w-full h-full object-contain p-3">
-                    ${esOferta ? '<div class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider text-white" style="background:linear-gradient(135deg,#f97316,#ef4444);">ðŸ”¥ Oferta</div>' : ''}
+                    ${esOferta ? '<div class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider text-white" style="background:linear-gradient(135deg,#f97316,#ef4444);">🔥 Oferta</div>' : ''}
                 </div>
                 <div class="p-3 flex flex-col flex-1">
                     <p class="text-[7px] font-black text-violet-400 uppercase truncate mb-0.5">${p.marca}</p>
@@ -1210,9 +1210,9 @@
             render(productos.filter(p => p.esOferta));
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // RENDER
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function render(lista) {
             filtrados = lista;
             const box           = document.getElementById('contenedor');
@@ -1236,7 +1236,7 @@
             const pagina     = lista.slice(inicio, fin);
 
             contador.innerText  = `${fin} de ${total} productos`;
-            infoPagina.innerText = `PÃ¡gina ${paginaActual} de ${totalPags}`;
+            infoPagina.innerText = `Página ${paginaActual} de ${totalPags}`;
 
             // Botones numerados
             let botonesHtml = '';
@@ -1259,7 +1259,7 @@
                 const realIdx          = inicio + idx;
 
                 const msgConsulta = encodeURIComponent(`Hola! Me interesa: ${p.nombre}\n\n${link}`);
-                const msgAmigo    = encodeURIComponent(`Â¡MirÃ¡ esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
+                const msgAmigo    = encodeURIComponent(`¡Mirá esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
 
                 const badgeSinStock = p.sinStock ? `<div class="badge-sin-stock">Sin Stock</div>` : '';
 
@@ -1291,18 +1291,18 @@
             }).join('');
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // PAGINACIÃ“N
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
+        // PAGINACIÓN
+        // ════════════════════════════════════════
         function irAPagina(n) {
             paginaActual = n;
             render(filtrados);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // MODAL PRODUCTO
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function carruselNav(dir) {
             carruselActual = (carruselActual + dir + carruselFotos.length) % carruselFotos.length;
             actualizarCarrusel();
@@ -1360,7 +1360,7 @@
 
             const link = generarLink(p.nombre);
             const msgC = encodeURIComponent(`Hola! Me interesa: ${p.nombre}\n\n${link}`);
-            const msgA = encodeURIComponent(`Â¡MirÃ¡ esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
+            const msgA = encodeURIComponent(`¡Mirá esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
 
             document.getElementById('botonesModalContenedor').innerHTML = `
                 <a href="https://wa.me/${NRO_TELEFONO}?text=${msgC}" target="_blank" rel="noopener"
@@ -1390,9 +1390,9 @@
             }
         });
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // SLIDER
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         const misDestacados = [
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`,
             `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpg`,
@@ -1477,18 +1477,18 @@
             iniciarAutoplay();
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // SELECTS
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function llenarSelect(id, prop) {
             const vals = [...new Set(productos.map(p => p[prop]))].filter(Boolean).sort();
             const el   = document.getElementById(id);
             vals.forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // AUTH
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         function validarAcceso() {
             const u = document.getElementById('userInput').value.trim().toLowerCase();
             const p = document.getElementById('passInput').value.trim();
@@ -1528,19 +1528,15 @@
         }
 
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // CARRITO
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         let carrito = []; // [{id, nombre, precio, precioLabel, img, cantidad}]
-
-        function getPrecioNumerico(valor) {
-            return Math.round(parseFloat(valor) / 100) * 100 - 1;
-        }
 
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
             const val = logueado ? getPrecioUsuario(p) : p.precioP;
-            return getPrecioNumerico(val) || 0;
+            return Math.round(parseFloat(val) / 100) * 100 - 1;
         }
 
         function agregarAlCarrito(idx) {
@@ -1615,7 +1611,7 @@
             // Total
             document.getElementById('carritoTotal').textContent = formatPrecio(total);
 
-            // Footer / vacÃ­o
+            // Footer / vacío
             const vacio   = document.getElementById('carritoVacio');
             const footer  = document.getElementById('carritoFooter');
             const lista   = document.getElementById('carritoLista');
@@ -1640,9 +1636,9 @@
                         <p class="text-[11px] font-black text-violet-600 mt-1">${subtotal}</p>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <button onclick="eliminarDelCarrito(${item.id})" class="text-slate-300 hover:text-red-400 transition-colors text-xs">âœ•</button>
+                        <button onclick="eliminarDelCarrito(${item.id})" class="text-slate-300 hover:text-red-400 transition-colors text-xs">✕</button>
                         <div class="flex items-center gap-1.5">
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1)">âˆ’</button>
+                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1)">−</button>
                             <span class="text-xs font-black text-slate-700 w-4 text-center">${item.cantidad}</span>
                             <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1)">+</button>
                         </div>
@@ -1668,9 +1664,9 @@
             document.body.style.overflow = '';
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // CHECKOUT â€” MODAL DE DATOS
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
+        // CHECKOUT — MODAL DE DATOS
+        // ════════════════════════════════════════
         function abrirCheckout() {
             if (carrito.length === 0) return;
             const logueado = document.body.classList.contains('is-logged-in');
@@ -1776,24 +1772,24 @@
             if (!nombre) {
                 document.getElementById('checkout-nombre').classList.add('error');
                 document.getElementById('checkout-nombre').focus();
-                errEl.textContent = 'Por favor ingresÃ¡ tu nombre completo.';
+                errEl.textContent = 'Por favor ingresá tu nombre completo.';
                 errEl.classList.remove('hidden');
                 return;
             }
             if (!pago) {
-                errEl.textContent = 'SeleccionÃ¡ una forma de pago.';
+                errEl.textContent = 'Seleccioná una forma de pago.';
                 errEl.classList.remove('hidden');
                 return;
             }
             if (!entrega) {
-                errEl.textContent = 'SeleccionÃ¡ un mÃ©todo de entrega.';
+                errEl.textContent = 'Seleccioná un método de entrega.';
                 errEl.classList.remove('hidden');
                 return;
             }
-            if (entrega === 'EnvÃ­o a domicilio' && !direccion) {
+            if (entrega === 'Envío a domicilio' && !direccion) {
                 document.getElementById('checkout-direccion').classList.add('error');
                 document.getElementById('checkout-direccion').focus();
-                errEl.textContent = 'IngresÃ¡ la direcciÃ³n de envÃ­o.';
+                errEl.textContent = 'Ingresá la dirección de envío.';
                 errEl.classList.remove('hidden');
                 return;
             }
@@ -1802,21 +1798,21 @@
             var logueado  = document.body.classList.contains('is-logged-in');
             var tipoPrec  = logueado ? ' _(precios especiales)_' : '';
             var lineas    = carrito.map(function(i) {
-                return 'â€¢ ' + i.cantidad + 'x ' + i.nombre + ' â€” ' + formatPrecio(i.precio * i.cantidad);
+                return '• ' + i.cantidad + 'x ' + i.nombre + ' — ' + formatPrecio(i.precio * i.cantidad);
             }).join('\n');
             var total     = formatPrecio(carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0));
 
-            var msg = 'ðŸ›’ *Nuevo Pedido â€” Blinky MDQ*' + tipoPrec + '\n\n';
+            var msg = '🛒 *Nuevo Pedido — Blinky MDQ*' + tipoPrec + '\n\n';
             msg += '*Productos:*\n' + lineas + '\n\n';
-            msg += 'ðŸ’° *Total: ' + total + '*\n\n';
-            msg += 'â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n';
-            msg += 'ðŸ‘¤ *Nombre:* ' + nombre + '\n';
-            msg += 'ðŸ’³ *Forma de pago:* ' + pago + '\n';
-            msg += 'ðŸšš *Entrega:* ' + entrega + '\n';
-            if (direccion) msg += 'ðŸ“ *DirecciÃ³n:* ' + direccion + '\n';
+            msg += '💰 *Total: ' + total + '*\n\n';
+            msg += '─────────────────\n';
+            msg += '👤 *Nombre:* ' + nombre + '\n';
+            msg += '💳 *Forma de pago:* ' + pago + '\n';
+            msg += '🚚 *Entrega:* ' + entrega + '\n';
+            if (direccion) msg += '📍 *Dirección:* ' + direccion + '\n';
             var regalo = document.getElementById('checkout-regalo').value;
-            if (regalo)    msg += 'ðŸŽ *Preparar para regalo*\n';
-            if (nota)      msg += 'ðŸ“ *AclaraciÃ³n:* ' + nota + '\n';
+            if (regalo)    msg += '🎁 *Preparar para regalo*\n';
+            if (nota)      msg += '📝 *Aclaración:* ' + nota + '\n';
 
             document.getElementById('modalCheckout').classList.remove('visible');
             document.body.style.overflow = '';
@@ -1828,9 +1824,9 @@
             abrirCheckout();
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         // INICIO
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ════════════════════════════════════════
         mostrarShimmer();
         cargarDatos();
     </script>
@@ -1838,8 +1834,6 @@
 
 </body>
 </html>
-
-
 
 
 
