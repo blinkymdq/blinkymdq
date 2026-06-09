@@ -160,23 +160,16 @@
 
         /* ─── Badge de usuario logueado ─── */
         #user-badge {
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, #7c3aed, #4f46e5);
-            border-radius: 1rem;
-            height: 2.5rem;
-            transition: opacity 0.15s;
+            position: static;
+            overflow: visible;
+            background: none;
+            border-radius: 0;
+            height: auto;
+            transition: none;
+            animation: none;
         }
-        #user-badge::before {
-            content: "";
-            position: absolute;
-            top: 0; left: -100%;
-            width: 60%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
-            transform: skewX(-20deg);
-            animation: loginShine 3s ease-in-out infinite;
-        }
-        #user-badge:active { opacity: 0.85; }
+        #user-badge::before { display: none; }
+        #user-badge:active { opacity: 1; }
 
         /* ─── Botón cerrar modal ─── */
         #btnCerrarModal {
