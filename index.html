@@ -506,16 +506,16 @@
 </style>
 <div style="background:#f3f0ff;border-bottom:1px solid #e5e0fa;width:100%;overflow:hidden;">
     <!-- Mobile: fijo con destello -->
-    <div style="height:32px;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 12px;">
-        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+    <div style="height:26px;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 12px;">
+        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
             <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/></svg>Productos originales
         </span>
         <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
             <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compra 100% segura
         </span>
         <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+        <span class="benefit-item" style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
             <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos a todo el país
         </span>
     </div>
@@ -652,7 +652,7 @@
     </div>
 
     <!-- ── MOBILE ── -->
-    <div class="md:hidden px-3 pt-2 pb-2 flex flex-col gap-2">
+    <div class="md:hidden px-3 pt-1 pb-3 flex flex-col gap-3">
         <!-- Fila 1: usuario + carrito (derecha) -->
         <div class="flex items-center gap-2 justify-end">
             <!-- Sin login -->
@@ -683,8 +683,8 @@
             </button>
         </div>
         <!-- Fila 2: logo + buscador -->
-        <div class="flex items-center gap-2 pr-2">
-            <a href="/" title="Volver al inicio" style="filter:drop-shadow(0 0 8px rgba(124,58,237,0.5));flex-shrink:0;">
+        <div class="flex items-center gap-4 pr-3 pl-1">
+            <a href="/" title="Volver al inicio" style="filter:drop-shadow(0 0 5px rgba(124,58,237,0.35));flex-shrink:0;">
                 <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:72px;width:auto;object-fit:contain;">
             </a>
             <div class="search-wrapper flex-1">
@@ -700,7 +700,7 @@
             </div>
         </div>
         <!-- Fila 3: desplegables -->
-        <div class="flex gap-2 pr-2">
+        <div class="flex gap-2 pr-3 pl-1">
             <div class="relative flex-1">
                 <select id="selectCatMobile" onchange="document.getElementById('selectCat').value=this.value;ejecutarFiltros()" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:#7c3aed;color:white;border:none;border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
                     <option value="">Categorías</option>
@@ -1062,14 +1062,13 @@
     </div>
 
     <!-- ══════════════════════════════════════════
-         POPUP DÍA DEL PADRE
+         POPUPS MARTES Y JUEVES (+ DÍA DEL PADRE)
     ══════════════════════════════════════════ -->
+    <!-- Popup 1: Día del Padre (con cuenta regresiva) -->
     <div id="popupPadre" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,20,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
         <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-            <!-- Imagen vertical -->
             <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/popuppapa.jpg"
                  alt="Día del Padre" style="width:100%;display:block;">
-            <!-- Contador superpuesto sobre el espacio celeste inferior -->
             <div style="position:absolute;bottom:0;left:0;right:0;height:22%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
                 <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.12em;color:#1e3a5f;margin-bottom:2px;">⏰ Quedan</div>
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -1094,49 +1093,89 @@
                     </div>
                 </div>
             </div>
-            <!-- Botón X -->
-            <button onclick="cerrarPopupPadre()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
+            <button onclick="cerrarPopup1()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
         </div>
     </div>
+
+    <!-- Popup 2: Martes y Jueves BBVA -->
+    <div id="popupBBVA" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,20,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+        <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/martesyjuevesbbva.jpg"
+                 alt="Martes y Jueves BBVA" style="width:100%;display:block;">
+            <button onclick="cerrarPopup2()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
+        </div>
+    </div>
+
     <script>
     (function() {
+        var hoy = new Date().getDay(); // 2=martes, 4=jueves
+        var esDia = (hoy === 2 || hoy === 4);
+        if (!esDia) return;
+
         var target = new Date('2026-06-20T00:00:00-03:00').getTime();
         function pad(n) { return String(n).padStart(2,'0'); }
         var timer;
+
         function tick() {
             var diff = target - Date.now();
-            if (diff <= 0) { cerrarPopupPadre(); return; }
+            if (diff <= 0) { cerrarPopup1(); return; }
             var d = Math.floor(diff / 86400000);
             var h = Math.floor((diff % 86400000) / 3600000);
             var m = Math.floor((diff % 3600000) / 60000);
             var s = Math.floor((diff % 60000) / 1000);
-            document.getElementById('pdDias').textContent     = pad(d);
-            document.getElementById('pdHoras').textContent    = pad(h);
-            document.getElementById('pdMinutos').textContent  = pad(m);
-            document.getElementById('pdSegundos').textContent = pad(s);
+            document.getElementById('pdDias').textContent    = pad(d);
+            document.getElementById('pdHoras').textContent   = pad(h);
+            document.getElementById('pdMinutos').textContent = pad(m);
+            document.getElementById('pdSegundos').textContent= pad(s);
         }
-        function cerrarPopupPadre() {
-            var p = document.getElementById('popupPadre');
-            p.style.opacity = '0';
-            p.style.transition = 'opacity 0.3s';
-            setTimeout(function(){ p.style.display = 'none'; }, 300);
+
+        function mostrarPopup(el) {
+            el.style.display = 'flex';
+            el.style.opacity = '0';
+            el.style.transition = 'opacity 0.4s';
+            setTimeout(function(){ el.style.opacity = '1'; }, 30);
+        }
+
+        function ocultarPopup(el, cb) {
+            el.style.opacity = '0';
+            el.style.transition = 'opacity 0.3s';
+            setTimeout(function(){
+                el.style.display = 'none';
+                if (cb) cb();
+            }, 320);
+        }
+
+        function cerrarPopup1() {
             clearInterval(timer);
-            sessionStorage.setItem('popupPadreVisto', '1');
+            ocultarPopup(document.getElementById('popupPadre'), function() {
+                // Después del primero, mostrar el segundo
+                var p2 = document.getElementById('popupBBVA');
+                mostrarPopup(p2);
+            });
         }
-        window.cerrarPopupPadre = cerrarPopupPadre;
-        // Mostrar solo una vez por sesión y si falta tiempo
-        var visto = sessionStorage.getItem('popupPadreVisto');
-        if (!visto && target > Date.now()) {
-            setTimeout(function() {
-                var p = document.getElementById('popupPadre');
-                p.style.display = 'flex';
-                p.style.opacity = '0';
-                p.style.transition = 'opacity 0.4s';
-                setTimeout(function(){ p.style.opacity = '1'; }, 30);
+
+        function cerrarPopup2() {
+            ocultarPopup(document.getElementById('popupBBVA'));
+        }
+
+        window.cerrarPopup1 = cerrarPopup1;
+        window.cerrarPopup2 = cerrarPopup2;
+        // mantener compatibilidad con código viejo
+        window.cerrarPopupPadre = cerrarPopup1;
+
+        // Mostrar popup 1 al cargar
+        setTimeout(function() {
+            var p1 = document.getElementById('popupPadre');
+            // Solo si la fecha target aún no pasó
+            if (target > Date.now()) {
+                mostrarPopup(p1);
                 tick();
                 timer = setInterval(tick, 1000);
-            }, 800);
-        }
+            } else {
+                // Si ya pasó la fecha del padre, mostrar directamente el BBVA
+                mostrarPopup(document.getElementById('popupBBVA'));
+            }
+        }, 800);
     })();
     </script>
 
