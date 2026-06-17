@@ -1146,11 +1146,16 @@
 
     <script>
     (function() {
-        var hoy = new Date().getDay(); // 2=martes, 4=jueves
-        var esDia = (hoy === 2 || hoy === 4);
-        if (!esDia) return;
+        var ahora  = new Date();
+        var diaSem = ahora.getDay();                // 0=dom,1=lun,2=mar,3=mie,4=jue,5=vie,6=sab
+        var anio   = ahora.getFullYear();
+        var mes    = ahora.getMonth();              // 5 = junio
+        var dia    = ahora.getDate();
 
-        var target = new Date('2026-06-20T00:00:00-03:00').getTime();
+        var esBBVA = (diaSem === 2 || diaSem === 4);             // martes o jueves
+        var esHoy  = (anio === 2026 && mes === 5 && dia === 17); // solo 17 jun 2026
+
+        var target = new Date('2026-06-22T00:00:00-03:00').getTime(); // límite popup padre
         function pad(n) { return String(n).padStart(2,'0'); }
         var timer;
 
@@ -1161,10 +1166,10 @@
             var h = Math.floor((diff % 86400000) / 3600000);
             var m = Math.floor((diff % 3600000) / 60000);
             var s = Math.floor((diff % 60000) / 1000);
-            document.getElementById('pdDias').textContent    = pad(d);
-            document.getElementById('pdHoras').textContent   = pad(h);
-            document.getElementById('pdMinutos').textContent = pad(m);
-            document.getElementById('pdSegundos').textContent= pad(s);
+            document.getElementById('pdDias').textContent     = pad(d);
+            document.getElementById('pdHoras').textContent    = pad(h);
+            document.getElementById('pdMinutos').textContent  = pad(m);
+            document.getElementById('pdSegundos').textContent = pad(s);
         }
 
         function mostrarPopup(el) {
@@ -1186,9 +1191,14 @@
         function cerrarPopup1() {
             clearInterval(timer);
             ocultarPopup(document.getElementById('popupPadre'), function() {
-                // Después del primero, mostrar el segundo
-                var p2 = document.getElementById('popupBBVA');
-                mostrarPopup(p2);
+                if (esHoy) {
+                    // Hoy 17/6: mostrar popup 6 cuotas
+                    mostrarPopup(document.getElementById('popupHoy'));
+                } else if (esBBVA) {
+                    // Martes o jueves: mostrar BBVA martes/jueves
+                    mostrarPopup(document.getElementById('popupBBVA'));
+                }
+                // Otros días: no mostrar nada más
             });
         }
 
@@ -1198,19 +1208,16 @@
 
         window.cerrarPopup1 = cerrarPopup1;
         window.cerrarPopup2 = cerrarPopup2;
-        // mantener compatibilidad con código viejo
         window.cerrarPopupPadre = cerrarPopup1;
 
-        // Mostrar popup 1 al cargar
+        // Mostrar popup padre al cargar (todos los días hasta el 22/6)
         setTimeout(function() {
-            var p1 = document.getElementById('popupPadre');
-            // Solo si la fecha target aún no pasó
             if (target > Date.now()) {
-                mostrarPopup(p1);
+                mostrarPopup(document.getElementById('popupPadre'));
                 tick();
                 timer = setInterval(tick, 1000);
-            } else {
-                // Si ya pasó la fecha del padre, mostrar directamente el BBVA
+            } else if (esBBVA) {
+                // Pasó el 22/6: solo martes/jueves ven el BBVA directo
                 mostrarPopup(document.getElementById('popupBBVA'));
             }
         }, 800);
