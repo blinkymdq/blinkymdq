@@ -2119,6 +2119,85 @@
             document.getElementById('modalCheckout').classList.remove('visible');
             document.body.style.overflow = '';
 
+            // ── Guardar pedido en Supabase ──────────────────────────────
+            (async function() {
+                try {
+                    var SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+                    var SUPA_KEY = 'sb_publishable_5_1R9_CMTqLP3K53n20Img_rdwa45iL';
+                    var hdrs = {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPA_KEY,
+                        'Authorization': 'Bearer ' + SUPA_KEY,
+                        'Prefer': 'return=representation'
+                    };
+
+                    // Generar número de pedido
+                    var numR = await fetch(SUPA_URL + '/rpc/generar_numero_pedido', { method: 'POST', headers: hdrs });
+                    var numeroPedido = await numR.json();
+
+                    var logueado = document.body.classList.contains('is-logged-in');
+                    var totalNum = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+
+                    // Insertar pedido
+                    await fetch(SUPA_URL + '/rest/v1/pedidos', {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify({
+                            numero_pedido: numeroPedido,
+                            nombre: nombre,
+                            telefono: '',
+                            tipo: logueado ? 'mayorista' : 'minorista',
+                            forma_pago: pago,
+                            entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
+                            notas: (direccion ? 'Dir: ' + direccion + ' ' : '') + (nota || ''),
+                            total: totalNum,
+                            estado: 'pendiente'
+                        })
+                    });
+
+                    // Insertar items
+                    var items = carrito.map(function(i) {
+                        return {
+                            numero_pedido: numeroPedido,
+                            producto: i.nombre,
+                            cantidad: i.cantidad,
+                            precio_unitario: i.precio
+                        };
+                    });
+                    await fetch(SUPA_URL + '/rest/v1/pedido_items', {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify(items)
+                    });
+
+                    // Llamar Edge Function para mandar mail
+                    fetch(SUPA_URL + '/functions/v1/notificar-pedido', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + SUPA_KEY
+                        },
+                        body: JSON.stringify({
+                            record: {
+                                numero_pedido: numeroPedido,
+                                nombre: nombre,
+                                telefono: '',
+                                tipo: logueado ? 'mayorista' : 'minorista',
+                                forma_pago: pago,
+                                entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
+                                notas: (direccion ? 'Dir: ' + direccion + ' ' : '') + (nota || ''),
+                                total: totalNum,
+                                created_at: new Date().toISOString()
+                            }
+                        })
+                    }).catch(function(e) { console.warn('Mail no enviado', e); });
+
+                } catch(e) {
+                    console.warn('Supabase: no se pudo guardar el pedido', e);
+                }
+            })();
+            // ────────────────────────────────────────────────────────────
+
             window.open('https://wa.me/' + NRO_TELEFONO + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
         }
 
