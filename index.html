@@ -978,6 +978,12 @@
                     <input id="checkout-nombre" type="text" class="checkout-input" placeholder="Tu nombre y apellido" autocomplete="name">
                 </div>
 
+                <!-- Teléfono -->
+                <div>
+                    <label class="checkout-label" for="checkout-telefono">Teléfono / WhatsApp</label>
+                    <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
+                </div>
+
                 <!-- Forma de pago -->
                 <div>
                     <label class="checkout-label">Forma de Pago *</label>
@@ -1985,6 +1991,7 @@
 
             // Reset form
             document.getElementById('checkout-nombre').value = '';
+            document.getElementById('checkout-telefono').value = '';
             document.getElementById('checkout-nota').value   = '';
             document.getElementById('checkout-pago').value   = '';
             document.getElementById('checkout-entrega').value = '';
@@ -2061,6 +2068,7 @@
 
         function confirmarYEnviar() {
             var nombre   = document.getElementById('checkout-nombre').value.trim();
+            var telefono = document.getElementById('checkout-telefono').value.trim();
             var pago     = document.getElementById('checkout-pago').value;
             var entrega  = document.getElementById('checkout-entrega').value;
             var direccion = document.getElementById('checkout-direccion').value.trim();
@@ -2104,17 +2112,18 @@
             }).join('\n');
             var total     = formatPrecio(carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0));
 
-            var msg = '🛒 *Nuevo Pedido — Blinky MDQ*' + tipoPrec + '\n\n';
+            var msg = '*Nuevo Pedido - Blinky MDQ*' + tipoPrec + '\n\n';
             msg += '*Productos:*\n' + lineas + '\n\n';
-            msg += '💰 *Total: ' + total + '*\n\n';
-            msg += '─────────────────\n';
-            msg += '👤 *Nombre:* ' + nombre + '\n';
-            msg += '💳 *Forma de pago:* ' + pago + '\n';
-            msg += '🚚 *Entrega:* ' + entrega + '\n';
-            if (direccion) msg += '📍 *Dirección:* ' + direccion + '\n';
+            msg += '*Total: ' + total + '*\n\n';
+            msg += '-----------------\n';
+            msg += '*Nombre:* ' + nombre + '\n';
+            if (telefono) msg += '*Tel:* ' + telefono + '\n';
+            msg += '*Pago:* ' + pago + '\n';
+            msg += '*Entrega:* ' + entrega + '\n';
+            if (direccion) msg += '*Direccion:* ' + direccion + '\n';
             var regalo = document.getElementById('checkout-regalo').value;
-            if (regalo)    msg += '🎁 *Preparar para regalo*\n';
-            if (nota)      msg += '📝 *Aclaración:* ' + nota + '\n';
+            if (regalo)    msg += '*Preparar para regalo*\n';
+            if (nota)      msg += '*Aclaracion:* ' + nota + '\n';
 
             document.getElementById('modalCheckout').classList.remove('visible');
             document.body.style.overflow = '';
@@ -2140,7 +2149,7 @@
                         headers: hdrs,
                         body: JSON.stringify({
                             nombre: nombre,
-                            telefono: '',
+                            telefono: telefono,
                             tipo: logueado ? 'mayorista' : 'minorista',
                             forma_pago: pago,
                             entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
