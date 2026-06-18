@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1061,42 +1061,6 @@
         </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         POPUP PROMO — 6 SIN INTERÉS BBVA
-         (activo hasta la fecha "vence")
-    ══════════════════════════════════════════ -->
-    <div id="popupHoy" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(10,10,20,0.80);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-            <img src="6 SIN INTERES BBVA.jpg" alt="6 cuotas sin interés BBVA" style="width:100%;display:block;">
-            <button onclick="cerrarPopupHoy()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
-        </div>
-    </div>
-    <script>
-    (function() {
-        var ahora = new Date();
-        var vence = new Date('2026-06-20T23:59:59-03:00');
-        if (ahora > vence) return;
-
-        function mostrarEl(el) {
-            el.style.display = 'flex';
-            el.style.opacity = '0';
-            el.style.transition = 'opacity 0.4s';
-            setTimeout(function(){ el.style.opacity = '1'; }, 30);
-        }
-        function ocultarEl(el) {
-            el.style.opacity = '0';
-            el.style.transition = 'opacity 0.3s';
-            setTimeout(function(){ el.style.display = 'none'; }, 320);
-        }
-
-        window.cerrarPopupHoy = function() {
-            ocultarEl(document.getElementById('popupHoy'));
-        };
-
-        setTimeout(function() {
-            mostrarEl(document.getElementById('popupHoy'));
-        }, 800);
-    })();
     </script>
 
     <!-- ══════════════════════════════════════════
