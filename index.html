@@ -2128,24 +2128,17 @@
                         'Content-Type': 'application/json',
                         'apikey': SUPA_KEY,
                         'Authorization': 'Bearer ' + SUPA_KEY,
-                        'Prefer': 'return=representation',
-                        'X-Client-Info': 'blinkymdq'
+                        'Prefer': 'return=representation'
                     };
-
-                    // Generar número de pedido desde el cliente
-                    var ts = Date.now().toString().slice(-6);
-                    var rand = Math.floor(Math.random()*900)+100;
-                    var numeroPedido = '#' + ts + rand;
 
                     var logueado = document.body.classList.contains('is-logged-in');
                     var totalNum = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
 
-                    // Insertar pedido
-                    await fetch(SUPA_URL + '/rest/v1/pedidos', {
+                    // Insertar pedido — numero_pedido lo genera Supabase con la secuencia
+                    var pedidoRes = await fetch(SUPA_URL + '/rest/v1/pedidos', {
                         method: 'POST',
                         headers: hdrs,
                         body: JSON.stringify({
-                            numero_pedido: numeroPedido,
                             nombre: nombre,
                             telefono: '',
                             tipo: logueado ? 'mayorista' : 'minorista',
@@ -2156,6 +2149,8 @@
                             estado: 'pendiente'
                         })
                     });
+                    var pedidoData = await pedidoRes.json();
+                    var numeroPedido = pedidoData[0] ? pedidoData[0].numero_pedido : '';
 
                     // Insertar items
                     var items = carrito.map(function(i) {
