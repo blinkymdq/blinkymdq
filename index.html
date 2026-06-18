@@ -2128,12 +2128,14 @@
                         'Content-Type': 'application/json',
                         'apikey': SUPA_KEY,
                         'Authorization': 'Bearer ' + SUPA_KEY,
-                        'Prefer': 'return=representation'
+                        'Prefer': 'return=representation',
+                        'X-Client-Info': 'blinkymdq'
                     };
 
-                    // Generar número de pedido
-                    var numR = await fetch(SUPA_URL + '/rpc/generar_numero_pedido', { method: 'POST', headers: hdrs });
-                    var numeroPedido = await numR.json();
+                    // Generar número de pedido desde el cliente
+                    var ts = Date.now().toString().slice(-6);
+                    var rand = Math.floor(Math.random()*900)+100;
+                    var numeroPedido = '#' + ts + rand;
 
                     var logueado = document.body.classList.contains('is-logged-in');
                     var totalNum = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
