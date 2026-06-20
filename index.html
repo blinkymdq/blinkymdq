@@ -1114,6 +1114,14 @@
         </div>
     </div>
 
+    <!-- POPUP 3 CUOTAS SIN INTERÉS — viernes y sábados -->
+    <div id="popupVierSab" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,20,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+        <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <img src="3sininteres.png" alt="3 cuotas sin interés BBVA" style="width:100%;display:block;">
+            <button onclick="cerrarPopup3()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
+        </div>
+    </div>
+
     <script>
     (function() {
         var ahora  = new Date();
@@ -1122,8 +1130,8 @@
         var mes    = ahora.getMonth();              // 5 = junio
         var dia    = ahora.getDate();
 
-        var esBBVA = (diaSem === 2 || diaSem === 4);             // martes o jueves
-        var esHoy  = (anio === 2026 && mes === 5 && dia === 17); // solo 17 jun 2026
+        var esBBVA    = (diaSem === 2 || diaSem === 4); // martes o jueves
+        var esVierSab = (diaSem === 5 || diaSem === 6); // viernes o sábado
 
         var target = new Date('2026-06-22T00:00:00-03:00').getTime(); // límite popup padre
         function pad(n) { return String(n).padStart(2,'0'); }
@@ -1161,14 +1169,11 @@
         function cerrarPopup1() {
             clearInterval(timer);
             ocultarPopup(document.getElementById('popupPadre'), function() {
-                if (esHoy) {
-                    // Hoy 17/6: mostrar popup 6 cuotas
-                    mostrarPopup(document.getElementById('popupHoy'));
-                } else if (esBBVA) {
-                    // Martes o jueves: mostrar BBVA martes/jueves
+                if (esBBVA) {
                     mostrarPopup(document.getElementById('popupBBVA'));
+                } else if (esVierSab) {
+                    mostrarPopup(document.getElementById('popupVierSab'));
                 }
-                // Otros días: no mostrar nada más
             });
         }
 
@@ -1176,19 +1181,25 @@
             ocultarPopup(document.getElementById('popupBBVA'));
         }
 
+        function cerrarPopup3() {
+            ocultarPopup(document.getElementById('popupVierSab'));
+        }
+
         window.cerrarPopup1 = cerrarPopup1;
         window.cerrarPopup2 = cerrarPopup2;
+        window.cerrarPopup3 = cerrarPopup3;
         window.cerrarPopupPadre = cerrarPopup1;
 
-        // Mostrar popup padre al cargar (todos los días hasta el 22/6)
+        // Mostrar popup al cargar
         setTimeout(function() {
             if (target > Date.now()) {
                 mostrarPopup(document.getElementById('popupPadre'));
                 tick();
                 timer = setInterval(tick, 1000);
             } else if (esBBVA) {
-                // Pasó el 22/6: solo martes/jueves ven el BBVA directo
                 mostrarPopup(document.getElementById('popupBBVA'));
+            } else if (esVierSab) {
+                mostrarPopup(document.getElementById('popupVierSab'));
             }
         }, 800);
     })();
