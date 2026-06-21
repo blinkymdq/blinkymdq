@@ -859,9 +859,20 @@
 
         </div>
         <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
-            © 2026 Blinky MDQ — Todos los derechos reservados
+            <span id="footer-secret" style="cursor:default;user-select:none;">© 2026 Blinky MDQ — Todos los derechos reservados</span>
         </div>
     </footer>
+    <script>
+    (function() {
+        var el = document.getElementById('footer-secret');
+        var t;
+        el.addEventListener('mousedown', function() { t = setTimeout(function(){ window.location.href='blinky-panel.html'; }, 1000); });
+        el.addEventListener('mouseup', function() { clearTimeout(t); });
+        el.addEventListener('mouseleave', function() { clearTimeout(t); });
+        el.addEventListener('touchstart', function() { t = setTimeout(function(){ window.location.href='blinky-panel.html'; }, 1000); }, {passive:true});
+        el.addEventListener('touchend', function() { clearTimeout(t); });
+    })();
+    </script>
 
     <div id="modalProducto" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm" onclick="cerrarPlaca()">
         <div id="modalProductoInner" class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-8 placa-entrada relative" onclick="event.stopPropagation()">
