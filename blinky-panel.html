@@ -48,8 +48,8 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .btn-logout:hover { color:var(--text);border-color:var(--text2); }
 
 /* NAV */
-.nav { display:flex;gap:4px;padding:1rem 1.5rem 0;border-bottom:1px solid var(--border);background:var(--surface); }
-.nav-tab { padding:0.5rem 1.1rem;border-radius:8px 8px 0 0;border:none;background:transparent;color:var(--text2);font-size:0.875rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s; }
+.nav { display:flex;gap:4px;padding:1rem 1.5rem 0;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto; }
+.nav-tab { padding:0.5rem 1rem;border-radius:8px 8px 0 0;border:none;background:transparent;color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap; }
 .nav-tab.active { color:var(--violet-light);border-bottom-color:var(--violet); }
 .nav-tab:hover:not(.active) { color:var(--text); }
 
@@ -67,6 +67,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .stat-card.green { border-color:rgba(16,185,129,0.3); } .stat-card.green .stat-val { color:var(--green); }
 .stat-card.cyan { border-color:rgba(6,182,212,0.3); } .stat-card.cyan .stat-val { color:var(--cyan); }
 .stat-card.yellow { border-color:rgba(245,158,11,0.3); } .stat-card.yellow .stat-val { color:var(--yellow); }
+.stat-card.red { border-color:rgba(239,68,68,0.3); } .stat-card.red .stat-val { color:var(--red); }
 
 .chart-row { display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem; }
 @media(max-width:640px){ .chart-row { grid-template-columns:1fr; } }
@@ -81,6 +82,19 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .legend-item { display:flex;align-items:center;gap:0.5rem;font-size:0.8rem; }
 .legend-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
 
+/* CAJAS */
+.cajas-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem; }
+.caja-card { background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem; }
+.caja-icon { font-size:1.5rem;margin-bottom:0.5rem; }
+.caja-label { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.4rem; }
+.caja-val { font-size:1.8rem;font-weight:900;letter-spacing:-1px; }
+.caja-efectivo { border-color:rgba(16,185,129,0.3); } .caja-efectivo .caja-val { color:var(--green); }
+.caja-transferencia { border-color:rgba(6,182,212,0.3); } .caja-transferencia .caja-val { color:var(--cyan); }
+.caja-tarjeta { border-color:rgba(124,58,237,0.3); } .caja-tarjeta .caja-val { color:var(--violet-light); }
+
+.fecha-filters { display:flex;gap:0.5rem;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap; }
+.fecha-filters label { font-size:0.78rem;color:var(--text2);font-weight:600; }
+
 /* PEDIDOS */
 .filters { display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center; }
 .filter-select, .filter-input { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.825rem;padding:0.45rem 0.75rem;outline:none;font-family:inherit; }
@@ -89,15 +103,22 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .btn-refresh { margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--violet-light);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.8rem;font-weight:700;cursor:pointer; }
 .btn-refresh:hover { background:var(--surface2); }
 
-.pedido-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.65rem;cursor:pointer;transition:border-color 0.15s; }
+/* PEDIDO CARD con color de fondo según pago */
+.pedido-card { border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.65rem;cursor:pointer;transition:border-color 0.15s;position:relative;overflow:hidden; }
+.pedido-card::before { content:'';position:absolute;inset:0;opacity:0.07;pointer-events:none; }
+.pedido-card.pagado::before { background:var(--green); }
+.pedido-card.debe::before { background:var(--red); }
 .pedido-card:hover { border-color:var(--violet); }
-.pedido-card.eliminado { border-color:rgba(239,68,68,0.2); opacity:0.75; }
-.pedido-top { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem; }
+.pedido-card.eliminado { opacity:0.75; }
+.pedido-top { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;position:relative; }
 .pedido-num { font-size:0.95rem;font-weight:900;color:var(--violet-light); }
 .pedido-nombre { font-size:0.875rem;font-weight:600;margin-left:0.75rem; }
 .pedido-fecha { font-size:0.75rem;color:var(--text3); }
 .pedido-total { font-size:0.95rem;font-weight:900; }
-.pedido-meta { display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap; }
+.pedido-meta { display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap;position:relative; }
+.pago-status { font-size:0.75rem;font-weight:700;margin-left:auto; }
+.pago-status.pagado { color:var(--green); }
+.pago-status.debe { color:var(--red); }
 
 .badge { font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.3px; }
 .badge-min { background:rgba(6,182,212,0.12);color:var(--cyan); }
@@ -113,7 +134,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 /* MODAL */
 .overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:1rem; }
 .overlay.open { display:flex; }
-.modal { background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:1.5rem; }
+.modal { background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:1.5rem; }
 .modal-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem; }
 .modal-hdr h2 { font-size:1rem;font-weight:900; }
 .btn-close { width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.9rem;cursor:pointer; }
@@ -121,7 +142,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .detail-row:last-of-type { border-bottom:none; }
 .detail-key { color:var(--text2);font-weight:600; }
 .items-table { width:100%;border-collapse:collapse;margin-top:1rem;font-size:0.82rem; }
-.items-table th { padding:6px 8px;color:var(--text3);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.3px;border-bottom:1px solid var(--border);text-align:left; }
+.items-table th { padding:6px 8px;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);text-align:left; }
 .items-table th:not(:first-child) { text-align:right; }
 .items-table td { padding:7px 8px;border-bottom:1px solid var(--border); }
 .items-table td:not(:first-child) { text-align:right; }
@@ -129,27 +150,58 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .total-row { display:flex;justify-content:flex-end;align-items:center;gap:1rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border); }
 .total-lbl { font-size:0.85rem;color:var(--text2);font-weight:600; }
 .total-big { font-size:1.4rem;font-weight:900;color:var(--violet-light); }
+
+/* SALDO */
+.saldo-box { margin-top:1rem;border-radius:12px;padding:1rem 1.25rem;border:1px solid; }
+.saldo-box.pagado { background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.3); }
+.saldo-box.debe { background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3); }
+.saldo-title { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem; }
+.saldo-box.pagado .saldo-title { color:var(--green); }
+.saldo-box.debe .saldo-title { color:var(--red); }
+.saldo-val { font-size:1.3rem;font-weight:900; }
+.saldo-box.pagado .saldo-val { color:var(--green); }
+.saldo-box.debe .saldo-val { color:var(--red); }
+
+/* FORM PAGO */
+.pago-form { margin-top:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem; }
+.pago-form-title { font-size:0.78rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem; }
+.pago-form-row { display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem; }
+.pago-input { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem;padding:0.6rem 0.85rem;outline:none;width:100%;font-family:inherit; }
+.pago-input:focus { border-color:var(--violet); }
+.pago-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.875rem;padding:0.6rem 0.85rem;outline:none;width:100%;font-family:inherit; }
+.pago-select:focus { border-color:var(--violet); }
+.btn-agregar-pago { width:100%;background:var(--violet);color:white;border:none;border-radius:9px;padding:0.65rem;font-size:0.875rem;font-weight:700;cursor:pointer;margin-top:0.5rem; }
+.btn-agregar-pago:hover { background:var(--violet2); }
+
+/* HISTORIAL PAGOS */
+.pagos-list { margin-top:0.75rem; }
+.pago-item { display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border);font-size:0.82rem; }
+.pago-item:last-child { border-bottom:none; }
+.pago-forma { font-weight:600; }
+.pago-forma.efectivo { color:var(--green); }
+.pago-forma.transferencia { color:var(--cyan); }
+.pago-forma.tarjeta { color:var(--violet-light); }
+.pago-monto { font-weight:900; }
+.pago-fecha { font-size:0.72rem;color:var(--text3); }
+
 .estado-field { margin-top:1rem; }
 .estado-field label { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);display:block;margin-bottom:0.4rem; }
 .estado-field select { width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.875rem;padding:0.6rem 0.85rem;outline:none;font-family:inherit; }
-.estado-field select:focus { border-color:var(--violet); }
 
-.btn-eliminar { margin-top:1rem;width:100%;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:9px;padding:0.6rem;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.15s; }
+.btn-eliminar { margin-top:1rem;width:100%;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:9px;padding:0.6rem;font-size:0.85rem;font-weight:700;cursor:pointer; }
 .btn-eliminar:hover { background:rgba(239,68,68,0.1); }
-.btn-restaurar { margin-top:1rem;width:100%;background:transparent;border:1px solid var(--green);color:var(--green);border-radius:9px;padding:0.6rem;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.15s; }
+.btn-restaurar { margin-top:1rem;width:100%;background:transparent;border:1px solid var(--green);color:var(--green);border-radius:9px;padding:0.6rem;font-size:0.85rem;font-weight:700;cursor:pointer; }
 .btn-restaurar:hover { background:rgba(16,185,129,0.1); }
 
-.empty { text-align:center;padding:3rem 1rem;color:var(--text3); }
-.empty-icon { font-size:2rem;margin-bottom:0.75rem; }
-.loading-txt { text-align:center;padding:2rem;color:var(--text3);font-size:0.875rem; }
-
-/* CONFIRM */
 .confirm-box { background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:1rem;margin-top:1rem;text-align:center; }
 .confirm-box p { font-size:0.85rem;color:var(--text2);margin-bottom:0.75rem; }
 .confirm-btns { display:flex;gap:0.5rem;justify-content:center; }
 .btn-confirm-si { background:var(--red);color:white;border:none;border-radius:8px;padding:0.5rem 1.2rem;font-size:0.825rem;font-weight:700;cursor:pointer; }
 .btn-confirm-no { background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:0.5rem 1.2rem;font-size:0.825rem;font-weight:700;cursor:pointer; }
 
+.empty { text-align:center;padding:3rem 1rem;color:var(--text3); }
+.empty-icon { font-size:2rem;margin-bottom:0.75rem; }
+.loading-txt { text-align:center;padding:2rem;color:var(--text3);font-size:0.875rem; }
 #toast { position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.65rem 1.1rem;font-size:0.825rem;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s;max-width:260px; }
 #toast.show { transform:translateY(0);opacity:1; }
 #toast.ok { border-color:var(--green);color:var(--green); }
@@ -158,12 +210,9 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">
-      <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ">
-    </div>
+    <div class="login-logo"><img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ"></div>
     <div class="login-title">Panel de gestión</div>
     <div class="login-sub">Ingresá tu contraseña para continuar</div>
     <input class="login-input" type="password" id="pwd-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
@@ -172,7 +221,6 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header>
     <div class="h-logo">
@@ -184,6 +232,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 
   <div class="nav">
     <button class="nav-tab active" onclick="switchTab('stats',this)">Estadísticas</button>
+    <button class="nav-tab" onclick="switchTab('cajas',this)">Cajas</button>
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
     <button class="nav-tab" onclick="switchTab('eliminados',this)">Eliminados</button>
   </div>
@@ -200,7 +249,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         </div>
         <div class="chart-card">
           <div class="chart-title">Minorista vs Mayorista</div>
-          <div id="chart-tipo" class="donut-wrap">
+          <div class="donut-wrap">
             <canvas id="donut-canvas" width="120" height="120"></canvas>
             <div class="donut-legend" id="donut-legend"></div>
           </div>
@@ -209,6 +258,24 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div class="chart-card" style="margin-bottom:1rem;">
         <div class="chart-title">Ventas por día (últimos 14 días)</div>
         <div id="chart-dias"></div>
+      </div>
+    </div>
+
+    <!-- CAJAS -->
+    <div id="panel-cajas" class="panel">
+      <div class="fecha-filters">
+        <label>Desde</label>
+        <input type="date" id="caja-desde" class="filter-input" onchange="cargarCajas()">
+        <label>Hasta</label>
+        <input type="date" id="caja-hasta" class="filter-input" onchange="cargarCajas()">
+        <button class="btn-refresh" onclick="resetFechas()">Hoy</button>
+        <button class="btn-refresh" onclick="setFechasSemana()">Esta semana</button>
+        <button class="btn-refresh" onclick="setFechasMes()">Este mes</button>
+      </div>
+      <div class="cajas-grid" id="cajas-cards"><div class="loading-txt">Cargando...</div></div>
+      <div class="chart-card">
+        <div class="chart-title">Detalle de pagos</div>
+        <div id="cajas-detalle"><div class="loading-txt">Cargando...</div></div>
       </div>
     </div>
 
@@ -227,6 +294,11 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <option value="">Todos</option>
           <option value="minorista">Minorista</option>
           <option value="mayorista">Mayorista</option>
+        </select>
+        <select class="filter-select" id="filtro-pago" onchange="cargarPedidos()">
+          <option value="">Todos los pagos</option>
+          <option value="pagado">Pagado</option>
+          <option value="debe">Con saldo</option>
         </select>
         <input class="filter-input" id="filtro-busca" type="text" placeholder="Buscar nombre..." oninput="cargarPedidos()">
         <button class="btn-refresh" onclick="cargarPedidos()">↻ Actualizar</button>
@@ -262,15 +334,14 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const PASS = 'blinky2024';
-const hdrs = { 'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation' };
+const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
 
-// ── LOGIN ──────────────────────────────────────
 function doLogin() {
   if (document.getElementById('pwd-input').value === PASS) {
     sessionStorage.setItem('blinky_auth','1');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    cargarStats(); cargarPedidos();
+    cargarStats(); cargarPedidos(); resetFechas();
   } else {
     document.getElementById('login-error').textContent='Contraseña incorrecta';
     document.getElementById('pwd-input').value='';
@@ -280,18 +351,18 @@ function logout() { sessionStorage.removeItem('blinky_auth'); location.reload();
 if (sessionStorage.getItem('blinky_auth')==='1') {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  cargarStats(); cargarPedidos();
+  cargarStats(); cargarPedidos(); resetFechas();
 }
 
-// ── TABS ───────────────────────────────────────
 function switchTab(tab, btn) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   btn.classList.add('active');
-  if (tab==='eliminados') cargarEliminados();
-  if (tab==='pedidos') cargarPedidos();
-  if (tab==='stats') cargarStats();
+  if(tab==='stats') cargarStats();
+  if(tab==='pedidos') cargarPedidos();
+  if(tab==='eliminados') cargarEliminados();
+  if(tab==='cajas') cargarCajas();
 }
 
 // ── STATS ──────────────────────────────────────
@@ -303,51 +374,49 @@ async function cargarStats() {
     ]);
     const pedidos = await pR.json();
     const items = await iR.json();
-    if (!Array.isArray(pedidos)) return;
+    if(!Array.isArray(pedidos)) return;
 
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const semana = new Date(hoy); semana.setDate(hoy.getDate()-7);
-    const mes = new Date(hoy); mes.setDate(1);
+    const hoy=new Date(); hoy.setHours(0,0,0,0);
+    const semana=new Date(hoy); semana.setDate(hoy.getDate()-7);
+    const mes=new Date(hoy); mes.setDate(1);
 
-    const pedidosHoy = pedidos.filter(p=>new Date(p.created_at)>=hoy);
-    const pedidosSem = pedidos.filter(p=>new Date(p.created_at)>=semana);
-    const pedidosMes = pedidos.filter(p=>new Date(p.created_at)>=mes);
+    const pedidosHoy=pedidos.filter(p=>new Date(p.created_at)>=hoy);
+    const pedidosSem=pedidos.filter(p=>new Date(p.created_at)>=semana);
+    const pedidosMes=pedidos.filter(p=>new Date(p.created_at)>=mes);
+    const pendientes=pedidos.filter(p=>p.estado==='pendiente').length;
+    const conSaldo=pedidos.filter(p=>Number(p.monto_pagado||0)<Number(p.total)).length;
 
-    const totalHoy = pedidosHoy.reduce((s,p)=>s+Number(p.total),0);
-    const totalSem = pedidosSem.reduce((s,p)=>s+Number(p.total),0);
-    const totalMes = pedidosMes.reduce((s,p)=>s+Number(p.total),0);
-    const pendientes = pedidos.filter(p=>p.estado==='pendiente').length;
-
-    document.getElementById('stats-cards').innerHTML = `
-      <div class="stat-card violet"><div class="stat-label">Ventas hoy</div><div class="stat-val">$${totalHoy.toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosHoy.length} pedidos</div></div>
-      <div class="stat-card green"><div class="stat-label">Esta semana</div><div class="stat-val">$${totalSem.toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosSem.length} pedidos</div></div>
-      <div class="stat-card cyan"><div class="stat-label">Este mes</div><div class="stat-val">$${totalMes.toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosMes.length} pedidos</div></div>
+    document.getElementById('stats-cards').innerHTML=`
+      <div class="stat-card violet"><div class="stat-label">Ventas hoy</div><div class="stat-val">$${pedidosHoy.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosHoy.length} pedidos</div></div>
+      <div class="stat-card green"><div class="stat-label">Esta semana</div><div class="stat-val">$${pedidosSem.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosSem.length} pedidos</div></div>
+      <div class="stat-card cyan"><div class="stat-label">Este mes</div><div class="stat-val">$${pedidosMes.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosMes.length} pedidos</div></div>
       <div class="stat-card yellow"><div class="stat-label">Pendientes</div><div class="stat-val">${pendientes}</div><div class="stat-sub">sin confirmar</div></div>
+      <div class="stat-card red"><div class="stat-label">Con saldo</div><div class="stat-val">${conSaldo}</div><div class="stat-sub">pagos incompletos</div></div>
     `;
 
-    const conteo = {};
-    items.forEach(i=>{ conteo[i.producto]=(conteo[i.producto]||0)+i.cantidad; });
-    const top = Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,6);
-    const maxQ = top[0]?top[0][1]:1;
-    document.getElementById('chart-productos').innerHTML = top.length ? top.map(([nombre,qty])=>`
+    const conteo={};
+    items.forEach(i=>{conteo[i.producto]=(conteo[i.producto]||0)+i.cantidad;});
+    const top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxQ=top[0]?top[0][1]:1;
+    document.getElementById('chart-productos').innerHTML=top.length?top.map(([n,q])=>`
       <div class="bar-item">
-        <div class="bar-label"><span style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;">${nombre}</span><span style="font-weight:700;color:var(--text);">${qty}</span></div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(qty/maxQ*100)}%"></div></div>
-      </div>`).join('') : '<div style="color:var(--text3);font-size:0.8rem;">Sin datos</div>';
+        <div class="bar-label"><span style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;">${n}</span><span style="font-weight:700;color:var(--text);">${q}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(q/maxQ*100)}%"></div></div>
+      </div>`).join(''):'<div style="color:var(--text3);font-size:0.8rem;">Sin datos</div>';
 
-    const nMino = pedidos.filter(p=>p.tipo==='minorista').length;
-    const nMayo = pedidos.filter(p=>p.tipo==='mayorista').length;
-    const total = nMino+nMayo||1;
-    dibujarDonut(nMino/total, nMayo/total);
-    document.getElementById('donut-legend').innerHTML = `
+    const nMino=pedidos.filter(p=>p.tipo==='minorista').length;
+    const nMayo=pedidos.filter(p=>p.tipo==='mayorista').length;
+    const total=nMino+nMayo||1;
+    dibujarDonut(nMino/total,nMayo/total);
+    document.getElementById('donut-legend').innerHTML=`
       <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div><span>Minorista <strong>${nMino}</strong></span></div>
       <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div><span>Mayorista <strong>${nMayo}</strong></span></div>`;
 
-    const dias = {};
-    for (let i=13;i>=0;i--) { const d=new Date(hoy);d.setDate(hoy.getDate()-i);dias[d.toISOString().slice(0,10)]=0; }
-    pedidos.forEach(p=>{ const k=p.created_at.slice(0,10);if(dias[k]!==undefined)dias[k]+=Number(p.total); });
-    const maxV = Math.max(...Object.values(dias))||1;
-    document.getElementById('chart-dias').innerHTML = `
+    const dias={};
+    for(let i=13;i>=0;i--){const d=new Date(hoy);d.setDate(hoy.getDate()-i);dias[d.toISOString().slice(0,10)]=0;}
+    pedidos.forEach(p=>{const k=p.created_at.slice(0,10);if(dias[k]!==undefined)dias[k]+=Number(p.total);});
+    const maxV=Math.max(...Object.values(dias))||1;
+    document.getElementById('chart-dias').innerHTML=`
       <div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-top:0.5rem;">
         ${Object.entries(dias).map(([fecha,val])=>{
           const pct=Math.round(val/maxV*100);
@@ -358,7 +427,7 @@ async function cargarStats() {
           </div>`;
         }).join('')}
       </div>`;
-  } catch(e) { console.error(e); }
+  } catch(e){console.error(e);}
 }
 
 function dibujarDonut(pMino,pMayo) {
@@ -375,23 +444,91 @@ function dibujarDonut(pMino,pMayo) {
   ctx.beginPath();ctx.arc(60,60,30,0,2*Math.PI);ctx.fillStyle='#12121a';ctx.fill();
 }
 
+// ── CAJAS ──────────────────────────────────────
+function hoyStr() { return new Date().toISOString().slice(0,10); }
+function resetFechas() {
+  document.getElementById('caja-desde').value=hoyStr();
+  document.getElementById('caja-hasta').value=hoyStr();
+  cargarCajas();
+}
+function setFechasSemana() {
+  const hoy=new Date(); const lunes=new Date(hoy); lunes.setDate(hoy.getDate()-hoy.getDay()+1);
+  document.getElementById('caja-desde').value=lunes.toISOString().slice(0,10);
+  document.getElementById('caja-hasta').value=hoyStr();
+  cargarCajas();
+}
+function setFechasMes() {
+  const hoy=new Date();
+  document.getElementById('caja-desde').value=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10);
+  document.getElementById('caja-hasta').value=hoyStr();
+  cargarCajas();
+}
+
+async function cargarCajas() {
+  const desde=document.getElementById('caja-desde').value;
+  const hasta=document.getElementById('caja-hasta').value;
+  if(!desde||!hasta) return;
+  document.getElementById('cajas-cards').innerHTML='<div class="loading-txt">Cargando...</div>';
+
+  try {
+    const desdeISO=desde+'T00:00:00-03:00';
+    const hastaISO=hasta+'T23:59:59-03:00';
+    const pagos=await(await fetch(`${SUPA_URL}/rest/v1/pagos?created_at=gte.${encodeURIComponent(desdeISO)}&created_at=lte.${encodeURIComponent(hastaISO)}&order=created_at.desc`,{headers:hdrs})).json();
+    if(!Array.isArray(pagos)){document.getElementById('cajas-cards').innerHTML='<div class="loading-txt">Error</div>';return;}
+
+    const efectivo=pagos.filter(p=>p.forma_pago==='efectivo').reduce((s,p)=>s+Number(p.monto),0);
+    const transferencia=pagos.filter(p=>p.forma_pago==='transferencia').reduce((s,p)=>s+Number(p.monto),0);
+    const tarjeta=pagos.filter(p=>p.forma_pago==='tarjeta').reduce((s,p)=>s+Number(p.monto),0);
+
+    document.getElementById('cajas-cards').innerHTML=`
+      <div class="caja-card caja-efectivo"><div class="caja-icon">💵</div><div class="caja-label">Efectivo</div><div class="caja-val">$${efectivo.toLocaleString('es-AR')}</div></div>
+      <div class="caja-card caja-transferencia"><div class="caja-icon">📲</div><div class="caja-label">Transferencia</div><div class="caja-val">$${transferencia.toLocaleString('es-AR')}</div></div>
+      <div class="caja-card caja-tarjeta"><div class="caja-icon">💳</div><div class="caja-label">Tarjeta</div><div class="caja-val">$${tarjeta.toLocaleString('es-AR')}</div></div>
+    `;
+
+    document.getElementById('cajas-detalle').innerHTML=pagos.length?`
+      <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+        <thead><tr>
+          <th style="padding:7px 10px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Pedido</th>
+          <th style="padding:7px 10px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Forma</th>
+          <th style="padding:7px 10px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Monto</th>
+          <th style="padding:7px 10px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Fecha</th>
+        </tr></thead>
+        <tbody>${pagos.map(p=>`<tr>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:700;">${p.numero_pedido}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${p.forma_pago}</span></td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;">$${Number(p.monto).toLocaleString('es-AR')}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+        </tr>`).join('')}</tbody>
+      </table>`:'<div style="color:var(--text3);font-size:0.85rem;padding:1rem 0;">Sin pagos en este período</div>';
+  } catch(e){console.error(e);}
+}
+
 // ── PEDIDOS ────────────────────────────────────
 async function cargarPedidos() {
-  const cont = document.getElementById('lista-pedidos');
-  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
-  const estado = document.getElementById('filtro-estado').value;
-  const tipo = document.getElementById('filtro-tipo').value;
-  const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
-  let url = `${SUPA_URL}/rest/v1/pedidos?order=created_at.desc`;
-  if (estado) url+=`&estado=eq.${estado}`;
-  if (tipo) url+=`&tipo=eq.${tipo}`;
+  const cont=document.getElementById('lista-pedidos');
+  cont.innerHTML='<div class="loading-txt">Cargando...</div>';
+  const estado=document.getElementById('filtro-estado').value;
+  const tipo=document.getElementById('filtro-tipo').value;
+  const filtroPago=document.getElementById('filtro-pago').value;
+  const busca=document.getElementById('filtro-busca').value.trim().toLowerCase();
+  let url=`${SUPA_URL}/rest/v1/pedidos?order=created_at.desc`;
+  if(estado) url+=`&estado=eq.${estado}`;
+  if(tipo) url+=`&tipo=eq.${tipo}`;
   try {
-    let pedidos = await (await fetch(url,{headers:hdrs})).json();
-    if (!Array.isArray(pedidos)) { cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; return; }
-    if (busca) pedidos=pedidos.filter(p=>p.nombre.toLowerCase().includes(busca));
-    if (!pedidos.length) { cont.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>No hay pedidos</p></div>'; return; }
-    cont.innerHTML = pedidos.map(p=>`
-      <div class="pedido-card" onclick="verPedido('${p.numero_pedido}',false)">
+    let pedidos=await(await fetch(url,{headers:hdrs})).json();
+    if(!Array.isArray(pedidos)){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';return;}
+    if(busca) pedidos=pedidos.filter(p=>p.nombre.toLowerCase().includes(busca));
+    if(filtroPago==='pagado') pedidos=pedidos.filter(p=>Number(p.monto_pagado||0)>=Number(p.total));
+    if(filtroPago==='debe') pedidos=pedidos.filter(p=>Number(p.monto_pagado||0)<Number(p.total));
+    if(!pedidos.length){cont.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>No hay pedidos</p></div>';return;}
+
+    cont.innerHTML=pedidos.map(p=>{
+      const pagado=Number(p.monto_pagado||0);
+      const total=Number(p.total);
+      const saldo=total-pagado;
+      const esPagado=saldo<=0;
+      return `<div class="pedido-card ${esPagado?'pagado':'debe'}" onclick="verPedido('${p.numero_pedido}',false)">
         <div class="pedido-top">
           <div>
             <span class="pedido-num">${p.numero_pedido}</span>
@@ -399,7 +536,7 @@ async function cargarPedidos() {
             ${p.telefono?`<a href="https://wa.me/549${p.telefono}" target="_blank" onclick="event.stopPropagation()" style="margin-left:0.5rem;font-size:0.75rem;color:#10b981;">📱</a>`:''}
           </div>
           <div style="text-align:right;">
-            <div class="pedido-total">$${Number(p.total).toLocaleString('es-AR')}</div>
+            <div class="pedido-total">$${total.toLocaleString('es-AR')}</div>
             <div class="pedido-fecha">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
           </div>
         </div>
@@ -408,25 +545,25 @@ async function cargarPedidos() {
           <span class="badge badge-${p.estado}">${estadoLabel(p.estado)}</span>
           <span class="badge badge-neutral">${p.forma_pago}</span>
           <span class="badge badge-neutral">${p.entrega==='envio'?'🚚 Envío':'🏪 Retiro'}</span>
+          <span class="pago-status ${esPagado?'pagado':'debe'}" style="margin-left:auto;">
+            ${esPagado?'✓ PAGADO':'Debe $'+saldo.toLocaleString('es-AR')}
+          </span>
         </div>
-      </div>`).join('');
-  } catch(e) { cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error de conexión</p></div>'; }
+      </div>`;
+    }).join('');
+  } catch(e){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';}
 }
 
-// ── ELIMINADOS ─────────────────────────────────
 async function cargarEliminados() {
-  const cont = document.getElementById('lista-eliminados');
-  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  const cont=document.getElementById('lista-eliminados');
+  cont.innerHTML='<div class="loading-txt">Cargando...</div>';
   try {
-    const pedidos = await (await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?order=eliminado_at.desc`,{headers:hdrs})).json();
-    if (!Array.isArray(pedidos)||!pedidos.length) { cont.innerHTML='<div class="empty"><div class="empty-icon">🗑️</div><p>No hay pedidos eliminados</p></div>'; return; }
-    cont.innerHTML = pedidos.map(p=>`
+    const pedidos=await(await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?order=eliminado_at.desc`,{headers:hdrs})).json();
+    if(!Array.isArray(pedidos)||!pedidos.length){cont.innerHTML='<div class="empty"><div class="empty-icon">🗑️</div><p>No hay pedidos eliminados</p></div>';return;}
+    cont.innerHTML=pedidos.map(p=>`
       <div class="pedido-card eliminado" onclick="verPedido('${p.numero_pedido}',true)">
         <div class="pedido-top">
-          <div>
-            <span class="pedido-num">${p.numero_pedido}</span>
-            <span class="pedido-nombre">${p.nombre}</span>
-          </div>
+          <div><span class="pedido-num">${p.numero_pedido}</span><span class="pedido-nombre">${p.nombre}</span></div>
           <div style="text-align:right;">
             <div class="pedido-total">$${Number(p.total).toLocaleString('es-AR')}</div>
             <div class="pedido-fecha">Eliminado: ${new Date(p.eliminado_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
@@ -438,29 +575,31 @@ async function cargarEliminados() {
           <span class="badge badge-neutral">${p.forma_pago}</span>
         </div>
       </div>`).join('');
-  } catch(e) { cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
+  } catch(e){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';}
 }
 
-function estadoLabel(e) {
-  return {pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e;
-}
+function estadoLabel(e){return{pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e;}
 
 // ── VER PEDIDO ─────────────────────────────────
 async function verPedido(num, esEliminado) {
   document.getElementById('overlay').classList.add('open');
-  document.getElementById('modal-title').textContent = 'Pedido ' + num;
-  document.getElementById('modal-body').innerHTML = '<div class="loading-txt">Cargando...</div>';
-
+  document.getElementById('modal-title').textContent='Pedido '+num;
+  document.getElementById('modal-body').innerHTML='<div class="loading-txt">Cargando...</div>';
   try {
-    const tabla = esEliminado ? 'pedidos_eliminados' : 'pedidos';
-    const [pR,iR] = await Promise.all([
+    const tabla=esEliminado?'pedidos_eliminados':'pedidos';
+    const [pR,iR,pgR]=await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/${tabla}?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs})
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs}),
+      esEliminado?Promise.resolve({json:()=>[]}):fetch(`${SUPA_URL}/rest/v1/pagos?numero_pedido=eq.${encodeURIComponent(num)}&order=created_at.asc`,{headers:hdrs})
     ]);
-    const [ps,items] = await Promise.all([pR.json(),iR.json()]);
-    const p = ps[0];
+    const [ps,items,pagos]=await Promise.all([pR.json(),iR.json(),pgR.json()]);
+    const p=ps[0];
+    const montoPagado=Number(p.monto_pagado||0);
+    const total=Number(p.total);
+    const saldo=total-montoPagado;
+    const esPagado=saldo<=0;
 
-    document.getElementById('modal-body').innerHTML = `
+    document.getElementById('modal-body').innerHTML=`
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
       <div class="detail-row"><span class="detail-key">Tipo</span><span class="badge badge-${p.tipo==='mayorista'?'may':'min'}">${p.tipo}</span></div>
@@ -482,10 +621,45 @@ async function verPedido(num, esEliminado) {
 
       <div class="total-row">
         <span class="total-lbl">Total</span>
-        <span class="total-big">$${Number(p.total).toLocaleString('es-AR')}</span>
+        <span class="total-big">$${total.toLocaleString('es-AR')}</span>
       </div>
 
-      ${!esEliminado ? `
+      ${!esEliminado?`
+        <!-- SALDO -->
+        <div class="saldo-box ${esPagado?'pagado':'debe'}">
+          <div class="saldo-title">${esPagado?'✓ PAGADO':'Saldo pendiente'}</div>
+          <div class="saldo-val">${esPagado?'$0':'$'+saldo.toLocaleString('es-AR')}</div>
+          ${montoPagado>0?`<div style="font-size:0.78rem;margin-top:4px;opacity:0.7;">Pagado: $${montoPagado.toLocaleString('es-AR')}</div>`:''}
+        </div>
+
+        <!-- HISTORIAL PAGOS -->
+        ${pagos.length?`
+          <div style="margin-top:1rem;">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Historial de pagos</div>
+            <div class="pagos-list">
+              ${pagos.map(pg=>`<div class="pago-item">
+                <span class="pago-forma ${pg.forma_pago}">${pg.forma_pago}</span>
+                <span class="pago-monto">$${Number(pg.monto).toLocaleString('es-AR')}</span>
+                <span class="pago-fecha">${new Date(pg.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+              </div>`).join('')}
+            </div>
+          </div>`:''}
+
+        <!-- FORM AGREGAR PAGO -->
+        ${!esPagado?`
+          <div class="pago-form">
+            <div class="pago-form-title">Agregar pago</div>
+            <div class="pago-form-row">
+              <input type="number" class="pago-input" id="pago-monto" placeholder="$0" min="0">
+              <select class="pago-select" id="pago-forma">
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">📲 Transferencia</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+              </select>
+            </div>
+            <button class="btn-agregar-pago" onclick="agregarPago('${num}', ${total})">Agregar pago</button>
+          </div>`:''}
+
         <div class="estado-field">
           <label>Estado del pedido</label>
           <select onchange="cambiarEstado('${num}',this.value)">
@@ -498,93 +672,78 @@ async function verPedido(num, esEliminado) {
         </div>
         <button class="btn-eliminar" onclick="confirmarEliminar('${num}')">🗑️ Eliminar pedido</button>
         <div id="confirm-box" style="display:none;" class="confirm-box">
-          <p>¿Seguro que querés eliminar el pedido <strong>${num}</strong>?<br>Va a pasar al historial de eliminados.</p>
+          <p>¿Seguro que querés eliminar el pedido <strong>${num}</strong>?</p>
           <div class="confirm-btns">
             <button class="btn-confirm-si" onclick="eliminarPedido('${num}')">Sí, eliminar</button>
             <button class="btn-confirm-no" onclick="document.getElementById('confirm-box').style.display='none'">Cancelar</button>
           </div>
         </div>
-      ` : `
-        <button class="btn-restaurar" onclick="restaurarPedido('${num}')">↩ Restaurar pedido</button>
-      `}
+      `:`<button class="btn-restaurar" onclick="restaurarPedido('${num}')">↩ Restaurar pedido</button>`}
     `;
-  } catch(e) {
-    document.getElementById('modal-body').innerHTML='<p style="color:var(--red);padding:1rem;">Error al cargar.</p>';
-  }
+  } catch(e){document.getElementById('modal-body').innerHTML='<p style="color:var(--red);padding:1rem;">Error al cargar.</p>';}
 }
 
-function confirmarEliminar(num) {
-  document.getElementById('confirm-box').style.display='block';
+async function agregarPago(num, totalPedido) {
+  const monto=parseFloat(document.getElementById('pago-monto').value);
+  const forma=document.getElementById('pago-forma').value;
+  if(!monto||monto<=0){toast('Ingresá un monto válido','err');return;}
+
+  try {
+    // Insertar pago
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma})});
+
+    // Actualizar monto_pagado en pedido
+    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps=await pR.json();
+    const actual=Number(ps[0].monto_pagado||0);
+    const nuevo=Math.min(actual+monto, totalPedido);
+
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
+      method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})
+    });
+
+    toast('Pago registrado ✓','ok');
+    verPedido(num,false);
+    cargarPedidos();
+    cargarCajas();
+  } catch(e){toast('Error al registrar pago','err');}
 }
+
+async function cambiarEstado(num,estado) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({estado})});
+    toast('Estado actualizado ✓','ok');
+  } catch{toast('Error al actualizar','err');}
+}
+
+function confirmarEliminar(num){document.getElementById('confirm-box').style.display='block';}
 
 async function eliminarPedido(num) {
   try {
-    // Copiar a eliminados
-    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const pedidos = await pR.json();
-    const p = pedidos[0];
-    delete p.id;
-
-    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{
-      method:'POST', headers:hdrs,
-      body: JSON.stringify({...p, eliminado_at: new Date().toISOString()})
-    });
-
-    // Borrar de pedidos
-    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
-      method:'DELETE', headers:hdrs
-    });
-
-    toast('Pedido eliminado', 'ok');
-    cerrarModal();
-    cargarPedidos();
-    cargarStats();
-  } catch(e) { toast('Error al eliminar', 'err'); }
+    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps=await pR.json(); const p={...ps[0]}; delete p.id;
+    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    toast('Pedido eliminado','ok'); cerrarModal(); cargarPedidos(); cargarStats();
+  } catch(e){toast('Error al eliminar','err');}
 }
 
 async function restaurarPedido(num) {
   try {
-    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const pedidos = await pR.json();
-    const p = pedidos[0];
-    delete p.id;
-    delete p.eliminado_at;
-
-    await fetch(`${SUPA_URL}/rest/v1/pedidos`,{
-      method:'POST', headers:hdrs,
-      body: JSON.stringify(p)
-    });
-
-    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{
-      method:'DELETE', headers:hdrs
-    });
-
-    toast('Pedido restaurado ✓', 'ok');
-    cerrarModal();
-    cargarEliminados();
-    cargarStats();
-  } catch(e) { toast('Error al restaurar', 'err'); }
+    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps=await pR.json(); const p={...ps[0]}; delete p.id; delete p.eliminado_at;
+    await fetch(`${SUPA_URL}/rest/v1/pedidos`,{method:'POST',headers:hdrs,body:JSON.stringify(p)});
+    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    toast('Pedido restaurado ✓','ok'); cerrarModal(); cargarEliminados(); cargarStats();
+  } catch(e){toast('Error al restaurar','err');}
 }
 
-async function cambiarEstado(num, estado) {
-  try {
-    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
-      method:'PATCH', headers:hdrs, body:JSON.stringify({estado})
-    });
-    toast('Estado actualizado ✓', 'ok');
-  } catch { toast('Error al actualizar', 'err'); }
-}
+function cerrarModal(e){if(!e||e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');}
 
-function cerrarModal(e) {
-  if (!e || e.target===document.getElementById('overlay')) {
-    document.getElementById('overlay').classList.remove('open');
-  }
-}
-
-function toast(msg, tipo) {
-  const t = document.getElementById('toast');
-  t.textContent=msg; t.className='show '+(tipo||'');
-  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3000);
+function toast(msg,tipo){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show '+(tipo||'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',3000);
 }
 </script>
 </body>
