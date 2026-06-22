@@ -318,7 +318,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 </div>
 
 <!-- MODAL -->
-<div class="overlay" id="overlay" onclick="cerrarModal(event)">
+<div class="overlay" id="overlay">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-hdr">
       <h2 id="modal-title">Pedido</h2>
@@ -739,6 +739,39 @@ async function restaurarPedido(num) {
 }
 
 function cerrarModal(e){if(!e||e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');}
+
+// Cerrar modal solo si no hubo selección de texto (drag)
+(function(){
+  var overlay = document.getElementById('overlay');
+  var mouseDownTarget = null;
+  var mouseDownX = 0, mouseDownY = 0;
+  overlay.addEventListener('mousedown', function(e){
+    mouseDownTarget = e.target;
+    mouseDownX = e.clientX;
+    mouseDownY = e.clientY;
+  });
+  overlay.addEventListener('mouseup', function(e){
+    var dx = Math.abs(e.clientX - mouseDownX);
+    var dy = Math.abs(e.clientY - mouseDownY);
+    var wasDrag = dx > 5 || dy > 5;
+    if (!wasDrag && e.target === overlay) {
+      overlay.classList.remove('open');
+    }
+  });
+  // Touch
+  var touchStartX = 0, touchStartY = 0;
+  overlay.addEventListener('touchstart', function(e){
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, {passive:true});
+  overlay.addEventListener('touchend', function(e){
+    var dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+    var dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    if (dx < 10 && dy < 10 && e.target === overlay) {
+      overlay.classList.remove('open');
+    }
+  });
+})();
 
 function toast(msg,tipo){
   const t=document.getElementById('toast');
