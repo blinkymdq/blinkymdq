@@ -1597,7 +1597,8 @@
                                 ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}
                             </div>
                         </div>
-                        <div class="flex gap-1 mt-3 pt-3 border-t border-slate-50">
+                        ${p.codigo ? `<p class="text-[7px] font-bold text-slate-300 uppercase mt-2">Cód. ${p.codigo}</p>` : ''}
+                        <div class="flex gap-1 mt-1 pt-2 border-t border-slate-50">
                             <a href="https://wa.me/${NRO_TELEFONO}?text=${msgConsulta}" target="_blank" rel="noopener"
                                 class="flex-[1.2] h-10 bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase flex items-center justify-center gap-1.5 px-1">
                                 ${iconWA} Consultar
@@ -1621,6 +1622,7 @@
             paginaActual = n;
             render(filtrados);
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            history.pushState({ pagina: n }, '', '');
         }
 
         // ════════════════════════════════════════
@@ -1647,6 +1649,7 @@
         function abrirPlacaPorIdx(idx) {
             const p = filtrados[idx];
             if (!p) return;
+            history.pushState({ modal: true, idx }, '', '');
 
             // Carrusel: separar fotos por coma
             carruselFotos  = p.foto ? p.foto.split(',').map(f => f.trim()).filter(Boolean) : [];
@@ -1705,6 +1708,20 @@
             document.getElementById('modalProducto').classList.add('hidden');
             document.body.style.overflow = '';
         }
+
+        // ── History API: back button ──────────────────────────────
+        window.addEventListener('popstate', function(e) {
+            const modal = document.getElementById('modalProducto');
+            if (!modal.classList.contains('hidden')) {
+                // Si hay modal abierto, lo cerramos
+                cerrarPlaca();
+            } else if (e.state && e.state.pagina && e.state.pagina !== paginaActual) {
+                // Si hay cambio de página, volvemos a esa página
+                paginaActual = e.state.pagina;
+                render(filtrados);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
 
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
