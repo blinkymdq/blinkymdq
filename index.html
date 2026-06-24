@@ -1334,6 +1334,7 @@
                     precioM:      String(p.precio_mayorista || 0),
                     esOferta:     p.estado === 'oferta',
                     esMasVisto:   p.estado === 'oferta',
+                    stock:        Number(p.stock || 0),
                     sinStock:     p.stock === 0,
                     oculto:       false
                 }));
