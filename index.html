@@ -1888,6 +1888,11 @@
 
             const existente = carrito.find(item => item.id === p.id);
             if (existente) {
+                const stockDisponible = Number(p.stock || 0);
+                if (existente.cantidad >= stockDisponible) {
+                    toast(`Solo hay ${stockDisponible} unidad${stockDisponible === 1 ? '' : 'es'} disponible${stockDisponible === 1 ? '' : 's'}`, 'err');
+                    return;
+                }
                 existente.cantidad++;
             } else {
                 carrito.push({
@@ -1919,6 +1924,15 @@
         function cambiarCantidad(id, delta) {
             const item = carrito.find(i => i.id === id);
             if (!item) return;
+            if (delta > 0) {
+                // Buscar el producto en filtrados para obtener el stock actual
+                const prod = filtrados.find(p => p.id === id);
+                const stockDisponible = Number(prod ? prod.stock : 0);
+                if (stockDisponible > 0 && item.cantidad >= stockDisponible) {
+                    toast(`Solo hay ${stockDisponible} unidad${stockDisponible === 1 ? '' : 'es'} disponible${stockDisponible === 1 ? '' : 's'}`, 'err');
+                    return;
+                }
+            }
             item.cantidad += delta;
             if (item.cantidad <= 0) carrito = carrito.filter(i => i.id !== id);
             actualizarCarritoUI();
@@ -2387,6 +2401,22 @@
             });
         });
     })();
+    </script>
+
+    <!-- Toast de stock -->
+    <div id="stock-toast" style="position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a26;border:1px solid #ef4444;color:#ef4444;border-radius:10px;padding:0.65rem 1.2rem;font-size:0.85rem;font-weight:700;z-index:9999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;"></div>
+    <script>
+    function toast(msg) {
+        const t = document.getElementById('stock-toast');
+        t.textContent = msg;
+        t.style.opacity = '1';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(t._t);
+        t._t = setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 2500);
+    }
     </script>
 </body>
 </html>
