@@ -891,13 +891,35 @@ async function cambiarEstado(num,estado) {
   } catch{toast('Error al actualizar','err');}
 }
 
+// ── STOCK HELPERS ──────────────────────────────
+async function ajustarStock(items, signo) {
+  // signo: +1 para devolver stock, -1 para restar
+  for (const item of items) {
+    if (!item.codigo) continue;
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(item.codigo)}`,{headers:hdrs});
+      const prods = await r.json();
+      if (!prods.length) continue;
+      const nuevoStock = Math.max(0, Number(prods[0].stock || 0) + signo * Number(item.cantidad));
+      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(item.codigo)}`,{
+        method:'PATCH', headers:hdrs, body:JSON.stringify({stock: nuevoStock})
+      });
+    } catch(e){ console.warn('Stock no actualizado para', item.codigo, e); }
+  }
+}
+
 async function eliminarPedidoDirecto(num) {
   if(!confirm(`¿Seguro que querés eliminar el pedido ${num}?`)) return;
   try {
-    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const ps=await pR.json(); const p={...ps[0]}; delete p.id;
+    const [pR, iR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs})
+    ]);
+    const ps=await pR.json(); const items=await iR.json();
+    const p={...ps[0]}; delete p.id;
     await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    await ajustarStock(items, +1); // devolver stock
     toast('Pedido eliminado','ok'); cargarPedidos(); cargarStats();
   } catch(e){toast('Error al eliminar','err');}
 }
@@ -930,6 +952,7 @@ async function eliminarItem(itemId, numPedido) {
     });
 
     toast('Producto quitado ✓','ok');
+    await ajustarStock(items, +1); // devolver stock del ítem quitado
     verPedido(numPedido, false);
     cargarPedidos();
   } catch(e){toast('Error al quitar producto','err');}
@@ -949,20 +972,30 @@ async function finalizarPedido(num) {
 
 async function eliminarPedido(num) {
   try {
-    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const ps=await pR.json(); const p={...ps[0]}; delete p.id;
+    const [pR, iR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs})
+    ]);
+    const ps=await pR.json(); const items=await iR.json();
+    const p={...ps[0]}; delete p.id;
     await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    await ajustarStock(items, +1); // devolver stock
     toast('Pedido eliminado','ok'); cerrarModal(); cargarPedidos(); cargarStats();
   } catch(e){toast('Error al eliminar','err');}
 }
 
 async function restaurarPedido(num) {
   try {
-    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const ps=await pR.json(); const p={...ps[0]}; delete p.id; delete p.eliminado_at;
+    const [pR, iR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs})
+    ]);
+    const ps=await pR.json(); const items=await iR.json();
+    const p={...ps[0]}; delete p.id; delete p.eliminado_at;
     await fetch(`${SUPA_URL}/rest/v1/pedidos`,{method:'POST',headers:hdrs,body:JSON.stringify(p)});
     await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    await ajustarStock(items, -1); // volver a restar stock
     toast('Pedido restaurado ✓','ok'); cerrarModal(); cargarEliminados(); cargarStats();
   } catch(e){toast('Error al restaurar','err');}
 }

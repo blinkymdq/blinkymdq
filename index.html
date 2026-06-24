@@ -1892,6 +1892,7 @@
             } else {
                 carrito.push({
                     id:          p.id,
+                    codigo:      p.codigo || '',
                     nombre:      p.nombre,
                     precio:      precio,
                     img:         img,
@@ -2309,8 +2310,10 @@
                         return {
                             numero_pedido: numeroPedido,
                             producto: i.nombre,
+                            codigo: i.codigo || null,
                             cantidad: i.cantidad,
-                            precio_unitario: i.precio
+                            precio_unitario: i.precio,
+                            subtotal: i.precio * i.cantidad
                         };
                     });
                     await fetch(SUPA_URL + '/rest/v1/pedido_items', {
@@ -2318,6 +2321,24 @@
                         headers: hdrs,
                         body: JSON.stringify(items)
                     });
+
+                    // Restar stock por cada ítem con codigo
+                    for (var i = 0; i < carrito.length; i++) {
+                        var item = carrito[i];
+                        if (!item.codigo) continue;
+                        try {
+                            var prodR = await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), { headers: hdrs });
+                            var prods = await prodR.json();
+                            if (!prods.length) continue;
+                            var stockActual = Number(prods[0].stock || 0);
+                            var nuevoStock = Math.max(0, stockActual - item.cantidad);
+                            await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), {
+                                method: 'PATCH',
+                                headers: hdrs,
+                                body: JSON.stringify({ stock: nuevoStock })
+                            });
+                        } catch(se) { console.warn('Stock no actualizado para', item.codigo, se); }
+                    }
 
                 } catch(e) {
                     console.warn('Supabase: no se pudo guardar el pedido', e);
