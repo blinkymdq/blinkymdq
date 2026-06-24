@@ -428,7 +428,7 @@ function doLogin() {
     sessionStorage.setItem('blinky_auth','1');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    cargarStats(); cargarPedidos(); resetFechas();
+    cargarStats(); cargarPedidos(); setFechasMes();
   } else {
     document.getElementById('login-error').textContent='Contraseña incorrecta';
     document.getElementById('pwd-input').value='';
@@ -438,7 +438,7 @@ function logout() { sessionStorage.removeItem('blinky_auth'); location.reload();
 if (sessionStorage.getItem('blinky_auth')==='1') {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  cargarStats(); cargarPedidos(); resetFechas();
+  cargarStats(); cargarPedidos(); setFechasMes();
 }
 
 function switchTab(tab, btn) {
