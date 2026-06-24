@@ -955,6 +955,16 @@
     <!-- ══════════════════════════════════════════
          MODAL CHECKOUT — DATOS DEL PEDIDO
     ══════════════════════════════════════════ -->
+    <!-- MODAL ÉXITO -->
+    <div id="modalExito" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:white;border-radius:20px;padding:2rem 1.5rem;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+        <h2 style="font-size:1.3rem;font-weight:800;color:#1a1a2e;margin-bottom:0.75rem;">¡Pedido enviado con éxito!</h2>
+        <p style="color:#555;font-size:0.95rem;line-height:1.5;margin-bottom:1.5rem;">En breve nos pondremos en contacto para coordinar la entrega.<br><br>¡Gracias por tu compra! 🛍️</p>
+        <button onclick="cerrarModalExito()" style="background:#7c3aed;color:white;border:none;border-radius:12px;padding:0.85rem 2rem;font-size:1rem;font-weight:700;cursor:pointer;width:100%;">Volver a la tienda</button>
+      </div>
+    </div>
+
     <div id="modalCheckout">
         <div id="modalCheckoutInner" onclick="event.stopPropagation()">
 
@@ -2354,7 +2364,10 @@
             })();
             // ────────────────────────────────────────────────────────────
 
-            window.open('https://wa.me/' + NRO_TELEFONO + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+            // Mostrar modal de éxito y vaciar carrito
+            vaciarCarrito();
+            document.getElementById('modalExito').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
         function enviarPedidoWP() {
@@ -2409,6 +2422,21 @@
             t.style.opacity = '0';
             t.style.transform = 'translateX(-50%) translateY(20px)';
         }, 2500);
+    }
+
+    function cerrarModalExito() {
+        document.getElementById('modalExito').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // Mostrar éxito si vuelve de OpenPay con ?pago=ok
+    if (new URLSearchParams(window.location.search).get('pago') === 'ok') {
+        window.addEventListener('DOMContentLoaded', function() {
+            vaciarCarrito();
+            document.getElementById('modalExito').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            history.replaceState(null, '', window.location.pathname);
+        });
     }
     </script>
 </body>
