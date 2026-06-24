@@ -192,6 +192,21 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .btn-eliminar:hover { background:rgba(239,68,68,0.1); }
 .btn-restaurar { margin-top:1rem;width:100%;background:transparent;border:1px solid var(--green);color:var(--green);border-radius:9px;padding:0.6rem;font-size:0.85rem;font-weight:700;cursor:pointer; }
 .btn-restaurar:hover { background:rgba(16,185,129,0.1); }
+/* Botón eliminar en card de lista */
+.btn-trash-card { background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 5px;border-radius:5px;font-size:0.85rem;transition:color 0.15s;flex-shrink:0; }
+.btn-trash-card:hover { color:var(--red); }
+/* Botón eliminar ítem de tabla */
+.btn-del-item { background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:5px;font-size:0.8rem;transition:color 0.15s,background 0.15s; }
+.btn-del-item:hover { color:var(--red);background:rgba(239,68,68,0.12); }
+/* Botones post-pago */
+.post-pago-btns { display:grid;grid-template-columns:1fr auto;gap:0.5rem;margin-top:0.75rem;align-items:center; }
+.btn-finalizar { background:var(--green);color:white;border:none;border-radius:9px;padding:0.65rem 1rem;font-size:0.875rem;font-weight:700;cursor:pointer; }
+.btn-finalizar:hover { background:#059669; }
+.btn-eliminar-chico { background:transparent;border:1px solid var(--red);color:var(--red);border-radius:9px;padding:0.65rem 1rem;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap; }
+.btn-eliminar-chico:hover { background:rgba(239,68,68,0.1); }
+/* Botón eliminar en header del modal */
+.btn-del-header { background:transparent;border:1px solid rgba(239,68,68,0.4);color:var(--red);border-radius:8px;padding:0.3rem 0.7rem;font-size:0.75rem;font-weight:700;cursor:pointer;margin-right:0.5rem; }
+.btn-del-header:hover { background:rgba(239,68,68,0.1);border-color:var(--red); }
 
 .confirm-box { background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:1rem;margin-top:1rem;text-align:center; }
 .confirm-box p { font-size:0.85rem;color:var(--text2);margin-bottom:0.75rem; }
@@ -548,6 +563,7 @@ async function cargarPedidos() {
           <span class="pago-status ${esPagado?'pagado':'debe'}" style="margin-left:auto;">
             ${esPagado?'✓ PAGADO':'Debe $'+saldo.toLocaleString('es-AR')}
           </span>
+          <button class="btn-trash-card" title="Eliminar pedido" onclick="event.stopPropagation();eliminarPedidoDirecto('${p.numero_pedido}')">🗑</button>
         </div>
       </div>`;
     }).join('');
@@ -610,12 +626,13 @@ async function verPedido(num, esEliminado) {
       ${esEliminado?`<div class="detail-row"><span class="detail-key">Eliminado</span><span style="color:var(--red);">${new Date(p.eliminado_at).toLocaleString('es-AR')}</span></div>`:''}
 
       <table class="items-table">
-        <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th></tr></thead>
+        <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th>${!esEliminado?'<th style="width:30px;"></th>':''}</tr></thead>
         <tbody>${items.map(i=>`<tr>
           <td>${i.producto}</td>
           <td style="text-align:right;">${i.cantidad}</td>
           <td style="text-align:right;">$${Number(i.precio_unitario).toLocaleString('es-AR')}</td>
           <td style="text-align:right;font-weight:700;">$${Number(i.subtotal).toLocaleString('es-AR')}</td>
+          ${!esEliminado?`<td style="text-align:right;"><button class="btn-del-item" title="Quitar producto" onclick="eliminarItem(${i.id},'${num}')">✕</button></td>`:''}
         </tr>`).join('')}</tbody>
       </table>
 
@@ -658,7 +675,15 @@ async function verPedido(num, esEliminado) {
               </select>
             </div>
             <button class="btn-agregar-pago" onclick="agregarPago('${num}', ${total})">Agregar pago</button>
-          </div>`:''}
+            <div class="post-pago-btns">
+              <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
+              <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
+            </div>
+          </div>`:`
+          <div class="post-pago-btns" style="margin-top:1rem;">
+            <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
+            <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
+          </div>`}
 
         <div class="estado-field">
           <label>Estado del pedido</label>
@@ -670,7 +695,6 @@ async function verPedido(num, esEliminado) {
             <option value="cancelado" ${p.estado==='cancelado'?'selected':''}>Cancelado</option>
           </select>
         </div>
-        <button class="btn-eliminar" onclick="confirmarEliminar('${num}')">🗑️ Eliminar pedido</button>
         <div id="confirm-box" style="display:none;" class="confirm-box">
           <p>¿Seguro que querés eliminar el pedido <strong>${num}</strong>?</p>
           <div class="confirm-btns">
@@ -716,7 +740,61 @@ async function cambiarEstado(num,estado) {
   } catch{toast('Error al actualizar','err');}
 }
 
-function confirmarEliminar(num){document.getElementById('confirm-box').style.display='block';}
+async function eliminarPedidoDirecto(num) {
+  if(!confirm(`¿Seguro que querés eliminar el pedido ${num}?`)) return;
+  try {
+    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps=await pR.json(); const p={...ps[0]}; delete p.id;
+    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
+    toast('Pedido eliminado','ok'); cargarPedidos(); cargarStats();
+  } catch(e){toast('Error al eliminar','err');}
+}
+
+function mostrarConfirmEliminar(){
+  const box=document.getElementById('confirm-box');
+  if(box) { box.style.display='block'; box.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+function confirmarEliminar(num){mostrarConfirmEliminar();}
+
+async function eliminarItem(itemId, numPedido) {
+  if(!confirm('¿Quitar este producto del pedido?')) return;
+  try {
+    // Obtener el ítem para saber su subtotal
+    const iR = await fetch(`${SUPA_URL}/rest/v1/pedido_items?id=eq.${itemId}`,{headers:hdrs});
+    const items = await iR.json();
+    if(!items.length){toast('Ítem no encontrado','err');return;}
+    const subtotal = Number(items[0].subtotal);
+
+    // Eliminar el ítem
+    await fetch(`${SUPA_URL}/rest/v1/pedido_items?id=eq.${itemId}`,{method:'DELETE',headers:hdrs});
+
+    // Actualizar el total del pedido
+    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{headers:hdrs});
+    const ps = await pR.json();
+    const nuevoTotal = Math.max(0, Number(ps[0].total) - subtotal);
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{
+      method:'PATCH', headers:hdrs, body:JSON.stringify({total:nuevoTotal})
+    });
+
+    toast('Producto quitado ✓','ok');
+    verPedido(numPedido, false);
+    cargarPedidos();
+  } catch(e){toast('Error al quitar producto','err');}
+}
+
+async function finalizarPedido(num) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
+      method:'PATCH', headers:hdrs, body:JSON.stringify({estado:'entregado'})
+    });
+    toast('Pedido finalizado ✓','ok');
+    cerrarModal();
+    cargarPedidos();
+    cargarStats();
+  } catch(e){toast('Error al finalizar','err');}
+}
 
 async function eliminarPedido(num) {
   try {
@@ -738,7 +816,11 @@ async function restaurarPedido(num) {
   } catch(e){toast('Error al restaurar','err');}
 }
 
-function cerrarModal(e){if(!e||e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');}
+function cerrarModal(e){
+  if(!e||e.target===document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('open');
+  }
+}
 
 // Cerrar modal solo si no hubo selección de texto (drag)
 (function(){
