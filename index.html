@@ -2367,13 +2367,13 @@
                 } catch(e) {
                     console.warn('Supabase: no se pudo guardar el pedido', e);
                 }
+
+                // Mostrar modal de éxito y vaciar carrito
+                vaciarCarrito();
+                document.getElementById('modalExito').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
             })();
             // ────────────────────────────────────────────────────────────
-
-            // Mostrar modal de éxito y vaciar carrito
-            vaciarCarrito();
-            document.getElementById('modalExito').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
         }
 
         function enviarPedidoWP() {
