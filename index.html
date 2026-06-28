@@ -2335,11 +2335,16 @@
                             precio_unitario: i.precio
                         };
                     });
-                    await fetch(SUPA_URL + '/rest/v1/pedido_items', {
+                    console.log('numeroPedido:', numeroPedido);
+                    console.log('items a insertar:', JSON.stringify(items));
+                    var itemsRes = await fetch(SUPA_URL + '/rest/v1/pedido_items', {
                         method: 'POST',
                         headers: hdrs,
                         body: JSON.stringify(items)
                     });
+                    console.log('pedido_items status:', itemsRes.status);
+                    var itemsData = await itemsRes.text();
+                    console.log('pedido_items response:', itemsData);
 
                     // Restar stock por cada ítem con codigo
                     for (var i = 0; i < carrito.length; i++) {
