@@ -261,6 +261,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   <div class="nav">
     <button class="nav-tab active" onclick="switchTab('stats',this)">Estadísticas</button>
     <button class="nav-tab" onclick="switchTab('cajas',this)">Cajas</button>
+    <button class="nav-tab" onclick="switchTab('stock',this)">Stock</button>
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
     <button class="nav-tab" onclick="switchTab('pagos',this)">Pagos</button>
     <button class="nav-tab" onclick="switchTab('gastos',this)">Gastos</button>
@@ -366,6 +367,43 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div id="lista-gastos"><div class="loading-txt">Cargando...</div></div>
     </div>
 
+    <!-- STOCK -->
+    <div id="panel-stock" class="panel">
+      <div class="chart-card" style="max-width:560px;margin:0 auto;">
+        <!-- Buscador -->
+        <div style="margin-bottom:1.25rem;">
+          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Buscar producto</div>
+          <div style="display:flex;gap:0.5rem;">
+            <input id="stock-buscar" class="gasto-input" type="text" placeholder="Nombre o código..." oninput="buscarProductoStock()" style="flex:1;">
+            <button class="btn-refresh" onclick="buscarProductoStock()">↻</button>
+          </div>
+          <div id="stock-resultados" style="margin-top:0.5rem;"></div>
+        </div>
+        <!-- Preview + ajuste -->
+        <div id="stock-preview" style="display:none;">
+          <div style="border-top:1px solid var(--border);padding-top:1.25rem;display:flex;gap:1rem;align-items:flex-start;">
+            <img id="stock-foto" src="" alt="" style="width:90px;height:90px;object-fit:contain;border-radius:10px;background:var(--surface2);flex-shrink:0;">
+            <div style="flex:1;">
+              <div id="stock-nombre" style="font-weight:800;font-size:1rem;margin-bottom:0.25rem;"></div>
+              <div id="stock-codigo-txt" style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;"></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+                <span style="font-size:0.8rem;color:var(--text2);">Stock actual:</span>
+                <span id="stock-actual" style="font-size:1.4rem;font-weight:900;color:var(--violet-light);"></span>
+                <span style="font-size:0.8rem;color:var(--text2);">unidades</span>
+              </div>
+              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Ajustar stock</div>
+              <div style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
+                <button onclick="cambiarSigno()" id="stock-signo-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.85rem;font-size:1.1rem;font-weight:900;cursor:pointer;color:var(--green);min-width:44px;">+</button>
+                <input id="stock-cantidad" type="number" min="1" value="1" class="gasto-input" placeholder="Cantidad">
+                <button onclick="guardarStock()" style="background:var(--green);color:white;border:none;border-radius:8px;padding:0.55rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;">Guardar</button>
+              </div>
+              <div id="stock-nuevo-preview" style="font-size:0.82rem;color:var(--text2);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- PEDIDOS -->
     <div id="panel-pedidos" class="panel">
       <div class="filters">
@@ -452,6 +490,7 @@ function switchTab(tab, btn) {
   if(tab==='cajas') cargarCajas();
   if(tab==='pagos') cargarPagos();
   if(tab==='gastos') cargarGastos();
+  if(tab==='stock') { document.getElementById('stock-buscar').value=''; document.getElementById('stock-resultados').innerHTML=''; document.getElementById('stock-preview').style.display='none'; }
 }
 
 // ── STATS ──────────────────────────────────────
@@ -1011,7 +1050,92 @@ async function cambiarEstado(num,estado) {
   } catch{toast('Error al actualizar','err');}
 }
 
-// ── STOCK HELPERS ──────────────────────────────
+// ── STOCK ──────────────────────────────────────
+let stockProductoActual = null;
+let stockSigno = '+';
+
+async function buscarProductoStock() {
+  const q = document.getElementById('stock-buscar').value.trim();
+  const cont = document.getElementById('stock-resultados');
+  document.getElementById('stock-preview').style.display = 'none';
+  stockProductoActual = null;
+  if (q.length < 2) { cont.innerHTML = ''; return; }
+  try {
+    const [porNombre, porCodigo] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/productos?nombre=ilike.*${encodeURIComponent(q)}*&limit=5`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/productos?codigo=ilike.*${encodeURIComponent(q)}*&limit=5`, {headers:hdrs})
+    ]);
+    const n = await porNombre.json();
+    const c = await porCodigo.json();
+    const vistos = new Set();
+    const todos = [...(Array.isArray(n)?n:[]), ...(Array.isArray(c)?c:[])].filter(p => {
+      if (vistos.has(p.id)) return false;
+      vistos.add(p.id); return true;
+    });
+    if (!todos.length) { cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin resultados</div>'; return; }
+    cont.innerHTML = todos.map(p => `
+      <div onclick="seleccionarProductoStock(${JSON.stringify(JSON.stringify(p))})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <img src="${p.foto||''}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:white;" onerror="this.style.display='none'">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</div>
+          <div style="font-size:0.72rem;color:var(--text3);">${p.codigo||''}</div>
+        </div>
+        <div style="font-size:0.9rem;font-weight:900;color:var(--violet-light);flex-shrink:0;">${p.stock??0} u.</div>
+      </div>`).join('');
+  } catch(e) { cont.innerHTML = '<div style="color:var(--red);font-size:0.82rem;">Error al buscar</div>'; }
+}
+
+function seleccionarProductoStock(jsonStr) {
+  const p = JSON.parse(jsonStr);
+  stockProductoActual = p;
+  stockSigno = '+';
+  document.getElementById('stock-resultados').innerHTML = '';
+  document.getElementById('stock-buscar').value = p.nombre;
+  document.getElementById('stock-foto').src = p.foto || '';
+  document.getElementById('stock-nombre').textContent = p.nombre;
+  document.getElementById('stock-codigo-txt').textContent = p.codigo ? 'Código: ' + p.codigo : '';
+  document.getElementById('stock-actual').textContent = p.stock ?? 0;
+  document.getElementById('stock-cantidad').value = 1;
+  document.getElementById('stock-signo-btn').textContent = '+';
+  document.getElementById('stock-signo-btn').style.color = 'var(--green)';
+  document.getElementById('stock-nuevo-preview').textContent = '';
+  document.getElementById('stock-preview').style.display = 'block';
+  document.getElementById('stock-cantidad').oninput = actualizarPreviewStock;
+}
+
+function cambiarSigno() {
+  stockSigno = stockSigno === '+' ? '-' : '+';
+  const btn = document.getElementById('stock-signo-btn');
+  btn.textContent = stockSigno;
+  btn.style.color = stockSigno === '+' ? 'var(--green)' : 'var(--red)';
+  actualizarPreviewStock();
+}
+
+function actualizarPreviewStock() {
+  if (!stockProductoActual) return;
+  const cant = parseInt(document.getElementById('stock-cantidad').value) || 0;
+  const actual = Number(stockProductoActual.stock ?? 0);
+  const nuevo = stockSigno === '+' ? actual + cant : Math.max(0, actual - cant);
+  document.getElementById('stock-nuevo-preview').textContent = `Nuevo stock: ${actual} ${stockSigno} ${cant} = ${nuevo} unidades`;
+}
+
+async function guardarStock() {
+  if (!stockProductoActual) return;
+  const cant = parseInt(document.getElementById('stock-cantidad').value) || 0;
+  if (cant <= 0) { toast('Ingresá una cantidad válida', 'err'); return; }
+  const actual = Number(stockProductoActual.stock ?? 0);
+  const nuevo = stockSigno === '+' ? actual + cant : Math.max(0, actual - cant);
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${stockProductoActual.id}`, {
+      method: 'PATCH', headers: hdrs, body: JSON.stringify({ stock: nuevo })
+    });
+    stockProductoActual.stock = nuevo;
+    document.getElementById('stock-actual').textContent = nuevo;
+    document.getElementById('stock-nuevo-preview').textContent = '';
+    document.getElementById('stock-cantidad').value = 1;
+    toast(`Stock actualizado: ${nuevo} unidades ✓`, 'ok');
+  } catch(e) { toast('Error al guardar stock', 'err'); }
+}
 async function ajustarStock(items, signo) {
   // signo: +1 para devolver stock, -1 para restar
   for (const item of items) {
