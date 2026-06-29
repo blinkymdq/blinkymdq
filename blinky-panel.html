@@ -1073,8 +1073,9 @@ async function buscarProductoStock() {
       vistos.add(p.id); return true;
     });
     if (!todos.length) { cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin resultados</div>'; return; }
-    cont.innerHTML = todos.map(p => `
-      <div onclick="seleccionarProductoStock(${JSON.stringify(JSON.stringify(p))})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+    window._stockResultados = todos;
+    cont.innerHTML = todos.map((p, idx) => `
+      <div onclick="seleccionarProductoStock(${idx})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
         <img src="${p.foto||''}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:white;" onerror="this.style.display='none'">
         <div style="flex:1;min-width:0;">
           <div style="font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</div>
@@ -1085,8 +1086,8 @@ async function buscarProductoStock() {
   } catch(e) { cont.innerHTML = '<div style="color:var(--red);font-size:0.82rem;">Error al buscar</div>'; }
 }
 
-function seleccionarProductoStock(jsonStr) {
-  const p = JSON.parse(jsonStr);
+function seleccionarProductoStock(idx) {
+  const p = window._stockResultados[idx];
   stockProductoActual = p;
   stockSigno = '+';
   document.getElementById('stock-resultados').innerHTML = '';
