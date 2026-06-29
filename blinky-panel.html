@@ -1054,6 +1054,12 @@ async function cambiarEstado(num,estado) {
 let stockProductoActual = null;
 let stockSigno = '+';
 
+function getImgUrl(foto) {
+  if (!foto || foto.trim() === '') return '';
+  if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`;
+  return `https://blinkymdq.com/Productos/${foto}.jpg`;
+}
+
 async function buscarProductoStock() {
   const q = document.getElementById('stock-buscar').value.trim();
   const cont = document.getElementById('stock-resultados');
@@ -1073,10 +1079,9 @@ async function buscarProductoStock() {
       vistos.add(p.id); return true;
     });
     if (!todos.length) { cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin resultados</div>'; return; }
-    window._stockResultados = todos;
-    cont.innerHTML = todos.map((p, idx) => `
-      <div onclick="seleccionarProductoStock(${idx})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <img src="${p.foto||''}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:white;" onerror="this.style.display='none'">
+    cont.innerHTML = todos.map(p => `
+      <div onclick="seleccionarProductoStock(${JSON.stringify(JSON.stringify(p))})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:white;" onerror="this.style.display='none'">
         <div style="flex:1;min-width:0;">
           <div style="font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</div>
           <div style="font-size:0.72rem;color:var(--text3);">${p.codigo||''}</div>
@@ -1086,13 +1091,13 @@ async function buscarProductoStock() {
   } catch(e) { cont.innerHTML = '<div style="color:var(--red);font-size:0.82rem;">Error al buscar</div>'; }
 }
 
-function seleccionarProductoStock(idx) {
-  const p = window._stockResultados[idx];
+function seleccionarProductoStock(jsonStr) {
+  const p = JSON.parse(jsonStr);
   stockProductoActual = p;
   stockSigno = '+';
   document.getElementById('stock-resultados').innerHTML = '';
   document.getElementById('stock-buscar').value = p.nombre;
-  document.getElementById('stock-foto').src = p.foto || '';
+  document.getElementById('stock-foto').src = getImgUrl((p.foto||'').split(',')[0].trim());
   document.getElementById('stock-nombre').textContent = p.nombre;
   document.getElementById('stock-codigo-txt').textContent = p.codigo ? 'Código: ' + p.codigo : '';
   document.getElementById('stock-actual').textContent = p.stock ?? 0;
