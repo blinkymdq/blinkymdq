@@ -262,6 +262,8 @@ async function guardarProducto(id) {
     toast('Guardado ✓', 'ok');
   } catch(e) { toast('Error al guardar', 'err'); }
 }
+
+async function cargarProductos() {
   document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/productos?order=nombre.asc`, {headers:hdrs});
