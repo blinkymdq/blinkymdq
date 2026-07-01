@@ -487,6 +487,7 @@
             display: block;
         }
     </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
@@ -1091,13 +1092,12 @@
 
     <div id="modalLogin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onclick="cerrarLogin()">
         <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-black text-slate-800 uppercase mb-6">Acceso Clientes</h3>
-            <input type="text" id="userInput" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 text-center font-bold outline-none"
-                onkeydown="if(event.key==='Enter') document.getElementById('passInput').focus()">
-            <input type="password" id="passInput" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 text-center font-bold outline-none"
-                onkeydown="if(event.key==='Enter') validarAcceso()">
-            <div id="loginError" class="hidden text-xs text-rose-500 font-bold mb-3 -mt-3">Usuario o contraseña incorrectos</div>
-            <button onclick="validarAcceso()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase">Entrar</button>
+            <h3 class="text-xl font-black text-slate-800 uppercase mb-2">Acceso Clientes</h3>
+            <p class="text-slate-400 text-sm mb-8">Ingresá con tu cuenta de Google para ver precios y hacer pedidos</p>
+            <button onclick="loginGoogle()" class="w-full flex items-center justify-center gap-3 border border-slate-200 rounded-2xl p-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors mb-3" style="font-size:0.95rem;">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;">
+              Ingresar con Google
+            </button>
             <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2 mt-1">Cancelar</button>
         </div>
     </div>
@@ -1364,17 +1364,6 @@
 
                 renderMasVistos();
 
-                const userSaved = localStorage.getItem('blinky_user');
-                if (userSaved) {
-                    const found = baseUsuarios.find(u => u.user === userSaved);
-                    if (found) {
-                        colUsuario = found.col !== "" ? parseInt(found.col) : COL_DEFAULT;
-                        document.body.classList.add('is-logged-in');
-                        document.getElementById('user-badge-name').innerText        = `HOLA, ${userSaved.toUpperCase()}`;
-                        document.getElementById('user-badge-name-mobile').innerText  = `HOLA, ${userSaved.toUpperCase()}`;
-                    }
-                }
-
                 const queryParam = new URLSearchParams(window.location.search).get('q');
                 if (queryParam) {
                     document.getElementById('inputBusqueda').value = queryParam.replace(/-/g, ' ');
@@ -1426,10 +1415,10 @@
         // PRECIO USUARIO
         // ════════════════════════════════════════
         function getPrecioUsuario(p) {
+            const esMayorista = window._userRol === 'mayorista';
+            if (!esMayorista) return p.precioP || "0";
             const val = p.precioM;
-            if (!val || parseFloat(val) === 0) {
-                return p.precioP || "0"; // fallback al precio público
-            }
+            if (!val || parseFloat(val) === 0) return p.precioP || "0";
             return val;
         }
 
@@ -1837,45 +1826,77 @@
         }
 
         // ════════════════════════════════════════
-        // AUTH
+        // AUTH GOOGLE
         // ════════════════════════════════════════
-        function validarAcceso() {
-            const u = document.getElementById('userInput').value.trim().toLowerCase();
-            const p = document.getElementById('passInput').value.trim();
-            const encontrado = baseUsuarios.find(idx => idx.user === u && idx.passHash === simpleHash(p));
+        const supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-            if (encontrado) {
-                localStorage.setItem('blinky_user', u);
-                colUsuario = encontrado.col !== "" ? parseInt(encontrado.col) : COL_DEFAULT;
-                document.body.classList.add('is-logged-in');
-                document.getElementById('user-badge-name').innerText        = `HOLA, ${u.toUpperCase()}`;
-                document.getElementById('user-badge-name-mobile').innerText  = `HOLA, ${u.toUpperCase()}`;
-                document.getElementById('loginError').classList.add('hidden');
-                cerrarLogin();
-                render(filtrados.length > 0 ? filtrados : productos);
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-            }
+        async function loginGoogle() {
+            await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
         }
 
-        function cerrarSesion() {
-            localStorage.removeItem('blinky_user');
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
             colUsuario = COL_DEFAULT;
             document.body.classList.remove('is-logged-in');
+            document.getElementById('user-badge-name').innerText = 'MI CUENTA';
+            document.getElementById('user-badge-name-mobile').innerText = 'MI CUENTA';
             render(filtrados.length > 0 ? filtrados : productos);
         }
 
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) await aplicarSesion(session.user);
+
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    await aplicarSesion(session.user);
+                } else {
+                    colUsuario = COL_DEFAULT;
+                    document.body.classList.remove('is-logged-in');
+                }
+            });
+        }
+
+        async function aplicarSesion(user) {
+            const { data } = await supabaseClient
+                .from('usuarios')
+                .select('rol, nombre')
+                .eq('id', user.id)
+                .single();
+
+            const rol = data?.rol || 'minorista';
+            const nombre = data?.nombre || user.user_metadata?.full_name || user.email;
+            const esMayorista = rol === 'mayorista';
+
+            // Guardar rol globalmente para usarlo en render
+            window._userRol = rol;
+            window._userId = user.id;
+
+            document.body.classList.add('is-logged-in');
+            if (esMayorista) document.body.classList.add('es-mayorista');
+            else document.body.classList.remove('es-mayorista');
+
+            const nombreCorto = nombre.split(' ')[0].toUpperCase();
+            document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
+            document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
+            cerrarLogin();
+            render(filtrados.length > 0 ? filtrados : productos);
+        }
+
+        function validarAcceso() {} // legacy — ya no se usa
+
         function mostrarLogin() {
             document.getElementById('modalLogin').classList.remove('hidden');
-            document.getElementById('loginError').classList.add('hidden');
-            document.getElementById('userInput').value  = '';
-            document.getElementById('passInput').value  = '';
-            setTimeout(() => document.getElementById('userInput').focus(), 100);
         }
 
         function cerrarLogin() {
             document.getElementById('modalLogin').classList.add('hidden');
         }
+
+        initAuth();
 
 
         // ════════════════════════════════════════
@@ -2314,12 +2335,13 @@
                         body: JSON.stringify({
                             nombre: nombre,
                             telefono: telefono,
-                            tipo: logueado ? 'mayorista' : 'minorista',
+                            tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
                             forma_pago: pago,
                             entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
                             notas: (direccion ? 'Dir: ' + direccion + ' ' : '') + (nota || ''),
                             total: totalNum,
-                            estado: 'pendiente'
+                            estado: 'pendiente',
+                            user_id: window._userId || null
                         })
                     });
                     var pedidoData = await pedidoRes.json();
