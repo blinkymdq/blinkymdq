@@ -1109,14 +1109,68 @@
     </div>
 
     <div id="modalLogin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onclick="cerrarLogin()">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-black text-slate-800 uppercase mb-2">Acceso Clientes</h3>
-            <p class="text-slate-400 text-sm mb-8">Ingresá con tu cuenta de Google para ver precios y hacer pedidos</p>
-            <button onclick="loginGoogle()" class="w-full flex items-center justify-center gap-3 border border-slate-200 rounded-2xl p-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors mb-3" style="font-size:0.95rem;">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;">
-              Ingresar con Google
-            </button>
-            <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2 mt-1">Cancelar</button>
+        <div class="bg-white rounded-[2.5rem] max-w-sm w-full shadow-2xl overflow-hidden" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;">
+
+            <!-- VISTA: LOGIN -->
+            <div id="vista-login" style="padding:2.5rem;">
+                <h3 class="text-xl font-black text-slate-800 uppercase mb-1 text-center">Acceso Clientes</h3>
+                <p id="login-subtitulo" class="text-slate-400 text-sm mb-6 text-center">Ingresá para ver precios y hacer pedidos</p>
+
+                <button onclick="loginGoogle()" class="w-full flex items-center justify-center gap-3 border border-slate-200 rounded-2xl p-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors mb-4" style="font-size:0.95rem;">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;">
+                    Ingresar con Google
+                </button>
+
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                    <span class="text-slate-400 text-xs font-bold">O CON EMAIL</span>
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                </div>
+
+                <input id="login-email" type="email" placeholder="Email" class="w-full p-3.5 bg-slate-100 rounded-2xl mb-3 text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                <input id="login-pass" type="password" placeholder="Contraseña" class="w-full p-3.5 bg-slate-100 rounded-2xl mb-2 text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'" onkeydown="if(event.key==='Enter') loginEmail()">
+                <div id="login-error" class="hidden text-xs text-red-500 font-bold mb-2 text-center"></div>
+                <button onclick="loginEmail()" class="w-full bg-violet-600 text-white p-3.5 rounded-2xl font-black text-sm uppercase mb-4 hover:bg-violet-700 transition-colors">Ingresar</button>
+
+                <p class="text-center text-slate-500 text-xs">¿No tenés cuenta? <button onclick="mostrarVista('registro')" class="text-violet-600 font-black hover:underline">Crear cuenta</button></p>
+                <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2 mt-2">Cancelar</button>
+            </div>
+
+            <!-- VISTA: REGISTRO -->
+            <div id="vista-registro" style="display:none;padding:2rem;">
+                <div class="flex items-center gap-3 mb-5">
+                    <button onclick="mostrarVista('login')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">←</button>
+                    <h3 class="text-lg font-black text-slate-800 uppercase">Crear cuenta</h3>
+                </div>
+
+                <div class="space-y-3">
+                    <input id="reg-email" type="email" placeholder="Email *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="reg-pass" type="password" placeholder="Contraseña * (mínimo 6 caracteres)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Fecha de nacimiento *</label>
+                        <input id="reg-nacimiento" type="date" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    </div>
+                    <input id="reg-telefono" type="tel" placeholder="Teléfono * (Ej: 2235123456)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                        <input id="reg-provincia" type="text" placeholder="Provincia *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                        <input id="reg-localidad" type="text" placeholder="Localidad *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    </div>
+                    <input id="reg-direccion" type="text" placeholder="Dirección *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                </div>
+
+                <div id="reg-error" class="hidden text-xs text-red-500 font-bold mt-3 text-center"></div>
+                <button onclick="registrarEmail()" class="w-full bg-violet-600 text-white p-3.5 rounded-2xl font-black text-sm uppercase mt-4 hover:bg-violet-700 transition-colors">Crear cuenta</button>
+                <button onclick="cerrarLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase py-2 mt-2">Cancelar</button>
+            </div>
+
+            <!-- VISTA: VERIFICACIÓN -->
+            <div id="vista-verificacion" style="display:none;padding:2.5rem;text-align:center;">
+                <div style="font-size:3rem;margin-bottom:1rem;">📧</div>
+                <h3 class="text-xl font-black text-slate-800 uppercase mb-3">¡Revisá tu email!</h3>
+                <p class="text-slate-500 text-sm mb-6">Te enviamos un link de confirmación. Una vez confirmado, podés ingresar con tu email y contraseña.</p>
+                <button onclick="mostrarVista('login')" class="w-full bg-violet-600 text-white p-3.5 rounded-2xl font-black text-sm uppercase hover:bg-violet-700 transition-colors">Volver al login</button>
+            </div>
+
         </div>
     </div>
 
@@ -1912,18 +1966,81 @@
 
         function validarAcceso() {} // legacy — ya no se usa
 
+        function mostrarVista(vista) {
+            ['login','registro','verificacion'].forEach(v => {
+                document.getElementById('vista-'+v).style.display = v===vista ? 'block' : 'none';
+            });
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('reg-error').classList.add('hidden');
+        }
+
         function mostrarLogin(contexto) {
-            var subtitulo = document.querySelector('#modalLogin p');
-            if (subtitulo) {
-                subtitulo.textContent = contexto === 'checkout'
-                    ? 'Ingresá con Google para completar tu pedido'
-                    : 'Ingresá con tu cuenta de Google para ver precios y hacer pedidos';
-            }
+            mostrarVista('login');
+            var subtitulo = document.getElementById('login-subtitulo');
+            if(subtitulo) subtitulo.textContent = contexto === 'checkout'
+                ? 'Ingresá con Google para completar tu pedido'
+                : 'Ingresá para ver precios y hacer pedidos';
             document.getElementById('modalLogin').classList.remove('hidden');
         }
 
         function cerrarLogin() {
             document.getElementById('modalLogin').classList.add('hidden');
+        }
+
+        async function loginEmail() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass  = document.getElementById('login-pass').value.trim();
+            const errEl = document.getElementById('login-error');
+            errEl.classList.add('hidden');
+            if(!email||!pass){ errEl.textContent='Completá email y contraseña.'; errEl.classList.remove('hidden'); return; }
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+            if(error){ errEl.textContent = error.message.includes('Invalid') ? 'Email o contraseña incorrectos.' : 'Email no confirmado. Revisá tu bandeja.'; errEl.classList.remove('hidden'); return; }
+            cerrarLogin();
+        }
+
+        async function registrarEmail() {
+            const email     = document.getElementById('reg-email').value.trim();
+            const pass      = document.getElementById('reg-pass').value.trim();
+            const nac       = document.getElementById('reg-nacimiento').value;
+            const telefono  = document.getElementById('reg-telefono').value.trim();
+            const provincia = document.getElementById('reg-provincia').value.trim();
+            const localidad = document.getElementById('reg-localidad').value.trim();
+            const direccion = document.getElementById('reg-direccion').value.trim();
+            const errEl = document.getElementById('reg-error');
+            errEl.classList.add('hidden');
+
+            if(!email||!pass||!nac||!telefono||!provincia||!localidad||!direccion){
+                errEl.textContent='Completá todos los campos obligatorios.'; errEl.classList.remove('hidden'); return;
+            }
+            if(pass.length < 6){
+                errEl.textContent='La contraseña debe tener al menos 6 caracteres.'; errEl.classList.remove('hidden'); return;
+            }
+
+            // Verificar mayor de edad
+            const hoy = new Date();
+            const nacDate = new Date(nac);
+            const edad = hoy.getFullYear() - nacDate.getFullYear() - (hoy < new Date(hoy.getFullYear(), nacDate.getMonth(), nacDate.getDate()) ? 1 : 0);
+            if(edad < 18){
+                errEl.textContent='Debés ser mayor de 18 años para registrarte.'; errEl.classList.remove('hidden'); return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email, password: pass,
+                options: { data: { full_name: email.split('@')[0] } }
+            });
+            if(error){ errEl.textContent = error.message; errEl.classList.remove('hidden'); return; }
+
+            // Guardar datos extra en usuarios
+            if(data.user) {
+                await supabaseClient.from('usuarios').upsert({
+                    id: data.user.id,
+                    email,
+                    nombre: email.split('@')[0],
+                    telefono, provincia, localidad, direccion: direccion,
+                    rol: 'minorista'
+                });
+            }
+            mostrarVista('verificacion');
         }
 
         initAuth();

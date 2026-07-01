@@ -1076,7 +1076,7 @@ async function cargarUsuarios() {
   cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   const q = document.getElementById('usuarios-buscar').value.trim();
   const rol = document.getElementById('usuarios-rol-filtro').value;
-  let url = `${SUPA_URL}/rest/v1/usuarios?order=created_at.desc`;
+  let url = `${SUPA_URL}/rest/v1/usuarios?order=numero_usuario.asc`;
   if(rol) url += `&rol=eq.${rol}`;
   try {
     const usuarios = await(await fetch(url, {headers:hdrs})).json();
@@ -1094,6 +1094,7 @@ async function cargarUsuarios() {
       <div class="chart-card" style="padding:0;">
         <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
           <thead><tr>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Nº</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Usuario</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Email</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Teléfono</th>
@@ -1102,6 +1103,7 @@ async function cargarUsuarios() {
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Registro</th>
           </tr></thead>
           <tbody>${filtrados.map(u=>`<tr>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:900;">#${u.numero_usuario||'-'}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);">
               <div style="display:flex;align-items:center;gap:0.6rem;">
                 ${u.avatar?`<img src="${u.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">`:'<div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:0.7rem;">👤</div>'}
