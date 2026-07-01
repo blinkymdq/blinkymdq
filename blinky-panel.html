@@ -928,6 +928,9 @@ async function verPedido(num, esEliminado) {
     document.getElementById('modal-body').innerHTML=`
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
+      ${p.email?`<div class="detail-row"><span class="detail-key">Email</span><span>${p.email}</span></div>`:''}
+      ${p.provincia||p.localidad?`<div class="detail-row"><span class="detail-key">Ubicación</span><span>${[p.localidad,p.provincia].filter(Boolean).join(', ')}</span></div>`:''}
+      ${p.direccion?`<div class="detail-row"><span class="detail-key">Dirección</span><span>${p.direccion}</span></div>`:''}
       <div class="detail-row"><span class="detail-key">Tipo</span><span class="badge badge-${p.tipo==='mayorista'?'may':'min'}">${p.tipo}</span></div>
       <div class="detail-row"><span class="detail-key">Pago</span><span>${p.forma_pago}</span></div>
       <div class="detail-row"><span class="detail-key">Entrega</span><span>${p.entrega==='envio'?'🚚 Envío':'🏪 Retiro'}</span></div>

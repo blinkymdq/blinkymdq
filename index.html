@@ -1005,6 +1005,24 @@
                     <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
                 </div>
 
+                <!-- Email -->
+                <div>
+                    <label class="checkout-label" for="checkout-email">Email</label>
+                    <input id="checkout-email" type="email" class="checkout-input" placeholder="tu@email.com" autocomplete="email">
+                </div>
+
+                <!-- Provincia y Localidad -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                    <div>
+                        <label class="checkout-label" for="checkout-provincia">Provincia</label>
+                        <input id="checkout-provincia" type="text" class="checkout-input" placeholder="Ej: Buenos Aires" autocomplete="address-level1">
+                    </div>
+                    <div>
+                        <label class="checkout-label" for="checkout-localidad">Localidad</label>
+                        <input id="checkout-localidad" type="text" class="checkout-input" placeholder="Ej: Mar del Plata" autocomplete="address-level2">
+                    </div>
+                </div>
+
                 <!-- Forma de pago -->
                 <div>
                     <label class="checkout-label">Forma de Pago *</label>
@@ -1863,7 +1881,7 @@
         async function aplicarSesion(user) {
             const { data } = await supabaseClient
                 .from('usuarios')
-                .select('rol, nombre')
+                .select('rol, nombre, telefono, provincia, localidad')
                 .eq('id', user.id)
                 .single();
 
@@ -1871,9 +1889,15 @@
             const nombre = data?.nombre || user.user_metadata?.full_name || user.email;
             const esMayorista = rol === 'mayorista';
 
-            // Guardar rol globalmente para usarlo en render
             window._userRol = rol;
             window._userId = user.id;
+            window._userData = {
+                nombre,
+                telefono:  data?.telefono  || '',
+                email:     user.email      || '',
+                provincia: data?.provincia || '',
+                localidad: data?.localidad || ''
+            };
 
             document.body.classList.add('is-logged-in');
             if (esMayorista) document.body.classList.add('es-mayorista');
@@ -2094,6 +2118,9 @@
             // Reset form
             document.getElementById('checkout-nombre').value = '';
             document.getElementById('checkout-telefono').value = '';
+            document.getElementById('checkout-email').value = '';
+            document.getElementById('checkout-provincia').value = '';
+            document.getElementById('checkout-localidad').value = '';
             document.getElementById('checkout-nota').value   = '';
             document.getElementById('checkout-pago').value   = '';
             document.getElementById('checkout-entrega').value = '';
@@ -2109,6 +2136,15 @@
             if (box) { box.style.background='white'; box.style.borderColor='#cbd5e1'; }
             if (icon) icon.classList.add('hidden');
             if (label) { label.style.borderColor=''; label.classList.remove('border-violet-500'); }
+
+            // Autocompletar datos del usuario logueado
+            if (window._userData) {
+                document.getElementById('checkout-nombre').value    = window._userData.nombre    || '';
+                document.getElementById('checkout-telefono').value  = window._userData.telefono  || '';
+                document.getElementById('checkout-email').value     = window._userData.email     || '';
+                document.getElementById('checkout-provincia').value = window._userData.provincia || '';
+                document.getElementById('checkout-localidad').value = window._userData.localidad || '';
+            }
 
             // Tip de precios
             if (logueado) {
@@ -2252,13 +2288,16 @@
         }
 
         function confirmarYEnviar() {
-            var nombre   = document.getElementById('checkout-nombre').value.trim();
-            var telefono = document.getElementById('checkout-telefono').value.trim();
-            var pago     = document.getElementById('checkout-pago').value;
-            var entrega  = document.getElementById('checkout-entrega').value;
+            var nombre    = document.getElementById('checkout-nombre').value.trim();
+            var telefono  = document.getElementById('checkout-telefono').value.trim();
+            var email     = document.getElementById('checkout-email').value.trim();
+            var provincia = document.getElementById('checkout-provincia').value.trim();
+            var localidad = document.getElementById('checkout-localidad').value.trim();
+            var pago      = document.getElementById('checkout-pago').value;
+            var entrega   = document.getElementById('checkout-entrega').value;
             var direccion = document.getElementById('checkout-direccion').value.trim();
-            var nota     = document.getElementById('checkout-nota').value.trim();
-            var errEl    = document.getElementById('checkoutError');
+            var nota      = document.getElementById('checkout-nota').value.trim();
+            var errEl     = document.getElementById('checkoutError');
 
             // Validaciones
             document.getElementById('checkout-nombre').classList.remove('error');
@@ -2335,10 +2374,14 @@
                         body: JSON.stringify({
                             nombre: nombre,
                             telefono: telefono,
+                            email: email || null,
+                            provincia: provincia || null,
+                            localidad: localidad || null,
+                            direccion: direccion || null,
                             tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
                             forma_pago: pago,
                             entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
-                            notas: (direccion ? 'Dir: ' + direccion + ' ' : '') + (nota || ''),
+                            notas: nota || null,
                             total: totalNum,
                             estado: 'pendiente',
                             user_id: window._userId || null
@@ -2384,6 +2427,22 @@
                                 body: JSON.stringify({ stock: nuevoStock })
                             });
                         } catch(se) { console.warn('Stock no actualizado para', item.codigo, se); }
+                    }
+
+                    // Actualizar perfil del usuario logueado
+                    if (window._userId) {
+                        supabaseClient.from('usuarios').update({
+                            nombre: nombre,
+                            telefono: telefono || null,
+                            provincia: provincia || null,
+                            localidad: localidad || null
+                        }).eq('id', window._userId);
+                        if (window._userData) {
+                            window._userData.nombre = nombre;
+                            window._userData.telefono = telefono;
+                            window._userData.provincia = provincia;
+                            window._userData.localidad = localidad;
+                        }
                     }
 
                 } catch(e) {
