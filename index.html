@@ -1912,7 +1912,13 @@
 
         function validarAcceso() {} // legacy — ya no se usa
 
-        function mostrarLogin() {
+        function mostrarLogin(contexto) {
+            var subtitulo = document.querySelector('#modalLogin p');
+            if (subtitulo) {
+                subtitulo.textContent = contexto === 'checkout'
+                    ? 'Ingresá con Google para completar tu pedido'
+                    : 'Ingresá con tu cuenta de Google para ver precios y hacer pedidos';
+            }
             document.getElementById('modalLogin').classList.remove('hidden');
         }
 
@@ -2100,6 +2106,10 @@
         // ════════════════════════════════════════
         function abrirCheckout() {
             if (carrito.length === 0) return;
+            if (!document.body.classList.contains('is-logged-in')) {
+                mostrarLogin('checkout');
+                return;
+            }
             // Resetear botones al abrir
             document.getElementById('wrap-btn-tarjeta').style.display = 'none';
             document.getElementById('wrap-btn-enviar').style.display = 'none';
