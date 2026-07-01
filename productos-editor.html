@@ -88,6 +88,11 @@
     <h1>📦 Editor de Productos — Blinky MDQ</h1>
     <div class="header-right">
       <span id="total-prods"></span>
+      <div style="display:flex;align-items:center;gap:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;">
+        <span style="color:var(--yellow);font-weight:700;font-size:0.82rem;">💵 USD</span>
+        <input id="dolar-valor" type="number" min="0" value="1200" style="background:transparent;border:none;color:var(--yellow);font-weight:900;font-size:0.9rem;width:80px;outline:none;text-align:right;" oninput="recalcularTodo()">
+        <span style="color:var(--text3);font-size:0.75rem;">$/USD</span>
+      </div>
       <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
     </div>
   </div>
@@ -138,19 +143,92 @@ function getImgUrl(foto) {
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
 }
 
-function calcPrecio(costo, impuestos, ganancia) {
-  const c = parseFloat(costo) || 0;
+function calcCostoPesos(costoUsd, envioUsd, dolar) {
+  const c = parseFloat(costoUsd) || 0;
+  const e = parseFloat(envioUsd) || 0;
+  const d = parseFloat(dolar) || 0;
+  if (!c && !e) return 0;
+  return Math.round((c + e) * d);
+}
+
+function calcPrecioDesde(costoPesos, impuestos, ganancia) {
+  const c = parseFloat(costoPesos) || 0;
   const i = parseFloat(impuestos) || 0;
   const g = parseFloat(ganancia) || 0;
   if (!c) return 0;
   return Math.round(c * (1 + i/100) * (1 + g/100));
 }
 
+function calcPrecio(costo, impuestos, ganancia) {
+  return calcPrecioDesde(costo, impuestos, ganancia);
+}
+
 function fmt(n) {
   return '$' + Math.round(n||0).toLocaleString('es-AR');
 }
 
-async function cargarProductos() {
+function recalcularTodo() {
+  todosLosProductos.forEach(p => actualizarCalc(p.id));
+}
+
+function actualizarCalc(id) {
+  const dolar   = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const costoUsd = document.getElementById(`costoUsd-${id}`)?.value;
+  const envioUsd = document.getElementById(`envioUsd-${id}`)?.value;
+  const imp     = document.getElementById(`imp-${id}`)?.value;
+  const gan     = document.getElementById(`gan-${id}`)?.value;
+  const ganM    = document.getElementById(`ganmay-${id}`)?.value;
+
+  const costoPesos = calcCostoPesos(costoUsd, envioUsd, dolar);
+  const pub = calcPrecioDesde(costoPesos, imp, gan);
+  const may = calcPrecioDesde(costoPesos, imp, ganM);
+
+  const elCostoPesos = document.getElementById(`costo-pesos-${id}`);
+  const elPub = document.getElementById(`calc-pub-${id}`);
+  const elMay = document.getElementById(`calc-may-${id}`);
+
+  if(elCostoPesos) elCostoPesos.textContent = costoPesos ? fmt(costoPesos) : '-';
+  if(elPub) elPub.textContent = pub ? fmt(pub) : '-';
+  if(elMay) elMay.textContent = may ? fmt(may) : '-';
+
+  const btn = document.getElementById(`btn-${id}`);
+  if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
+}
+
+async function guardarProducto(id) {
+  const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const costoUsd = parseFloat(document.getElementById(`costoUsd-${id}`)?.value) || null;
+  const envioUsd = parseFloat(document.getElementById(`envioUsd-${id}`)?.value) || null;
+  const imp      = parseFloat(document.getElementById(`imp-${id}`)?.value) || null;
+  const gan      = parseFloat(document.getElementById(`gan-${id}`)?.value) || null;
+  const ganM     = parseFloat(document.getElementById(`ganmay-${id}`)?.value) || null;
+
+  const costoPesos = calcCostoPesos(costoUsd, envioUsd, dolar) || null;
+  const precioPublico = calcPrecioDesde(costoPesos, imp, gan) || null;
+  const precioMayor   = calcPrecioDesde(costoPesos, imp, ganM) || null;
+
+  const body = {
+    costo_usd: costoUsd,
+    envio_usd: envioUsd,
+    costo: costoPesos,
+    impuestos: imp,
+    ganancia: gan,
+    ganancia_mayorista: ganM
+  };
+  if(precioPublico) body.precio_publico = precioPublico;
+  if(precioMayor)   body.precio_mayorista = precioMayor;
+
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${id}`, {
+      method:'PATCH', headers:hdrs, body:JSON.stringify(body)
+    });
+    const p = todosLosProductos.find(x=>x.id===id);
+    if(p) { p.costo_usd=costoUsd; p.envio_usd=envioUsd; p.costo=costoPesos; p.impuestos=imp; p.ganancia=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    const btn = document.getElementById(`btn-${id}`);
+    if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
+    toast('Guardado ✓', 'ok');
+  } catch(e) { toast('Error al guardar', 'err'); }
+}
   document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/productos?order=nombre.asc`, {headers:hdrs});
@@ -199,7 +277,9 @@ function renderTabla(prods) {
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
-        <th style="text-align:right;">Costo $</th>
+        <th style="text-align:right;color:var(--yellow);">Costo USD</th>
+        <th style="text-align:right;color:var(--yellow);">Envío USD</th>
+        <th style="text-align:right;color:var(--yellow);">Costo $</th>
         <th style="text-align:right;">Imp. %</th>
         <th style="text-align:right;">Gan. Min. %</th>
         <th style="text-align:right;">P. Público</th>
@@ -209,8 +289,11 @@ function renderTabla(prods) {
       </tr></thead>
       <tbody>
         ${prods.map(p => {
-          const precioPublico = calcPrecio(p.costo, p.impuestos, p.ganancia);
-          const precioMayor = calcPrecio(p.costo, p.impuestos, p.ganancia_mayorista);
+          const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 1200;
+          const costoPesos = calcCostoPesos(p.costo_usd, p.envio_usd, dolar);
+          const costoBase = costoPesos || parseFloat(p.costo) || 0;
+          const precioPublico = calcPrecioDesde(costoBase, p.impuestos, p.ganancia);
+          const precioMayor = calcPrecioDesde(costoBase, p.impuestos, p.ganancia_mayorista);
           return `<tr id="row-${p.id}">
             <td><img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0'"></td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
@@ -218,7 +301,9 @@ function renderTabla(prods) {
             <td style="color:var(--text2);">${p.marca||'-'}</td>
             <td style="color:var(--text2);">${p.categoria||'-'}</td>
             <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="costo-${p.id}" type="number" min="0" value="${p.costo||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.id}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.id}" type="number" min="0" step="0.01" value="${p.envio_usd||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.id}">${costoPesos ? fmt(costoPesos) : (p.costo ? fmt(p.costo) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="imp-${p.id}" type="number" min="0" max="999" value="${p.impuestos||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
             <td style="text-align:right;"><input class="td-input" id="gan-${p.id}" type="number" min="0" value="${p.ganancia||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.id}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
@@ -229,53 +314,6 @@ function renderTabla(prods) {
         }).join('')}
       </tbody>
     </table>`;
-}
-
-function actualizarCalc(id) {
-  const costo = document.getElementById(`costo-${id}`)?.value;
-  const imp   = document.getElementById(`imp-${id}`)?.value;
-  const gan   = document.getElementById(`gan-${id}`)?.value;
-  const ganM  = document.getElementById(`ganmay-${id}`)?.value;
-
-  const pub = calcPrecio(costo, imp, gan);
-  const may = calcPrecio(costo, imp, ganM);
-
-  const elPub = document.getElementById(`calc-pub-${id}`);
-  const elMay = document.getElementById(`calc-may-${id}`);
-  if(elPub) elPub.textContent = pub ? fmt(pub) : '-';
-  if(elMay) elMay.textContent = may ? fmt(may) : '-';
-
-  // Marcar botón como no guardado
-  const btn = document.getElementById(`btn-${id}`);
-  if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
-}
-
-async function guardarProducto(id) {
-  const costo  = parseFloat(document.getElementById(`costo-${id}`)?.value) || null;
-  const imp    = parseFloat(document.getElementById(`imp-${id}`)?.value)   || null;
-  const gan    = parseFloat(document.getElementById(`gan-${id}`)?.value)   || null;
-  const ganM   = parseFloat(document.getElementById(`ganmay-${id}`)?.value)|| null;
-
-  const precioPublico  = calcPrecio(costo, imp, gan)   || null;
-  const precioMayor    = calcPrecio(costo, imp, ganM)  || null;
-
-  const body = { costo, impuestos:imp, ganancia:gan, ganancia_mayorista:ganM };
-  if(precioPublico) body.precio_publico = precioPublico;
-  if(precioMayor)   body.precio_mayorista = precioMayor;
-
-  try {
-    await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${id}`, {
-      method:'PATCH', headers:hdrs, body:JSON.stringify(body)
-    });
-
-    // Actualizar local
-    const p = todosLosProductos.find(x=>x.id===id);
-    if(p) { p.costo=costo; p.impuestos=imp; p.ganancia=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
-
-    const btn = document.getElementById(`btn-${id}`);
-    if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
-    toast('Guardado ✓', 'ok');
-  } catch(e) { toast('Error al guardar', 'err'); }
 }
 
 function toast(msg, tipo) {
