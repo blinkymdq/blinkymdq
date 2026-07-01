@@ -265,6 +265,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
     <button class="nav-tab" onclick="switchTab('pagos',this)">Pagos</button>
     <button class="nav-tab" onclick="switchTab('gastos',this)">Gastos</button>
+    <button class="nav-tab" onclick="switchTab('usuarios',this)">Usuarios</button>
     <button class="nav-tab" onclick="switchTab('eliminados',this)">Eliminados</button>
   </div>
 
@@ -431,6 +432,20 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div id="lista-pedidos"><div class="loading-txt">Cargando...</div></div>
     </div>
 
+    <!-- USUARIOS -->
+    <div id="panel-usuarios" class="panel">
+      <div class="filters">
+        <input type="text" id="usuarios-buscar" class="filter-input" placeholder="Buscar por nombre o email..." oninput="cargarUsuarios()" style="flex:1;min-width:200px;">
+        <select class="filter-select" id="usuarios-rol-filtro" onchange="cargarUsuarios()">
+          <option value="">Todos los roles</option>
+          <option value="minorista">Minorista</option>
+          <option value="mayorista">Mayorista</option>
+        </select>
+        <button class="btn-refresh" onclick="cargarUsuarios()">↻ Actualizar</button>
+      </div>
+      <div id="lista-usuarios"><div class="loading-txt">Cargando...</div></div>
+    </div>
+
     <!-- ELIMINADOS -->
     <div id="panel-eliminados" class="panel">
       <div class="filters">
@@ -490,6 +505,7 @@ function switchTab(tab, btn) {
   if(tab==='cajas') cargarCajas();
   if(tab==='pagos') cargarPagos();
   if(tab==='gastos') cargarGastos();
+  if(tab==='usuarios') cargarUsuarios();
   if(tab==='stock') { document.getElementById('stock-buscar').value=''; document.getElementById('stock-resultados').innerHTML=''; document.getElementById('stock-preview').style.display='none'; }
 }
 
@@ -1051,6 +1067,70 @@ async function cambiarEstado(num,estado) {
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({estado})});
     toast('Estado actualizado ✓','ok');
   } catch{toast('Error al actualizar','err');}
+}
+
+// ── USUARIOS ───────────────────────────────────
+async function cargarUsuarios() {
+  const cont = document.getElementById('lista-usuarios');
+  if(!cont) return;
+  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  const q = document.getElementById('usuarios-buscar').value.trim();
+  const rol = document.getElementById('usuarios-rol-filtro').value;
+  let url = `${SUPA_URL}/rest/v1/usuarios?order=created_at.desc`;
+  if(rol) url += `&rol=eq.${rol}`;
+  try {
+    const usuarios = await(await fetch(url, {headers:hdrs})).json();
+    if(!Array.isArray(usuarios)||!usuarios.length){
+      cont.innerHTML='<div class="empty"><div class="empty-icon">👤</div><p>No hay usuarios</p></div>';return;
+    }
+    const filtrados = q ? usuarios.filter(u =>
+      (u.nombre||'').toLowerCase().includes(q.toLowerCase()) ||
+      (u.email||'').toLowerCase().includes(q.toLowerCase())
+    ) : usuarios;
+    if(!filtrados.length){
+      cont.innerHTML='<div class="empty"><div class="empty-icon">👤</div><p>Sin resultados</p></div>';return;
+    }
+    cont.innerHTML=`
+      <div class="chart-card" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+          <thead><tr>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Usuario</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Email</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Teléfono</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Localidad</th>
+            <th style="padding:10px 12px;text-align:center;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Rol</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Registro</th>
+          </tr></thead>
+          <tbody>${filtrados.map(u=>`<tr>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                ${u.avatar?`<img src="${u.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">`:'<div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:0.7rem;">👤</div>'}
+                <span style="font-weight:700;">${u.nombre||'Sin nombre'}</span>
+              </div>
+            </td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${u.email||''}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${u.telefono||'-'}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${[u.localidad,u.provincia].filter(Boolean).join(', ')||'-'}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center;">
+              <select onchange="cambiarRol('${u.id}',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:3px 6px;cursor:pointer;">
+                <option value="minorista" ${u.rol==='minorista'?'selected':''}>Minorista</option>
+                <option value="mayorista" ${u.rol==='mayorista'?'selected':''}>Mayorista</option>
+              </select>
+            </td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-size:0.78rem;">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  } catch(e){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error al cargar</p></div>';}
+}
+
+async function cambiarRol(userId, nuevoRol) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${userId}`,{
+      method:'PATCH', headers:hdrs, body:JSON.stringify({rol:nuevoRol})
+    });
+    toast(`Rol actualizado a ${nuevoRol} ✓`, 'ok');
+  } catch(e){ toast('Error al cambiar rol','err'); }
 }
 
 // ── STOCK ──────────────────────────────────────

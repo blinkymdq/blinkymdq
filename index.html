@@ -1612,10 +1612,10 @@
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
                                 <div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
-                                ${logueado ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}
+                                ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}
                             </div>
                         </div>
-                        ${p.codigo ? `<p class="text-[7px] font-bold text-slate-300 uppercase mt-2">Cód. ${p.codigo}</p>` : ''}
+                        ${p.codigo ? `<p style="font-size:8px;font-family:Arial,sans-serif;font-weight:400;color:#1e293b;margin-top:6px;">Cód. ${p.codigo}</p>` : ''}
                         <div class="flex gap-1 mt-1 pt-2 border-t border-slate-50">
                             <a href="https://wa.me/${NRO_TELEFONO}?text=${msgConsulta}" target="_blank" rel="noopener"
                                 class="flex-[1.2] h-10 bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase flex items-center justify-center gap-1.5 px-1">
