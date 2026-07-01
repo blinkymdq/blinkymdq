@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Productos — Blinky MDQ</title>
+<style>
+  :root {
+    --bg:#0f0f1a; --surface:#1a1a2e; --surface2:#22223a; --border:#2a2a4a;
+    --text:#e2e2f0; --text2:#a0a0c0; --text3:#606080;
+    --violet:#7c3aed; --violet-light:#a78bfa; --green:#10b981; --red:#ef4444;
+    --cyan:#06b6d4; --yellow:#f59e0b;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; min-height:100vh; }
+
+  /* LOGIN */
+  #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; width:320px; text-align:center; }
+  .login-card h2 { font-size:1.1rem; font-weight:900; margin-bottom:1.5rem; color:var(--violet-light); }
+  .login-input { background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:0.9rem; padding:0.75rem 1rem; width:100%; margin-bottom:0.75rem; outline:none; }
+  .login-input:focus { border-color:var(--violet); }
+  .btn-login { background:var(--violet); color:white; border:none; border-radius:10px; padding:0.75rem; width:100%; font-weight:700; cursor:pointer; font-size:0.9rem; }
+
+  /* APP */
+  #app { display:none; }
+  .header { background:var(--surface); border-bottom:1px solid var(--border); padding:1rem 1.5rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+  .header h1 { font-size:1rem; font-weight:900; color:var(--violet-light); }
+  .header-right { display:flex; align-items:center; gap:0.75rem; font-size:0.8rem; color:var(--text2); }
+
+  .container { max-width:1400px; margin:0 auto; padding:1.5rem; }
+
+  /* FILTROS */
+  .filters { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .filter-input { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.82rem; padding:0.5rem 0.75rem; outline:none; }
+  .filter-input:focus { border-color:var(--violet); }
+  .btn-refresh { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text2); font-size:0.82rem; padding:0.5rem 0.75rem; cursor:pointer; }
+  .btn-refresh:hover { border-color:var(--violet); color:var(--violet-light); }
+
+  /* TABLA */
+  .tabla-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:0.8rem; min-width:1100px; }
+  thead th { padding:10px 12px; text-align:left; color:var(--text3); font-size:0.68rem; text-transform:uppercase; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); position:sticky; top:0; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+
+  /* INPUTS en tabla */
+  .td-input { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.8rem; padding:4px 8px; width:90px; outline:none; text-align:right; }
+  .td-input:focus { border-color:var(--violet); }
+
+  /* PRECIO CALCULADO */
+  .precio-calc { font-weight:900; color:var(--violet-light); }
+  .precio-mayo { font-weight:700; color:var(--cyan); }
+
+  /* BTN GUARDAR */
+  .btn-guardar-row { background:var(--green); color:white; border:none; border-radius:6px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .btn-guardar-row:hover { background:#059669; }
+  .btn-guardar-row.guardado { background:var(--surface2); color:var(--green); border:1px solid var(--green); }
+
+  /* BADGE STOCK */
+  .stock-ok { color:var(--green); font-weight:900; }
+  .stock-cero { color:var(--red); font-weight:900; }
+
+  /* TOAST */
+  #toast { position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--green); color:var(--green); border-radius:10px; padding:10px 18px; font-size:0.82rem; font-weight:700; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; }
+  #toast.err { border-color:var(--red); color:var(--red); }
+  #toast.show { opacity:1; }
+
+  .loading-txt { text-align:center; padding:3rem; color:var(--text3); }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>🛍 Editor de Productos</h2>
+    <input class="login-input" type="password" id="pwd-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter') doLogin()">
+    <div id="login-error" style="color:var(--red);font-size:0.75rem;margin-bottom:0.5rem;display:none;">Contraseña incorrecta</div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <h1>📦 Editor de Productos — Blinky MDQ</h1>
+    <div class="header-right">
+      <span id="total-prods"></span>
+      <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="filters">
+      <input class="filter-input" id="buscar" type="text" placeholder="Buscar nombre o código..." oninput="filtrarTabla()" style="min-width:220px;">
+      <select class="filter-input" id="filtro-cat" onchange="filtrarTabla()">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select class="filter-input" id="filtro-stock" onchange="filtrarTabla()">
+        <option value="">Todo el stock</option>
+        <option value="sin">Sin stock</option>
+        <option value="con">Con stock</option>
+      </select>
+    </div>
+
+    <div class="tabla-wrap">
+      <div id="tabla-contenido"><div class="loading-txt">Cargando productos...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+const PASS = 'blinky2024';
+const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
+
+let todosLosProductos = [];
+
+function doLogin() {
+  if(document.getElementById('pwd-input').value === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    cargarProductos();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+function getImgUrl(foto) {
+  if (!foto || foto.trim() === '') return '';
+  if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=100`;
+  return `https://blinkymdq.com/Productos/${foto}.jpg`;
+}
+
+function calcPrecio(costo, impuestos, ganancia) {
+  const c = parseFloat(costo) || 0;
+  const i = parseFloat(impuestos) || 0;
+  const g = parseFloat(ganancia) || 0;
+  if (!c) return 0;
+  return Math.round(c * (1 + i/100) * (1 + g/100));
+}
+
+function fmt(n) {
+  return '$' + Math.round(n||0).toLocaleString('es-AR');
+}
+
+async function cargarProductos() {
+  document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Cargando...</div>';
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?order=nombre.asc`, {headers:hdrs});
+    todosLosProductos = await res.json();
+
+    // Poblar categorías
+    const cats = [...new Set(todosLosProductos.map(p=>p.categoria).filter(Boolean))].sort();
+    const sel = document.getElementById('filtro-cat');
+    const valActual = sel.value;
+    sel.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(c=>`<option value="${c}" ${c===valActual?'selected':''}>${c}</option>`).join('');
+
+    document.getElementById('total-prods').textContent = `${todosLosProductos.length} productos`;
+    filtrarTabla();
+  } catch(e) {
+    document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Error al cargar</div>';
+  }
+}
+
+function filtrarTabla() {
+  const q = document.getElementById('buscar').value.toLowerCase();
+  const cat = document.getElementById('filtro-cat').value;
+  const stock = document.getElementById('filtro-stock').value;
+
+  let prods = todosLosProductos.filter(p => {
+    const matchQ = !q || (p.nombre||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q);
+    const matchCat = !cat || p.categoria === cat;
+    const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
+    return matchQ && matchCat && matchStock;
+  });
+
+  renderTabla(prods);
+}
+
+function renderTabla(prods) {
+  if (!prods.length) {
+    document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Sin resultados</div>';
+    return;
+  }
+
+  document.getElementById('tabla-contenido').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Foto</th>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Marca</th>
+        <th>Categoría</th>
+        <th style="text-align:right;">Stock</th>
+        <th style="text-align:right;">Costo $</th>
+        <th style="text-align:right;">Imp. %</th>
+        <th style="text-align:right;">Gan. Min. %</th>
+        <th style="text-align:right;">P. Público</th>
+        <th style="text-align:right;">Gan. May. %</th>
+        <th style="text-align:right;">P. Mayor.</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${prods.map(p => {
+          const precioPublico = calcPrecio(p.costo, p.impuestos, p.ganancia);
+          const precioMayor = calcPrecio(p.costo, p.impuestos, p.ganancia_mayorista);
+          return `<tr id="row-${p.id}">
+            <td><img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0'"></td>
+            <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
+            <td style="font-weight:700;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.nombre}">${p.nombre}</td>
+            <td style="color:var(--text2);">${p.marca||'-'}</td>
+            <td style="color:var(--text2);">${p.categoria||'-'}</td>
+            <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="costo-${p.id}" type="number" min="0" value="${p.costo||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><input class="td-input" id="imp-${p.id}" type="number" min="0" max="999" value="${p.impuestos||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><input class="td-input" id="gan-${p.id}" type="number" min="0" value="${p.ganancia||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.id}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="ganmay-${p.id}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.id}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
+            <td><button class="btn-guardar-row" id="btn-${p.id}" onclick="guardarProducto(${p.id})">Guardar</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function actualizarCalc(id) {
+  const costo = document.getElementById(`costo-${id}`)?.value;
+  const imp   = document.getElementById(`imp-${id}`)?.value;
+  const gan   = document.getElementById(`gan-${id}`)?.value;
+  const ganM  = document.getElementById(`ganmay-${id}`)?.value;
+
+  const pub = calcPrecio(costo, imp, gan);
+  const may = calcPrecio(costo, imp, ganM);
+
+  const elPub = document.getElementById(`calc-pub-${id}`);
+  const elMay = document.getElementById(`calc-may-${id}`);
+  if(elPub) elPub.textContent = pub ? fmt(pub) : '-';
+  if(elMay) elMay.textContent = may ? fmt(may) : '-';
+
+  // Marcar botón como no guardado
+  const btn = document.getElementById(`btn-${id}`);
+  if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
+}
+
+async function guardarProducto(id) {
+  const costo  = parseFloat(document.getElementById(`costo-${id}`)?.value) || null;
+  const imp    = parseFloat(document.getElementById(`imp-${id}`)?.value)   || null;
+  const gan    = parseFloat(document.getElementById(`gan-${id}`)?.value)   || null;
+  const ganM   = parseFloat(document.getElementById(`ganmay-${id}`)?.value)|| null;
+
+  const precioPublico  = calcPrecio(costo, imp, gan)   || null;
+  const precioMayor    = calcPrecio(costo, imp, ganM)  || null;
+
+  const body = { costo, impuestos:imp, ganancia:gan, ganancia_mayorista:ganM };
+  if(precioPublico) body.precio_publico = precioPublico;
+  if(precioMayor)   body.precio_mayorista = precioMayor;
+
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${id}`, {
+      method:'PATCH', headers:hdrs, body:JSON.stringify(body)
+    });
+
+    // Actualizar local
+    const p = todosLosProductos.find(x=>x.id===id);
+    if(p) { p.costo=costo; p.impuestos=imp; p.ganancia=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+
+    const btn = document.getElementById(`btn-${id}`);
+    if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
+    toast('Guardado ✓', 'ok');
+  } catch(e) { toast('Error al guardar', 'err'); }
+}
+
+function toast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = tipo === 'err' ? 'err show' : 'show';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 2500);
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>

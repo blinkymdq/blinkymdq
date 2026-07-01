@@ -261,7 +261,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   <div class="nav">
     <button class="nav-tab active" onclick="switchTab('stats',this)">Estadísticas</button>
     <button class="nav-tab" onclick="switchTab('cajas',this)">Cajas</button>
-    <button class="nav-tab" onclick="switchTab('stock',this)">Stock</button>
+    <button class="nav-tab" onclick="switchTab('stock',this)">Productos</button>
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
     <button class="nav-tab" onclick="switchTab('pagos',this)">Pagos</button>
     <button class="nav-tab" onclick="switchTab('gastos',this)">Gastos</button>
@@ -368,37 +368,56 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div id="lista-gastos"><div class="loading-txt">Cargando...</div></div>
     </div>
 
-    <!-- STOCK -->
+    <!-- PRODUCTOS (ex Stock) -->
     <div id="panel-stock" class="panel">
-      <div class="chart-card" style="max-width:560px;margin:0 auto;">
-        <!-- Buscador -->
-        <div style="margin-bottom:1.25rem;">
-          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Buscar producto</div>
-          <div style="display:flex;gap:0.5rem;">
-            <input id="stock-buscar" class="gasto-input" type="text" placeholder="Nombre o código..." oninput="buscarProductoStock()" style="flex:1;">
-            <button class="btn-refresh" onclick="buscarProductoStock()">↻</button>
-          </div>
-          <div id="stock-resultados" style="margin-top:0.5rem;"></div>
-        </div>
-        <!-- Preview + ajuste -->
-        <div id="stock-preview" style="display:none;">
-          <div style="border-top:1px solid var(--border);padding-top:1.25rem;display:flex;gap:1rem;align-items:flex-start;">
-            <img id="stock-foto" src="" alt="" style="width:90px;height:90px;object-fit:contain;border-radius:10px;background:var(--surface2);flex-shrink:0;">
+      <!-- Filtros -->
+      <div class="filters">
+        <input id="prod-buscar" class="filter-input" type="text" placeholder="Buscar nombre o código..." oninput="cargarProductos()" style="flex:1;min-width:180px;">
+        <select class="filter-select" id="prod-categoria" onchange="cargarProductos()">
+          <option value="">Todas las categorías</option>
+        </select>
+        <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
+      </div>
+      <div id="lista-productos"><div class="loading-txt">Cargando...</div></div>
+
+      <!-- Modal editar producto -->
+      <div id="modal-producto" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:1rem;">
+        <div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
+          <button onclick="cerrarModalProducto()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
+          <div style="display:flex;gap:1rem;margin-bottom:1.25rem;align-items:flex-start;">
+            <img id="mp-foto" style="width:80px;height:80px;object-fit:contain;border-radius:10px;background:var(--surface2);flex-shrink:0;">
             <div style="flex:1;">
-              <div id="stock-nombre" style="font-weight:800;font-size:1rem;margin-bottom:0.25rem;"></div>
-              <div id="stock-codigo-txt" style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;"></div>
-              <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-                <span style="font-size:0.8rem;color:var(--text2);">Stock actual:</span>
-                <span id="stock-actual" style="font-size:1.4rem;font-weight:900;color:var(--violet-light);"></span>
-                <span style="font-size:0.8rem;color:var(--text2);">unidades</span>
-              </div>
-              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Ajustar stock</div>
-              <div style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
-                <button onclick="cambiarSigno()" id="stock-signo-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.85rem;font-size:1.1rem;font-weight:900;cursor:pointer;color:var(--green);min-width:44px;">+</button>
-                <input id="stock-cantidad" type="number" min="1" value="1" class="gasto-input" placeholder="Cantidad">
-                <button onclick="guardarStock()" style="background:var(--green);color:white;border:none;border-radius:8px;padding:0.55rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;">Guardar</button>
-              </div>
-              <div id="stock-nuevo-preview" style="font-size:0.82rem;color:var(--text2);"></div>
+              <div id="mp-nombre" style="font-weight:900;font-size:1rem;margin-bottom:4px;"></div>
+              <div id="mp-codigo" style="font-size:0.75rem;color:var(--text3);"></div>
+              <div id="mp-marca" style="font-size:0.75rem;color:var(--text2);"></div>
+            </div>
+          </div>
+          <!-- Stock -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:0.4rem;">Ajustar stock</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+              <span style="font-size:0.85rem;color:var(--text2);">Stock actual:</span>
+              <span id="mp-stock-actual" style="font-size:1.2rem;font-weight:900;color:var(--violet-light);"></span>
+            </div>
+            <div style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5rem;align-items:center;">
+              <button onclick="cambiarSigno()" id="stock-signo-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.85rem;font-size:1.1rem;font-weight:900;cursor:pointer;color:var(--green);min-width:44px;">+</button>
+              <input id="stock-cantidad" type="number" min="1" value="1" class="gasto-input" placeholder="Cantidad">
+              <button onclick="guardarStock()" style="background:var(--green);color:white;border:none;border-radius:8px;padding:0.55rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;">Guardar</button>
+            </div>
+            <div id="stock-nuevo-preview" style="font-size:0.82rem;color:var(--text2);margin-top:0.4rem;"></div>
+          </div>
+          <!-- Descripción -->
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:0.4rem;">Descripción del producto</div>
+            <textarea id="mp-descripcion" class="gasto-input" rows="4" placeholder="Escribí una descripción para mostrar en la página del producto..." style="resize:vertical;width:100%;"></textarea>
+            <button onclick="guardarDescripcion()" class="btn-gasto-guardar" style="margin-top:0.5rem;">✓ Guardar descripción</button>
+          </div>
+          <!-- Link -->
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:0.4rem;">Link para compartir</div>
+            <div style="display:flex;gap:0.5rem;">
+              <input id="mp-link" class="gasto-input" readonly style="flex:1;font-size:0.75rem;">
+              <button onclick="copiarLink()" style="background:var(--violet);color:white;border:none;border-radius:8px;padding:0.5rem 0.75rem;font-size:0.8rem;font-weight:700;cursor:pointer;">Copiar</button>
             </div>
           </div>
         </div>
@@ -506,7 +525,7 @@ function switchTab(tab, btn) {
   if(tab==='pagos') cargarPagos();
   if(tab==='gastos') cargarGastos();
   if(tab==='usuarios') cargarUsuarios();
-  if(tab==='stock') { document.getElementById('stock-buscar').value=''; document.getElementById('stock-resultados').innerHTML=''; document.getElementById('stock-preview').style.display='none'; }
+  if(tab==='stock') cargarProductos();
 }
 
 // ── STATS ──────────────────────────────────────
@@ -1135,7 +1154,7 @@ async function cambiarRol(userId, nuevoRol) {
   } catch(e){ toast('Error al cambiar rol','err'); }
 }
 
-// ── STOCK ──────────────────────────────────────
+// ── PRODUCTOS ──────────────────────────────────
 let stockProductoActual = null;
 let stockSigno = '+';
 
@@ -1145,54 +1164,116 @@ function getImgUrl(foto) {
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
 }
 
-async function buscarProductoStock() {
-  const q = document.getElementById('stock-buscar').value.trim();
-  const cont = document.getElementById('stock-resultados');
-  document.getElementById('stock-preview').style.display = 'none';
-  stockProductoActual = null;
-  if (q.length < 2) { cont.innerHTML = ''; return; }
+async function cargarProductos() {
+  const cont = document.getElementById('lista-productos');
+  if(!cont) return;
+  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  const q = document.getElementById('prod-buscar').value.trim();
+  const cat = document.getElementById('prod-categoria').value;
+
+  let url = `${SUPA_URL}/rest/v1/productos?order=nombre.asc`;
+  if(cat) url += `&categoria=eq.${encodeURIComponent(cat)}`;
+
   try {
-    const [porNombre, porCodigo] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/productos?nombre=ilike.*${encodeURIComponent(q)}*&limit=5`, {headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/productos?codigo=ilike.*${encodeURIComponent(q)}*&limit=5`, {headers:hdrs})
-    ]);
-    const n = await porNombre.json();
-    const c = await porCodigo.json();
-    const vistos = new Set();
-    const todos = [...(Array.isArray(n)?n:[]), ...(Array.isArray(c)?c:[])].filter(p => {
-      if (vistos.has(p.id)) return false;
-      vistos.add(p.id); return true;
-    });
-    if (!todos.length) { cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin resultados</div>'; return; }
-    window._stockResultados = todos;
-    cont.innerHTML = todos.map((p, idx) => `
-      <div onclick="seleccionarProductoStock(${idx})" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:0.35rem;background:var(--surface2);" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:white;" onerror="this.style.display='none'">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</div>
-          <div style="font-size:0.72rem;color:var(--text3);">${p.codigo||''}</div>
-        </div>
-        <div style="font-size:0.9rem;font-weight:900;color:var(--violet-light);flex-shrink:0;">${p.stock??0} u.</div>
-      </div>`).join('');
-  } catch(e) { cont.innerHTML = '<div style="color:var(--red);font-size:0.82rem;">Error al buscar</div>'; }
+    let prods = await(await fetch(url, {headers:hdrs})).json();
+    if(!Array.isArray(prods)) { cont.innerHTML='<div class="empty"><p>Error</p></div>'; return; }
+
+    // Poblar categorías
+    const cats = [...new Set(prods.map(p=>p.categoria).filter(Boolean))].sort();
+    const sel = document.getElementById('prod-categoria');
+    const valActual = sel.value;
+    sel.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(c=>`<option value="${c}" ${c===valActual?'selected':''}>${c}</option>`).join('');
+
+    // Filtro local por búsqueda
+    if(q) prods = prods.filter(p =>
+      (p.nombre||'').toLowerCase().includes(q.toLowerCase()) ||
+      (p.codigo||'').toLowerCase().includes(q.toLowerCase())
+    );
+
+    if(!prods.length){ cont.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>Sin resultados</p></div>'; return; }
+
+    cont.innerHTML = `
+      <div style="margin-bottom:0.75rem;font-size:0.8rem;color:var(--text3);">${prods.length} producto${prods.length===1?'':'s'}</div>
+      <div class="chart-card" style="padding:0;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;min-width:700px;">
+          <thead><tr>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Foto</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Código</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Nombre</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Marca</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Categoría</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">P. Público</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">P. Mayor.</th>
+            <th style="padding:10px 12px;text-align:center;color:var(--text3);font-size:0.68rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Stock</th>
+            <th style="padding:10px 12px;width:36px;border-bottom:1px solid var(--border);"></th>
+          </tr></thead>
+          <tbody>${prods.map(p=>`<tr style="cursor:pointer;" onclick="abrirModalProducto(${p.id})">
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);">
+              <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" style="width:38px;height:38px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0'">
+            </td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-family:monospace;">${p.codigo||'-'}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:700;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${p.marca||'-'}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${p.categoria||'-'}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;">$${Number(p.precio_publico||0).toLocaleString('es-AR')}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;color:var(--cyan);">$${Number(p.precio_mayorista||0).toLocaleString('es-AR')}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;">
+              <span style="font-weight:900;color:${(p.stock||0)===0?'var(--red)':'var(--green)'};">${p.stock||0}</span>
+            </td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;">
+              <button class="btn-trash-card" title="Editar" onclick="event.stopPropagation();abrirModalProducto(${p.id})" style="color:var(--text2);">✏️</button>
+            </td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+
+    // Guardar productos para acceso rápido
+    window._productosPanel = prods;
+  } catch(e){ cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
 
-function seleccionarProductoStock(idx) {
-  const p = window._stockResultados[idx];
+function abrirModalProducto(id) {
+  const p = (window._productosPanel||[]).find(x=>x.id===id);
+  if(!p) return;
   stockProductoActual = p;
   stockSigno = '+';
-  document.getElementById('stock-resultados').innerHTML = '';
-  document.getElementById('stock-buscar').value = p.nombre;
-  document.getElementById('stock-foto').src = getImgUrl((p.foto||'').split(',')[0].trim());
-  document.getElementById('stock-nombre').textContent = p.nombre;
-  document.getElementById('stock-codigo-txt').textContent = p.codigo ? 'Código: ' + p.codigo : '';
-  document.getElementById('stock-actual').textContent = p.stock ?? 0;
+  document.getElementById('mp-foto').src = getImgUrl((p.foto||'').split(',')[0].trim());
+  document.getElementById('mp-nombre').textContent = p.nombre;
+  document.getElementById('mp-codigo').textContent = p.codigo ? 'Cód. '+p.codigo : '';
+  document.getElementById('mp-marca').textContent = p.marca || '';
+  document.getElementById('mp-stock-actual').textContent = p.stock ?? 0;
   document.getElementById('stock-cantidad').value = 1;
   document.getElementById('stock-signo-btn').textContent = '+';
   document.getElementById('stock-signo-btn').style.color = 'var(--green)';
   document.getElementById('stock-nuevo-preview').textContent = '';
-  document.getElementById('stock-preview').style.display = 'block';
+  document.getElementById('mp-descripcion').value = p.descripcion || '';
+  document.getElementById('mp-link').value = p.codigo ? `https://blinkymdq.com/producto.html?cod=${p.codigo}` : '';
   document.getElementById('stock-cantidad').oninput = actualizarPreviewStock;
+  const modal = document.getElementById('modal-producto');
+  modal.style.display = 'flex';
+}
+
+function cerrarModalProducto() {
+  document.getElementById('modal-producto').style.display = 'none';
+  stockProductoActual = null;
+}
+
+function copiarLink() {
+  const link = document.getElementById('mp-link').value;
+  navigator.clipboard.writeText(link);
+  toast('Link copiado ✓', 'ok');
+}
+
+async function guardarDescripcion() {
+  if(!stockProductoActual) return;
+  const desc = document.getElementById('mp-descripcion').value.trim();
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${stockProductoActual.id}`,{
+      method:'PATCH', headers:hdrs, body:JSON.stringify({descripcion:desc})
+    });
+    stockProductoActual.descripcion = desc;
+    toast('Descripción guardada ✓','ok');
+  } catch(e){ toast('Error al guardar','err'); }
 }
 
 function cambiarSigno() {
@@ -1222,9 +1303,11 @@ async function guardarStock() {
       method: 'PATCH', headers: hdrs, body: JSON.stringify({ stock: nuevo })
     });
     stockProductoActual.stock = nuevo;
-    document.getElementById('stock-actual').textContent = nuevo;
+    document.getElementById('mp-stock-actual').textContent = nuevo;
     document.getElementById('stock-nuevo-preview').textContent = '';
     document.getElementById('stock-cantidad').value = 1;
+    // Actualizar en la tabla
+    cargarProductos();
     toast(`Stock actualizado: ${nuevo} unidades ✓`, 'ok');
   } catch(e) { toast('Error al guardar stock', 'err'); }
 }
