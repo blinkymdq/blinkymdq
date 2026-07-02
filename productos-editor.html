@@ -46,7 +46,9 @@
 
   /* INPUTS en tabla */
   .td-input { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.8rem; padding:4px 8px; width:90px; outline:none; text-align:right; }
-  .td-input:focus { border-color:var(--violet); }
+  .td-input:disabled { opacity:0.35; cursor:not-allowed; }
+  .btn-editar-row { background:var(--surface2); color:var(--violet-light); border:1px solid var(--violet); border-radius:6px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .btn-editar-row:hover { background:var(--violet); color:white; }
 
   /* PRECIO CALCULADO */
   .precio-calc { font-weight:900; color:var(--violet-light); }
@@ -143,6 +145,8 @@ const PASS = 'blinky2024';
 const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
 
 let todosLosProductos = [];
+let sortField = null;
+let sortDir = 1; // 1 asc, -1 desc
 
 function doLogin() {
   if(document.getElementById('pwd-input').value === PASS) {
@@ -232,7 +236,22 @@ function actualizarCalc(codigo) {
   if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
 }
 
-async function guardarProducto(codigo) {
+function editarProducto(codigo) {
+  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.disabled = false;
+  });
+  const btn = document.getElementById(`btn-${codigo}`);
+  if(btn) {
+    btn.textContent = 'Guardar';
+    btn.className = 'btn-guardar-row';
+    btn.onclick = () => guardarProducto(codigo);
+  }
+  document.getElementById(`costoUsd-${codigo}`)?.focus();
+}
+
+
   const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
   const costoUsd = parseFloat(document.getElementById(`costoUsd-${codigo}`)?.value) || null;
   const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
@@ -261,6 +280,13 @@ async function guardarProducto(codigo) {
     if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia_min=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
+    // Volver a deshabilitar inputs
+    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`].forEach(id => {
+      const el = document.getElementById(id); if(el) el.disabled = true;
+    });
+    setTimeout(() => {
+      if(btn) { btn.textContent='Editar'; btn.className='btn-editar-row'; btn.onclick = () => editarProducto(codigo); }
+    }, 1500);
     toast('Guardado ✓', 'ok');
   } catch(e) { toast('Error al guardar', 'err'); }
 }
@@ -290,6 +316,12 @@ async function cargarProductos() {
   }
 }
 
+function sortBy(field) {
+  if(sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = 1; }
+  filtrarTabla();
+}
+
 function filtrarTabla() {
   const q = document.getElementById('buscar').value.toLowerCase();
   const cat = document.getElementById('filtro-cat').value;
@@ -304,6 +336,14 @@ function filtrarTabla() {
     return matchQ && matchCat && matchMarca && matchStock;
   });
 
+  if(sortField) {
+    prods.sort((a, b) => {
+      const va = (a[sortField]||'').toString().toLowerCase();
+      const vb = (b[sortField]||'').toString().toLowerCase();
+      return va < vb ? -sortDir : va > vb ? sortDir : 0;
+    });
+  }
+
   renderTabla(prods);
 }
 
@@ -317,8 +357,8 @@ function renderTabla(prods) {
     <table>
       <thead><tr>
         <th>Foto</th>
-        <th>Código</th>
-        <th>Nombre</th>
+        <th style="cursor:pointer;user-select:none;" onclick="sortBy('codigo')">Código <span style="color:var(--violet-light);font-size:0.65rem;">${sortField==='codigo' ? (sortDir===1?'▲':'▼') : '⇅'}</span></th>
+        <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${sortField==='nombre' ? (sortDir===1?'▲':'▼') : '⇅'}</span></th>
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
@@ -345,14 +385,14 @@ function renderTabla(prods) {
             <td style="color:var(--text2);">${p.marca||'-'}</td>
             <td style="color:var(--text2);">${p.categoria||'-'}</td>
             <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);"></td>
-            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
+            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="gan-${p.codigo}" type="number" min="0" value="${p.ganancia_min||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')"></td>
+            <td style="text-align:right;"><input class="td-input" id="gan-${p.codigo}" type="number" min="0" value="${p.ganancia_min||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')"></td>
+            <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
-            <td><button class="btn-guardar-row" id="btn-${p.codigo}" onclick="guardarProducto('${p.codigo}')">Guardar</button></td>
+            <td><button class="btn-editar-row" id="btn-${p.codigo}" onclick="editarProducto('${p.codigo}')">Editar</button></td>
           </tr>`;
         }).join('')}
       </tbody>
