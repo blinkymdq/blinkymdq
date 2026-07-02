@@ -353,12 +353,15 @@ function renderTabla(prods) {
     return;
   }
 
+  const arrowCod  = sortField==='codigo' ? (sortDir===1?'▲':'▼') : '⇅';
+  const arrowNom  = sortField==='nombre' ? (sortDir===1?'▲':'▼') : '⇅';
+
   document.getElementById('tabla-contenido').innerHTML = `
     <table>
       <thead><tr>
         <th>Foto</th>
-        <th style="cursor:pointer;user-select:none;" onclick="sortBy('codigo')">Código <span style="color:var(--violet-light);font-size:0.65rem;">${sortField==='codigo' ? (sortDir===1?'▲':'▼') : '⇅'}</span></th>
-        <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${sortField==='nombre' ? (sortDir===1?'▲':'▼') : '⇅'}</span></th>
+        <th style="cursor:pointer;user-select:none;" onclick="sortBy('codigo')">Código <span style="color:var(--violet-light);font-size:0.65rem;">${arrowCod}</span></th>
+        <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${arrowNom}</span></th>
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
