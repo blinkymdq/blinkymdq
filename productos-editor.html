@@ -100,8 +100,11 @@
       <span id="total-prods"></span>
       <div style="display:flex;align-items:center;gap:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;">
         <span style="color:var(--yellow);font-weight:700;font-size:0.82rem;">💵 USD</span>
-        <input id="dolar-valor" type="number" min="0" value="1200" style="background:transparent;border:none;color:var(--yellow);font-weight:900;font-size:0.9rem;width:80px;outline:none;text-align:right;" oninput="recalcularTodo()">
+        <span id="dolar-display" style="color:var(--yellow);font-weight:900;font-size:0.9rem;min-width:80px;text-align:right;cursor:default;">1200</span>
+        <input id="dolar-valor" type="number" min="0" style="background:transparent;border:none;color:var(--yellow);font-weight:900;font-size:0.9rem;width:80px;outline:none;text-align:right;display:none;" oninput="recalcularTodo()">
         <span style="color:var(--text3);font-size:0.75rem;">$/USD</span>
+        <button id="btn-dolar-editar" onclick="editarDolar()" style="background:none;border:1px solid var(--violet);border-radius:5px;color:var(--violet-light);font-size:0.7rem;font-weight:700;padding:2px 7px;cursor:pointer;">Editar</button>
+        <button id="btn-dolar-guardar" onclick="guardarDolar()" style="background:var(--green);border:none;border-radius:5px;color:white;font-size:0.7rem;font-weight:700;padding:2px 7px;cursor:pointer;display:none;">Guardar</button>
       </div>
       <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
 
@@ -146,12 +149,50 @@ const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization
 
 let todosLosProductos = [];
 let sortField = null;
-let sortDir = 1; // 1 asc, -1 desc
+let sortDir = 1;
+
+// ── DÓLAR ──────────────────────────────────────
+function initDolar() {
+  const saved = localStorage.getItem('blinky_dolar');
+  const val = saved ? parseFloat(saved) : 1200;
+  document.getElementById('dolar-valor').value = val;
+  document.getElementById('dolar-display').textContent = val.toLocaleString('es-AR');
+}
+
+function editarDolar() {
+  const display = document.getElementById('dolar-display');
+  const input   = document.getElementById('dolar-valor');
+  const btnE    = document.getElementById('btn-dolar-editar');
+  const btnG    = document.getElementById('btn-dolar-guardar');
+  display.style.display = 'none';
+  input.style.display   = 'block';
+  btnE.style.display    = 'none';
+  btnG.style.display    = 'block';
+  input.focus();
+  input.select();
+}
+
+function guardarDolar() {
+  const display = document.getElementById('dolar-display');
+  const input   = document.getElementById('dolar-valor');
+  const btnE    = document.getElementById('btn-dolar-editar');
+  const btnG    = document.getElementById('btn-dolar-guardar');
+  const val = parseFloat(input.value) || 1200;
+  input.value = val;
+  display.textContent = val.toLocaleString('es-AR');
+  localStorage.setItem('blinky_dolar', val);
+  display.style.display = 'block';
+  input.style.display   = 'none';
+  btnE.style.display    = 'block';
+  btnG.style.display    = 'none';
+  recalcularTodo();
+}
 
 function doLogin() {
   if(document.getElementById('pwd-input').value === PASS) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+    initDolar();
     cargarProductos();
   } else {
     document.getElementById('login-error').style.display = 'block';
