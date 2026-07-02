@@ -112,6 +112,9 @@
       <select class="filter-input" id="filtro-cat" onchange="filtrarTabla()">
         <option value="">Todas las categorías</option>
       </select>
+      <select class="filter-input" id="filtro-marca" onchange="filtrarTabla()">
+        <option value="">Todas las marcas</option>
+      </select>
       <select class="filter-input" id="filtro-stock" onchange="filtrarTabla()">
         <option value="">Todo el stock</option>
         <option value="sin">Sin stock</option>
@@ -203,38 +206,38 @@ function cerrarConEsc(e) { if(e.key==='Escape') cerrarModalImg(); }
 
 
 function recalcularTodo() {
-  todosLosProductos.forEach(p => actualizarCalc(p.id));
+  todosLosProductos.forEach(p => actualizarCalc(p.codigo));
 }
 
-function actualizarCalc(id) {
+function actualizarCalc(codigo) {
   const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
-  const costoUsd = document.getElementById(`costoUsd-${id}`)?.value;
-  const impE     = document.getElementById(`envioUsd-${id}`)?.value; // Imp.E %
-  const gan      = document.getElementById(`gan-${id}`)?.value;
-  const ganM     = document.getElementById(`ganmay-${id}`)?.value;
+  const costoUsd = document.getElementById(`costoUsd-${codigo}`)?.value;
+  const impE     = document.getElementById(`envioUsd-${codigo}`)?.value;
+  const gan      = document.getElementById(`gan-${codigo}`)?.value;
+  const ganM     = document.getElementById(`ganmay-${codigo}`)?.value;
 
   const costoTotal = calcCostoPesos(costoUsd, impE, dolar);
   const pub = calcPrecioDesde(costoTotal, 0, gan);
   const may = calcPrecioDesde(costoTotal, 0, ganM);
 
-  const elCostoTotal = document.getElementById(`costo-pesos-${id}`);
-  const elPub = document.getElementById(`calc-pub-${id}`);
-  const elMay = document.getElementById(`calc-may-${id}`);
+  const elCostoTotal = document.getElementById(`costo-pesos-${codigo}`);
+  const elPub = document.getElementById(`calc-pub-${codigo}`);
+  const elMay = document.getElementById(`calc-may-${codigo}`);
 
   if(elCostoTotal) elCostoTotal.textContent = costoTotal ? fmt(costoTotal) : '-';
   if(elPub) elPub.textContent = pub ? fmt(pub) : '-';
   if(elMay) elMay.textContent = may ? fmt(may) : '-';
 
-  const btn = document.getElementById(`btn-${id}`);
+  const btn = document.getElementById(`btn-${codigo}`);
   if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
 }
 
-async function guardarProducto(id) {
+async function guardarProducto(codigo) {
   const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
-  const costoUsd = parseFloat(document.getElementById(`costoUsd-${id}`)?.value) || null;
-  const impE     = parseFloat(document.getElementById(`envioUsd-${id}`)?.value) || null; // Imp.E %
-  const gan      = parseFloat(document.getElementById(`gan-${id}`)?.value) || null;
-  const ganM     = parseFloat(document.getElementById(`ganmay-${id}`)?.value) || null;
+  const costoUsd = parseFloat(document.getElementById(`costoUsd-${codigo}`)?.value) || null;
+  const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
+  const gan      = parseFloat(document.getElementById(`gan-${codigo}`)?.value) || null;
+  const ganM     = parseFloat(document.getElementById(`ganmay-${codigo}`)?.value) || null;
 
   const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
   const precioPublico = calcPrecioDesde(costoTotal, 0, gan) || null;
@@ -251,12 +254,12 @@ async function guardarProducto(id) {
   if(precioMayor)   body.precio_mayorista = precioMayor;
 
   try {
-    await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?codigo=eq.${encodeURIComponent(p.codigo)}`, {
+    await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?codigo=eq.${encodeURIComponent(codigo)}`, {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
-    const p = todosLosProductos.find(x=>x.id===id);
+    const p = todosLosProductos.find(x=>x.codigo===codigo);
     if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia_min=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
-    const btn = document.getElementById(`btn-${id}`);
+    const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     toast('Guardado ✓', 'ok');
   } catch(e) { toast('Error al guardar', 'err'); }
@@ -274,6 +277,12 @@ async function cargarProductos() {
     const valActual = sel.value;
     sel.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(c=>`<option value="${c}" ${c===valActual?'selected':''}>${c}</option>`).join('');
 
+    // Poblar marcas
+    const marcas = [...new Set(todosLosProductos.map(p=>p.marca).filter(Boolean))].sort();
+    const selM = document.getElementById('filtro-marca');
+    const valMarca = selM.value;
+    selM.innerHTML = '<option value="">Todas las marcas</option>' + marcas.map(m=>`<option value="${m}" ${m===valMarca?'selected':''}>${m}</option>`).join('');
+
     document.getElementById('total-prods').textContent = `${todosLosProductos.length} productos`;
     filtrarTabla();
   } catch(e) {
@@ -284,13 +293,15 @@ async function cargarProductos() {
 function filtrarTabla() {
   const q = document.getElementById('buscar').value.toLowerCase();
   const cat = document.getElementById('filtro-cat').value;
+  const marca = document.getElementById('filtro-marca').value;
   const stock = document.getElementById('filtro-stock').value;
 
   let prods = todosLosProductos.filter(p => {
     const matchQ = !q || (p.nombre||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q);
     const matchCat = !cat || p.categoria === cat;
+    const matchMarca = !marca || p.marca === marca;
     const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
-    return matchQ && matchCat && matchStock;
+    return matchQ && matchCat && matchMarca && matchStock;
   });
 
   renderTabla(prods);
@@ -327,21 +338,21 @@ function renderTabla(prods) {
           const costoBase = costoTotal || parseFloat(p.costo) || 0;
           const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia_min);
           const precioMayor = calcPrecioDesde(costoBase, 0, p.ganancia_mayorista);
-          return `<tr id="row-${p.id}">
+          return `<tr id="row-${p.codigo}">
             <td><img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre}','${p.foto||''}')"></td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
             <td style="font-weight:700;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.nombre}">${p.nombre}</td>
             <td style="color:var(--text2);">${p.marca||'-'}</td>
             <td style="color:var(--text2);">${p.categoria||'-'}</td>
             <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.id}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
-            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.id}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
-            <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.id}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="gan-${p.id}" type="number" min="0" value="${p.ganancia_min||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
-            <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.id}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="ganmay-${p.id}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
-            <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.id}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
-            <td><button class="btn-guardar-row" id="btn-${p.id}" onclick="guardarProducto(${p.id})">Guardar</button></td>
+            <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="gan-${p.codigo}" type="number" min="0" value="${p.ganancia_min||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')"></td>
+            <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')"></td>
+            <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
+            <td><button class="btn-guardar-row" id="btn-${p.codigo}" onclick="guardarProducto('${p.codigo}')">Guardar</button></td>
           </tr>`;
         }).join('')}
       </tbody>
