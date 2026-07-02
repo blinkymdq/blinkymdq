@@ -88,7 +88,7 @@
     <h2>🛍 Editor de Productos</h2>
     <input class="login-input" type="password" id="pwd-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter') doLogin()">
     <div id="login-error" style="color:var(--red);font-size:0.75rem;margin-bottom:0.5rem;display:none;">Contraseña incorrecta</div>
-    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <button class="btn-login" onclick="window.doLogin && doLogin()">Entrar</button>
   </div>
 </div>
 
@@ -251,7 +251,7 @@ function editarProducto(codigo) {
   document.getElementById(`costoUsd-${codigo}`)?.focus();
 }
 
-
+async function guardarProducto(codigo) {
   const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
   const costoUsd = parseFloat(document.getElementById(`costoUsd-${codigo}`)?.value) || null;
   const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
