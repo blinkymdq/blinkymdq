@@ -102,6 +102,7 @@
         <span style="color:var(--text3);font-size:0.75rem;">$/USD</span>
       </div>
       <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
+      <button onclick="importarCostosSheets()" style="background:var(--yellow);color:#1a1a2e;border:none;border-radius:8px;padding:0.5rem 0.85rem;font-size:0.82rem;font-weight:700;cursor:pointer;">📥 Importar costos de Sheets</button>
     </div>
   </div>
 
@@ -199,6 +200,57 @@ function cerrarModalImg() {
 }
 
 function cerrarConEsc(e) { if(e.key==='Escape') cerrarModalImg(); }
+
+async function importarCostosSheets() {
+  if(!confirm('¿Importar costos USD desde Google Sheets? Esto actualizará el campo costo_usd de todos los productos que tengan código coincidente.')) return;
+
+  toast('Importando...', 'ok');
+  const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRiOWDysGfGLvNL7Y4WhqgozjxIV-QDBDftY6uGJZgNvNdn4dsXJFDAdYIgPYRMbkmHzOOpQ4nh0DBq/pub?gid=0&single=true&output=csv';
+
+  try {
+    const res = await fetch(SHEET_CSV);
+    const text = await res.text();
+    const filas = text.split('\n').slice(1); // saltar encabezado
+
+    let actualizados = 0;
+    let errores = 0;
+
+    for (const fila of filas) {
+      // Parsear CSV respetando comillas
+      const cols = fila.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || fila.split(',');
+      const limpiar = v => (v||'').replace(/^"|"$/g,'').replace(/[$\s,"]/g,'').trim();
+
+      const codigo = limpiar(cols[0]);
+      const costoRaw = limpiar(cols[5]); // columna F = índice 5
+      const costo = parseFloat(costoRaw);
+
+      if (!codigo || isNaN(costo) || costo <= 0) continue;
+
+      // Buscar producto en Supabase por código
+      try {
+        const r = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {headers:hdrs});
+        const prods = await r.json();
+        if (!prods.length) continue;
+
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
+          method:'PATCH', headers:hdrs,
+          body: JSON.stringify({ costo_usd: costo })
+        });
+        actualizados++;
+
+        // Actualizar local
+        const p = todosLosProductos.find(x=>x.codigo===codigo);
+        if(p) p.costo_usd = costo;
+      } catch(e) { errores++; }
+    }
+
+    toast(`✓ ${actualizados} productos actualizados${errores?` · ${errores} errores`:''}`, 'ok');
+    filtrarTabla(); // re-renderizar con nuevos valores
+  } catch(e) {
+    toast('Error al leer Sheets', 'err');
+    console.error(e);
+  }
+}
 
 function recalcularTodo() {
   todosLosProductos.forEach(p => actualizarCalc(p.id));
