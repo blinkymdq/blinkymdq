@@ -28,7 +28,7 @@
   .header h1 { font-size:1rem; font-weight:900; color:var(--violet-light); }
   .header-right { display:flex; align-items:center; gap:0.75rem; font-size:0.8rem; color:var(--text2); }
 
-  .container { max-width:1400px; margin:0 auto; padding:1.5rem; }
+  .container { width:100%; padding:1.5rem; }
 
   /* FILTROS */
   .filters { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; }
@@ -39,7 +39,7 @@
 
   /* TABLA */
   .tabla-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; font-size:0.8rem; min-width:1100px; }
+  table { width:100%; border-collapse:collapse; font-size:0.8rem; }
   thead th { padding:10px 12px; text-align:left; color:var(--text3); font-size:0.68rem; text-transform:uppercase; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); position:sticky; top:0; }
   tbody tr:hover { background:var(--surface2); }
   tbody td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
@@ -102,7 +102,7 @@
         <span style="color:var(--text3);font-size:0.75rem;">$/USD</span>
       </div>
       <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
-      <button onclick="importarCostosSheets()" style="background:var(--yellow);color:#1a1a2e;border:none;border-radius:8px;padding:0.5rem 0.85rem;font-size:0.82rem;font-weight:700;cursor:pointer;">📥 Importar costos de Sheets</button>
+
     </div>
   </div>
 
@@ -158,12 +158,12 @@ function getImgUrl(foto) {
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
 }
 
-function calcCostoPesos(costoUsd, envioUsd, dolar) {
+function calcCostoPesos(costoUsd, impE, dolar) {
   const c = parseFloat(costoUsd) || 0;
-  const e = parseFloat(envioUsd) || 0;
+  const e = parseFloat(impE) || 0;
   const d = parseFloat(dolar) || 0;
-  if (!c && !e) return 0;
-  return Math.round((c + e) * d);
+  if (!c) return 0;
+  return Math.round(c * (1 + e / 100) * d);
 }
 
 function calcPrecioDesde(costoPesos, impuestos, ganancia) {
@@ -257,22 +257,21 @@ function recalcularTodo() {
 }
 
 function actualizarCalc(id) {
-  const dolar   = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
   const costoUsd = document.getElementById(`costoUsd-${id}`)?.value;
-  const envioUsd = document.getElementById(`envioUsd-${id}`)?.value;
-  const imp     = document.getElementById(`imp-${id}`)?.value;
-  const gan     = document.getElementById(`gan-${id}`)?.value;
-  const ganM    = document.getElementById(`ganmay-${id}`)?.value;
+  const impE     = document.getElementById(`envioUsd-${id}`)?.value; // Imp.E %
+  const gan      = document.getElementById(`gan-${id}`)?.value;
+  const ganM     = document.getElementById(`ganmay-${id}`)?.value;
 
-  const costoPesos = calcCostoPesos(costoUsd, envioUsd, dolar);
-  const pub = calcPrecioDesde(costoPesos, imp, gan);
-  const may = calcPrecioDesde(costoPesos, imp, ganM);
+  const costoTotal = calcCostoPesos(costoUsd, impE, dolar);
+  const pub = calcPrecioDesde(costoTotal, 0, gan);
+  const may = calcPrecioDesde(costoTotal, 0, ganM);
 
-  const elCostoPesos = document.getElementById(`costo-pesos-${id}`);
+  const elCostoTotal = document.getElementById(`costo-pesos-${id}`);
   const elPub = document.getElementById(`calc-pub-${id}`);
   const elMay = document.getElementById(`calc-may-${id}`);
 
-  if(elCostoPesos) elCostoPesos.textContent = costoPesos ? fmt(costoPesos) : '-';
+  if(elCostoTotal) elCostoTotal.textContent = costoTotal ? fmt(costoTotal) : '-';
   if(elPub) elPub.textContent = pub ? fmt(pub) : '-';
   if(elMay) elMay.textContent = may ? fmt(may) : '-';
 
@@ -283,20 +282,18 @@ function actualizarCalc(id) {
 async function guardarProducto(id) {
   const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
   const costoUsd = parseFloat(document.getElementById(`costoUsd-${id}`)?.value) || null;
-  const envioUsd = parseFloat(document.getElementById(`envioUsd-${id}`)?.value) || null;
-  const imp      = parseFloat(document.getElementById(`imp-${id}`)?.value) || null;
+  const impE     = parseFloat(document.getElementById(`envioUsd-${id}`)?.value) || null; // Imp.E %
   const gan      = parseFloat(document.getElementById(`gan-${id}`)?.value) || null;
   const ganM     = parseFloat(document.getElementById(`ganmay-${id}`)?.value) || null;
 
-  const costoPesos = calcCostoPesos(costoUsd, envioUsd, dolar) || null;
-  const precioPublico = calcPrecioDesde(costoPesos, imp, gan) || null;
-  const precioMayor   = calcPrecioDesde(costoPesos, imp, ganM) || null;
+  const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
+  const precioPublico = calcPrecioDesde(costoTotal, 0, gan) || null;
+  const precioMayor   = calcPrecioDesde(costoTotal, 0, ganM) || null;
 
   const body = {
     costo_usd: costoUsd,
-    envio_usd: envioUsd,
-    costo: costoPesos,
-    impuestos: imp,
+    imp_e: impE,
+    costo_final: costoTotal,
     ganancia: gan,
     ganancia_mayorista: ganM
   };
@@ -308,7 +305,7 @@ async function guardarProducto(id) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.id===id);
-    if(p) { p.costo_usd=costoUsd; p.envio_usd=envioUsd; p.costo=costoPesos; p.impuestos=imp; p.ganancia=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${id}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     toast('Guardado ✓', 'ok');
@@ -365,9 +362,8 @@ function renderTabla(prods) {
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
         <th style="text-align:right;color:var(--yellow);">Costo USD</th>
-        <th style="text-align:right;color:var(--yellow);">Envío USD</th>
-        <th style="text-align:right;color:var(--yellow);">Costo $</th>
-        <th style="text-align:right;">Imp. %</th>
+        <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
+        <th style="text-align:right;color:var(--yellow);">Costo Total</th>
         <th style="text-align:right;">Gan. Min. %</th>
         <th style="text-align:right;">P. Público</th>
         <th style="text-align:right;">Gan. May. %</th>
@@ -377,10 +373,10 @@ function renderTabla(prods) {
       <tbody>
         ${prods.map(p => {
           const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 1200;
-          const costoPesos = calcCostoPesos(p.costo_usd, p.envio_usd, dolar);
-          const costoBase = costoPesos || parseFloat(p.costo) || 0;
-          const precioPublico = calcPrecioDesde(costoBase, p.impuestos, p.ganancia);
-          const precioMayor = calcPrecioDesde(costoBase, p.impuestos, p.ganancia_mayorista);
+          const costoTotal = calcCostoPesos(p.costo_usd, p.envio_usd, dolar);
+          const costoBase = costoTotal || parseFloat(p.costo) || 0;
+          const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia);
+          const precioMayor = calcPrecioDesde(costoBase, 0, p.ganancia_mayorista);
           return `<tr id="row-${p.id}">
             <td><img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre}','${p.foto||''}')"></td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
@@ -389,9 +385,8 @@ function renderTabla(prods) {
             <td style="color:var(--text2);">${p.categoria||'-'}</td>
             <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.id}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
-            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.id}" type="number" min="0" step="0.01" value="${p.envio_usd||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
-            <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.id}">${costoPesos ? fmt(costoPesos) : (p.costo ? fmt(p.costo) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="imp-${p.id}" type="number" min="0" max="999" value="${p.impuestos||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
+            <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.id}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc(${p.id})" style="border-color:rgba(245,158,11,0.3);"></td>
+            <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.id}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="gan-${p.id}" type="number" min="0" value="${p.ganancia||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.id}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.id}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc(${p.id})"></td>
