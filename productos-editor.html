@@ -77,6 +77,32 @@
   #modal-img-info { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:white;border-radius:8px;padding:8px 16px;font-size:0.8rem;text-align:center; }
   .img-thumb { cursor:zoom-in; transition:opacity 0.15s; }
   .img-thumb:hover { opacity:0.8; }
+
+  /* TABS */
+  .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
+  .tab-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text2); font-size:0.85rem; font-weight:700; padding:0.6rem 1.1rem; cursor:pointer; }
+  .tab-btn.active { background:var(--violet); border-color:var(--violet); color:white; }
+
+  /* FORM NUEVO PRODUCTO */
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.5rem; max-width:640px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; }
+  .form-field { display:flex; flex-direction:column; gap:0.3rem; }
+  .form-field.full { grid-column:1 / -1; }
+  .form-field label { font-size:0.72rem; color:var(--text3); text-transform:uppercase; font-weight:700; }
+  .form-field input, .form-field textarea { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.85rem; padding:0.6rem 0.75rem; outline:none; font-family:inherit; }
+  .form-field input:focus, .form-field textarea:focus { border-color:var(--violet); }
+  .form-field textarea { resize:vertical; min-height:70px; }
+
+  .foto-drop { border:2px dashed var(--border); border-radius:10px; padding:1.2rem; text-align:center; cursor:pointer; color:var(--text3); font-size:0.8rem; }
+  .foto-drop:hover { border-color:var(--violet); color:var(--violet-light); }
+  .foto-previews { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem; }
+  .foto-preview { position:relative; width:64px; height:64px; }
+  .foto-preview img { width:100%; height:100%; object-fit:cover; border-radius:8px; background:var(--surface2); }
+  .foto-preview .del-foto { position:absolute; top:-6px; right:-6px; background:var(--red); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:0.7rem; cursor:pointer; line-height:1; }
+
+  .btn-crear { background:var(--green); color:white; border:none; border-radius:10px; padding:0.75rem 1.5rem; font-weight:700; font-size:0.88rem; cursor:pointer; margin-top:0.5rem; }
+  .btn-crear:hover { background:#059669; }
+  .btn-crear:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
@@ -112,23 +138,87 @@
   </div>
 
   <div class="container">
-    <div class="filters">
-      <input class="filter-input" id="buscar" type="text" placeholder="Buscar nombre o código..." oninput="filtrarTabla()" style="min-width:220px;">
-      <select class="filter-input" id="filtro-cat" onchange="filtrarTabla()">
-        <option value="">Todas las categorías</option>
-      </select>
-      <select class="filter-input" id="filtro-marca" onchange="filtrarTabla()">
-        <option value="">Todas las marcas</option>
-      </select>
-      <select class="filter-input" id="filtro-stock" onchange="filtrarTabla()">
-        <option value="">Todo el stock</option>
-        <option value="sin">Sin stock</option>
-        <option value="con">Con stock</option>
-      </select>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabbtn-productos" onclick="switchTab('productos')">📦 Productos</button>
+      <button class="tab-btn" id="tabbtn-nuevo" onclick="switchTab('nuevo')">➕ Nuevo producto</button>
     </div>
 
-    <div class="tabla-wrap">
-      <div id="tabla-contenido"><div class="loading-txt">Cargando productos...</div></div>
+    <div id="tab-productos">
+      <div class="filters">
+        <input class="filter-input" id="buscar" type="text" placeholder="Buscar nombre o código..." oninput="filtrarTabla()" style="min-width:220px;">
+        <select class="filter-input" id="filtro-cat" onchange="filtrarTabla()">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select class="filter-input" id="filtro-marca" onchange="filtrarTabla()">
+          <option value="">Todas las marcas</option>
+        </select>
+        <select class="filter-input" id="filtro-stock" onchange="filtrarTabla()">
+          <option value="">Todo el stock</option>
+          <option value="sin">Sin stock</option>
+          <option value="con">Con stock</option>
+        </select>
+      </div>
+
+      <div class="tabla-wrap">
+        <div id="tabla-contenido"><div class="loading-txt">Cargando productos...</div></div>
+      </div>
+    </div>
+
+    <div id="tab-nuevo" style="display:none;">
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Código *</label>
+            <input type="text" id="np-codigo" placeholder="Ej: PER-0123">
+          </div>
+          <div class="form-field">
+            <label>Nombre *</label>
+            <input type="text" id="np-nombre" placeholder="Ej: Perfume Bora Bora">
+          </div>
+          <div class="form-field">
+            <label>Marca</label>
+            <input type="text" id="np-marca" list="np-marca-list" placeholder="Ej: Natura">
+            <datalist id="np-marca-list"></datalist>
+          </div>
+          <div class="form-field">
+            <label>Categoría</label>
+            <input type="text" id="np-categoria" list="np-cat-list" placeholder="Ej: Perfumes">
+            <datalist id="np-cat-list"></datalist>
+          </div>
+          <div class="form-field">
+            <label>Stock</label>
+            <input type="number" id="np-stock" min="0" placeholder="0">
+          </div>
+          <div class="form-field">
+            <label>Costo USD</label>
+            <input type="number" id="np-costo-usd" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="form-field">
+            <label>Imp. E %</label>
+            <input type="number" id="np-imp-e" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="form-field">
+            <label>Gan. Minorista %</label>
+            <input type="number" id="np-gan-min" min="0" placeholder="0">
+          </div>
+          <div class="form-field">
+            <label>Gan. Mayorista %</label>
+            <input type="number" id="np-gan-may" min="0" placeholder="0">
+          </div>
+          <div class="form-field full">
+            <label>Descripción</label>
+            <textarea id="np-descripcion" placeholder="Ej: Perfume de notas frescas, con notas de lavanda y cítricos..."></textarea>
+          </div>
+          <div class="form-field full">
+            <label>Fotos</label>
+            <div class="foto-drop" onclick="document.getElementById('np-fotos-input').click()">📷 Click para elegir una o más fotos</div>
+            <input type="file" id="np-fotos-input" accept="image/*" multiple style="display:none;" onchange="onFotosSeleccionadas(event)">
+            <div class="foto-previews" id="np-foto-previews"></div>
+            <div id="np-foto-total" style="font-size:0.72rem;color:var(--text3);margin-top:0.4rem;"></div>
+          </div>
+        </div>
+        <button class="btn-crear" id="btn-crear-producto" onclick="crearProducto()">Crear producto</button>
+      </div>
     </div>
   </div>
 </div>
@@ -202,8 +292,196 @@ function doLogin() {
 
 function getImgUrl(foto) {
   if (!foto || foto.trim() === '') return '';
+  if (foto.startsWith('http')) return foto;
   if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=100`;
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
+}
+
+// ── TABS ───────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tab-productos').style.display = tab === 'productos' ? 'block' : 'none';
+  document.getElementById('tab-nuevo').style.display = tab === 'nuevo' ? 'block' : 'none';
+  document.getElementById('tabbtn-productos').classList.toggle('active', tab === 'productos');
+  document.getElementById('tabbtn-nuevo').classList.toggle('active', tab === 'nuevo');
+  if (tab === 'nuevo') poblarDatalists();
+}
+
+function poblarDatalists() {
+  const marcas = [...new Set(todosLosProductos.map(p=>p.marca).filter(Boolean))].sort();
+  const cats = [...new Set(todosLosProductos.map(p=>p.categoria).filter(Boolean))].sort();
+  document.getElementById('np-marca-list').innerHTML = marcas.map(m=>`<option value="${m}">`).join('');
+  document.getElementById('np-cat-list').innerHTML = cats.map(c=>`<option value="${c}">`).join('');
+}
+
+// ── NUEVO PRODUCTO / FOTOS ─────────────────────
+const STORAGE_BUCKET = 'productos-fotos';
+let fotosSeleccionadas = [];
+
+const FOTO_MAX_ANCHO = 1200;
+const FOTO_CALIDAD = 0.8;
+
+function comprimirImagen(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > FOTO_MAX_ANCHO) {
+        height = Math.round(height * (FOTO_MAX_ANCHO / width));
+        width = FOTO_MAX_ANCHO;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        if (!blob) { resolve(file); return; }
+        const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], nombre, { type: 'image/jpeg' }));
+      }, 'image/jpeg', FOTO_CALIDAD);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+async function onFotosSeleccionadas(event) {
+  const nuevos = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!nuevos.length) return;
+
+  const drop = document.querySelector('.foto-drop');
+  const textoOriginal = drop.textContent;
+  drop.textContent = '⏳ Comprimiendo...';
+
+  try {
+    const comprimidas = await Promise.all(nuevos.map(comprimirImagen));
+    fotosSeleccionadas = fotosSeleccionadas.concat(comprimidas);
+    renderFotoPreviews();
+  } catch (e) {
+    console.error(e);
+    toast('Error al procesar alguna imagen', 'err');
+  } finally {
+    drop.textContent = textoOriginal;
+  }
+}
+
+function fmtKB(bytes) {
+  return bytes > 1024*1024 ? (bytes/1024/1024).toFixed(1)+'MB' : Math.round(bytes/1024)+'KB';
+}
+
+function renderFotoPreviews() {
+  const cont = document.getElementById('np-foto-previews');
+  cont.innerHTML = fotosSeleccionadas.map((file, i) => `
+    <div class="foto-preview">
+      <img src="${URL.createObjectURL(file)}">
+      <button class="del-foto" onclick="quitarFoto(${i})">×</button>
+      <div style="position:absolute;bottom:-2px;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;font-size:0.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0;">${fmtKB(file.size)}</div>
+    </div>`).join('');
+  const totalKB = fotosSeleccionadas.reduce((s,f)=>s+f.size, 0);
+  const totalEl = document.getElementById('np-foto-total');
+  if (fotosSeleccionadas.length && totalEl) totalEl.textContent = `Total: ${fmtKB(totalKB)}`;
+}
+
+function quitarFoto(i) {
+  fotosSeleccionadas.splice(i, 1);
+  renderFotoPreviews();
+}
+
+async function subirFotos(codigo) {
+  const urls = [];
+  for (const file of fotosSeleccionadas) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${codigo}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const res = await fetch(`${SUPA_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': file.type || 'image/jpeg' },
+      body: file
+    });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(()=> '');
+      throw new Error(`Error subiendo ${file.name}: ${errTxt}`);
+    }
+    urls.push(`${SUPA_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`);
+  }
+  return urls;
+}
+
+function limpiarFormNuevo() {
+  ['np-codigo','np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may','np-descripcion'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  fotosSeleccionadas = [];
+  renderFotoPreviews();
+  document.getElementById('np-foto-total').textContent = '';
+}
+
+async function crearProducto() {
+  const codigo = document.getElementById('np-codigo').value.trim();
+  const nombre = document.getElementById('np-nombre').value.trim();
+  if (!codigo || !nombre) { toast('Código y nombre son obligatorios', 'err'); return; }
+
+  if (todosLosProductos.some(p => p.codigo === codigo)) {
+    toast('Ya existe un producto con ese código', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('btn-crear-producto');
+  btn.disabled = true; btn.textContent = 'Creando...';
+
+  try {
+    let fotoField = '';
+    if (fotosSeleccionadas.length) {
+      btn.textContent = 'Subiendo fotos...';
+      const urls = await subirFotos(codigo);
+      fotoField = urls.join(',');
+    }
+
+    const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+    const costoUsd = parseFloat(document.getElementById('np-costo-usd').value) || null;
+    const impE = parseFloat(document.getElementById('np-imp-e').value) || null;
+    const ganMin = parseFloat(document.getElementById('np-gan-min').value) || null;
+    const ganMay = parseFloat(document.getElementById('np-gan-may').value) || null;
+    const costoTotal = calcCostoPesos(costoUsd, impE, dolar) || null;
+    const precioPublico = calcPrecioDesde(costoTotal, 0, ganMin) || null;
+    const precioMayor = calcPrecioDesde(costoTotal, 0, ganMay) || null;
+
+    const body = {
+      codigo, nombre,
+      marca: document.getElementById('np-marca').value.trim() || null,
+      categoria: document.getElementById('np-categoria').value.trim() || null,
+      stock: parseInt(document.getElementById('np-stock').value) || 0,
+      costo_usd: costoUsd,
+      imp_e: impE,
+      costo_final: costoTotal,
+      ganancia_min: ganMin,
+      ganancia_mayorista: ganMay,
+      precio_publico: precioPublico,
+      precio_mayorista: precioMayor,
+      descripcion: document.getElementById('np-descripcion').value.trim() || null,
+      foto: fotoField || null
+    };
+
+    btn.textContent = 'Guardando...';
+    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria`, {
+      method: 'POST', headers: hdrs, body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(()=> '');
+      throw new Error(errTxt);
+    }
+
+    toast('Producto creado ✓', 'ok');
+    limpiarFormNuevo();
+    await cargarProductos();
+    switchTab('productos');
+  } catch (e) {
+    console.error(e);
+    toast('Error al crear producto', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crear producto';
+  }
 }
 
 function calcCostoPesos(costoUsd, impE, dolar) {
