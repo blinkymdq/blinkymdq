@@ -23,7 +23,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para CSV robusto -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
     <title>Blinky - Mar del Plata </title>
     <style>
@@ -1313,13 +1312,11 @@
     </script>
 
     <script>
-        const USERS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRiOWDysGfGLvNL7Y4WhqgozjxIV-QDBDftY6uGJZgNvNdn4dsXJFDAdYIgPYRMbkmHzOOpQ4nh0DBq/pub?gid=99011678&single=true&output=csv';
         const SUPA_URL   = 'https://fcaytkwcypktvrmerexp.supabase.co';
         const SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
         const NRO_TELEFONO = "5492235910492";
 
         let productos    = [];
-        let baseUsuarios = [];
         let filtrados    = [];
 
         const COL_DEFAULT = 21;
@@ -1378,21 +1375,11 @@
         // ════════════════════════════════════════
         async function cargarDatos() {
             try {
-                // ── Usuarios desde Sheets (sin cambios) ──
-                const resU   = await fetch(USERS_URL);
-                const dataU  = await resU.text();
-                const parsedU = Papa.parse(dataU, { header: false, skipEmptyLines: true });
-                baseUsuarios = parsedU.data.slice(1).map(c => ({
-                    user:     (c[0] || "").trim().toLowerCase(),
-                    passHash: simpleHash((c[1] || "").trim()),
-                    col:      (c[2] || "").trim()
-                }));
-
-                // ── Productos desde Supabase ──
                 const resP = await fetch(
                     SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,precio_publico,precio_mayorista,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
+
                 const data = await resP.json();
 
                 productos = data.map((p, index) => ({
@@ -1464,14 +1451,6 @@
         // ════════════════════════════════════════
         // HASH SIMPLE
         // ════════════════════════════════════════
-        function simpleHash(str) {
-            let h = 0;
-            for (let i = 0; i < str.length; i++) {
-                h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-            }
-            return h;
-        }
-
         // ════════════════════════════════════════
         // LINK COMPARTIBLE
         // ════════════════════════════════════════
