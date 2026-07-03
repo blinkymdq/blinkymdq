@@ -200,6 +200,14 @@
             <input type="number" id="np-stock" min="0" placeholder="0">
           </div>
           <div class="form-field">
+            <label>Estado</label>
+            <select id="np-estado">
+              <option value="activo">Activo</option>
+              <option value="oferta">Oferta</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+          <div class="form-field">
             <label>Costo USD</label>
             <input type="number" id="np-costo-usd" min="0" step="0.01" placeholder="0.00" oninput="actualizarCalcNuevo()">
           </div>
@@ -369,7 +377,7 @@ function poblarDatalists() {
 // ── CÓDIGO AUTOMÁTICO ───────────────────────────
 async function obtenerProximoCodigo() {
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?select=codigo`, {headers:hdrs});
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo`, {headers:hdrs});
     const rows = await res.json();
     let max = 0;
     rows.forEach(r => {
@@ -573,7 +581,7 @@ async function guardarFotosProducto() {
     }
     const fotoField = [...mfActuales, ...urlsNuevas].join(',');
 
-    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?codigo=eq.${encodeURIComponent(mfCodigo)}`, {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(mfCodigo)}`, {
       method: 'PATCH', headers: hdrs, body: JSON.stringify({ foto: fotoField || null })
     });
     if (!res.ok) {
@@ -599,6 +607,7 @@ function limpiarFormNuevo() {
   ['np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may','np-descripcion'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  document.getElementById('np-estado').value = 'activo';
   fotosSeleccionadas = [];
   renderFotoPreviews();
   document.getElementById('np-foto-total').textContent = '';
@@ -641,10 +650,11 @@ async function crearProducto() {
       marca: document.getElementById('np-marca').value.trim() || null,
       categoria: document.getElementById('np-categoria').value.trim() || null,
       stock: parseInt(document.getElementById('np-stock').value) || 0,
+      estado: document.getElementById('np-estado').value,
       costo_usd: costoUsd,
       imp_e: impE,
       costo_final: costoTotal,
-      ganancia_min: ganMin,
+      ganancia: ganMin,
       ganancia_mayorista: ganMay,
       precio_publico: precioPublico,
       precio_mayorista: precioMayor,
@@ -658,7 +668,7 @@ async function crearProducto() {
     let guardado = false;
     while (!guardado && intentos < 3) {
       intentos++;
-      const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria`, {
+      const res = await fetch(`${SUPA_URL}/rest/v1/productos`, {
         method: 'POST', headers: hdrs, body: JSON.stringify({ codigo, ...bodyBase })
       });
       if (res.ok) {
@@ -758,8 +768,13 @@ function actualizarCalc(codigo) {
   if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
 }
 
+function marcarSinGuardar(codigo) {
+  const btn = document.getElementById(`btn-${codigo}`);
+  if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
+}
+
 function editarProducto(codigo) {
-  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`];
+  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -779,6 +794,8 @@ async function guardarProducto(codigo) {
   const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
   const gan      = parseFloat(document.getElementById(`gan-${codigo}`)?.value) || null;
   const ganM     = parseFloat(document.getElementById(`ganmay-${codigo}`)?.value) || null;
+  const stock    = parseInt(document.getElementById(`stock-${codigo}`)?.value) || 0;
+  const estado   = document.getElementById(`estado-${codigo}`)?.value || 'activo';
 
   const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
   const precioPublico = calcPrecioDesde(costoTotal, 0, gan) || null;
@@ -788,22 +805,24 @@ async function guardarProducto(codigo) {
     costo_usd: costoUsd,
     imp_e: impE,
     costo_final: costoTotal,
-    ganancia_min: gan,
-    ganancia_mayorista: ganM
+    ganancia: gan,
+    ganancia_mayorista: ganM,
+    stock: stock,
+    estado: estado
   };
   if(precioPublico) body.precio_publico = precioPublico;
   if(precioMayor)   body.precio_mayorista = precioMayor;
 
   try {
-    await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?codigo=eq.${encodeURIComponent(codigo)}`, {
+    await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia_min=gan; p.ganancia_mayorista=ganM; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`].forEach(id => {
+    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     setTimeout(() => {
@@ -816,7 +835,7 @@ async function guardarProducto(codigo) {
 async function cargarProductos() {
   document.getElementById('tabla-contenido').innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?order=nombre.asc`, {headers:hdrs});
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?order=nombre.asc`, {headers:hdrs});
     todosLosProductos = await res.json();
 
     // Poblar categorías
@@ -887,6 +906,7 @@ function renderTabla(prods) {
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
+        <th>Estado</th>
         <th style="text-align:right;color:var(--yellow);">Costo USD</th>
         <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
         <th style="text-align:right;color:var(--yellow);">Costo Total</th>
@@ -901,7 +921,7 @@ function renderTabla(prods) {
           const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 1200;
           const costoTotal = calcCostoPesos(p.costo_usd, p.imp_e, dolar);
           const costoBase = costoTotal || parseFloat(p.costo) || 0;
-          const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia_min);
+          const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia);
           const precioMayor = calcPrecioDesde(costoBase, 0, p.ganancia_mayorista);
           return `<tr id="row-${p.codigo}">
             <td>
@@ -914,11 +934,18 @@ function renderTabla(prods) {
             <td style="font-weight:700;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.nombre}">${p.nombre}</td>
             <td style="color:var(--text2);">${p.marca||'-'}</td>
             <td style="color:var(--text2);">${p.categoria||'-'}</td>
-            <td style="text-align:right;"><span class="${(p.stock||0)>0?'stock-ok':'stock-cero'}">${p.stock||0}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:60px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td>
+              <select class="td-input" id="estado-${p.codigo}" style="width:90px;" oninput="marcarSinGuardar('${p.codigo}')" disabled>
+                <option value="activo" ${p.estado==='activo'?'selected':''}>Activo</option>
+                <option value="oferta" ${p.estado==='oferta'?'selected':''}>Oferta</option>
+                <option value="inactivo" ${p.estado==='inactivo'?'selected':''}>Inactivo</option>
+              </select>
+            </td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
-            <td style="text-align:right;"><input class="td-input" id="gan-${p.codigo}" type="number" min="0" value="${p.ganancia_min||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
+            <td style="text-align:right;"><input class="td-input" id="gan-${p.codigo}" type="number" min="0" value="${p.ganancia||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
