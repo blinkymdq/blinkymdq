@@ -1390,7 +1390,7 @@
 
                 // ── Productos desde Supabase ──
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=*&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,precio_publico,precio_mayorista,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
                 const data = await resP.json();
