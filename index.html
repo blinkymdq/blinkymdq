@@ -1358,6 +1358,7 @@
         // ════════════════════════════════════════
         function getImgUrl(foto, sz) {
             if (!foto || foto.trim() === '') return 'sin-foto.png';
+            if (foto.startsWith('http')) return foto;
             if (foto.includes('id=')) {
                 return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=${sz}`;
             }

@@ -95,6 +95,7 @@ const NRO_WSP = '5492235910492'; // ← cambiá por tu número
 
 function getImgUrl(foto) {
   if (!foto || foto.trim() === '') return '';
+  if (foto.startsWith('http')) return foto;
   if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=800`;
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
 }
