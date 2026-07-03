@@ -242,9 +242,15 @@ let sortField = null;
 let sortDir = 1;
 
 // ── DÓLAR ──────────────────────────────────────
-function initDolar() {
-  const saved = localStorage.getItem('blinky_dolar');
-  const val = saved ? parseFloat(saved) : 1200;
+async function initDolar() {
+  let val = 1200;
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/configuracion?select=dolar&id=eq.1`, {headers:hdrs});
+    const data = await res.json();
+    if (data && data[0] && data[0].dolar) val = parseFloat(data[0].dolar);
+  } catch(e) {
+    console.error('No se pudo cargar el dólar desde Supabase, uso valor por defecto', e);
+  }
   document.getElementById('dolar-valor').value = val;
   document.getElementById('dolar-display').textContent = val.toLocaleString('es-AR');
 }
@@ -262,7 +268,7 @@ function editarDolar() {
   input.select();
 }
 
-function guardarDolar() {
+async function guardarDolar() {
   const display = document.getElementById('dolar-display');
   const input   = document.getElementById('dolar-valor');
   const btnE    = document.getElementById('btn-dolar-editar');
@@ -270,7 +276,17 @@ function guardarDolar() {
   const val = parseFloat(input.value) || 1200;
   input.value = val;
   display.textContent = val.toLocaleString('es-AR');
-  localStorage.setItem('blinky_dolar', val);
+  btnG.disabled = true; btnG.textContent = '...';
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/configuracion?id=eq.1`, {
+      method: 'PATCH', headers: hdrs,
+      body: JSON.stringify({ dolar: val, updated_at: new Date().toISOString() })
+    });
+    toast('Dólar actualizado ✓', 'ok');
+  } catch(e) {
+    toast('Error al guardar el dólar', 'err');
+  }
+  btnG.disabled = false; btnG.textContent = 'Guardar';
   display.style.display = 'block';
   input.style.display   = 'none';
   btnE.style.display    = 'block';
@@ -278,11 +294,11 @@ function guardarDolar() {
   recalcularTodo();
 }
 
-function doLogin() {
+async function doLogin() {
   if(document.getElementById('pwd-input').value === PASS) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    initDolar();
+    await initDolar();
     cargarProductos();
   } else {
     document.getElementById('login-error').style.display = 'block';
