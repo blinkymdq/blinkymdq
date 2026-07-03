@@ -279,8 +279,8 @@
 <script>
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
-const PASS = 'blinky2024';
 const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
+const PASS = '727272';
 
 let todosLosProductos = [];
 let sortField = null;
@@ -339,17 +339,29 @@ async function guardarDolar() {
   recalcularTodo();
 }
 
-async function doLogin() {
-  if(document.getElementById('pwd-input').value === PASS) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    await initDolar();
-    cargarProductos();
+async function iniciarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  await initDolar();
+  cargarProductos();
+}
+
+function doLogin() {
+  if (document.getElementById('pwd-input').value === PASS) {
+    sessionStorage.setItem('blinky_auth', '1');
+    iniciarApp();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('pwd-input').value = '';
   }
 }
+
+// Si ya está logueado en blinky-panel.html (misma sessionStorage), entra directo
+if (sessionStorage.getItem('blinky_auth') === '1') {
+  iniciarApp();
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 function getImgUrl(foto) {
   if (!foto || foto.trim() === '') return '';
@@ -964,7 +976,6 @@ function toast(msg, tipo) {
   t._t = setTimeout(() => t.className = '', 2500);
 }
 
-document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 </script>
 </body>
 </html>
