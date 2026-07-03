@@ -75,6 +75,16 @@
   #modal-img.open { display:flex; }
   #modal-img img { max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5); }
   #modal-img-info { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:white;border-radius:8px;padding:8px 16px;font-size:0.8rem;text-align:center; }
+
+  /* MODAL GESTIÓN DE FOTOS */
+  #modal-fotos { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:998; align-items:center; justify-content:center; padding:1rem; }
+  #modal-fotos.open { display:flex; }
+  .modal-fotos-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; width:100%; max-width:520px; max-height:85vh; overflow-y:auto; }
+  .modal-fotos-card h3 { font-size:0.95rem; color:var(--violet-light); margin-bottom:1rem; }
+  .modal-fotos-actions { display:flex; justify-content:flex-end; gap:0.6rem; margin-top:1.2rem; }
+  .btn-modal-cancelar { background:var(--surface2); border:1px solid var(--border); color:var(--text2); border-radius:8px; padding:0.6rem 1.1rem; font-weight:700; font-size:0.82rem; cursor:pointer; }
+  .btn-modal-guardar { background:var(--green); border:none; color:white; border-radius:8px; padding:0.6rem 1.1rem; font-weight:700; font-size:0.82rem; cursor:pointer; }
+  .btn-modal-guardar:disabled { opacity:0.5; cursor:not-allowed; }
   .img-thumb { cursor:zoom-in; transition:opacity 0.15s; }
   .img-thumb:hover { opacity:0.8; }
 
@@ -168,8 +178,8 @@
       <div class="form-card">
         <div class="form-grid">
           <div class="form-field">
-            <label>Código *</label>
-            <input type="text" id="np-codigo" placeholder="Ej: PER-0123">
+            <label>Código (automático)</label>
+            <input type="text" id="np-codigo" readonly style="opacity:0.7;cursor:not-allowed;" placeholder="...">
           </div>
           <div class="form-field">
             <label>Nombre *</label>
@@ -191,19 +201,31 @@
           </div>
           <div class="form-field">
             <label>Costo USD</label>
-            <input type="number" id="np-costo-usd" min="0" step="0.01" placeholder="0.00">
+            <input type="number" id="np-costo-usd" min="0" step="0.01" placeholder="0.00" oninput="actualizarCalcNuevo()">
           </div>
           <div class="form-field">
             <label>Imp. E %</label>
-            <input type="number" id="np-imp-e" min="0" step="0.01" placeholder="0">
+            <input type="number" id="np-imp-e" min="0" step="0.01" placeholder="0" oninput="actualizarCalcNuevo()">
           </div>
           <div class="form-field">
             <label>Gan. Minorista %</label>
-            <input type="number" id="np-gan-min" min="0" placeholder="0">
+            <input type="number" id="np-gan-min" min="0" placeholder="0" oninput="actualizarCalcNuevo()">
           </div>
           <div class="form-field">
             <label>Gan. Mayorista %</label>
-            <input type="number" id="np-gan-may" min="0" placeholder="0">
+            <input type="number" id="np-gan-may" min="0" placeholder="0" oninput="actualizarCalcNuevo()">
+          </div>
+          <div class="form-field">
+            <label>Costo Total ($)</label>
+            <div class="td-input" id="np-costo-total-preview" style="border:none;background:var(--surface2);text-align:right;font-weight:700;color:var(--yellow);width:100%;">-</div>
+          </div>
+          <div class="form-field">
+            <label>Precio Público</label>
+            <div class="td-input precio-calc" id="np-precio-pub-preview" style="border:none;background:var(--surface2);text-align:right;width:100%;">-</div>
+          </div>
+          <div class="form-field">
+            <label>Precio Mayorista</label>
+            <div class="td-input precio-mayo" id="np-precio-may-preview" style="border:none;background:var(--surface2);text-align:right;width:100%;">-</div>
           </div>
           <div class="form-field full">
             <label>Descripción</label>
@@ -229,6 +251,21 @@
 <div id="modal-img" onclick="cerrarModalImg()">
   <img id="modal-img-src" src="" alt="">
   <div id="modal-img-info"></div>
+</div>
+
+<!-- MODAL GESTIÓN DE FOTOS -->
+<div id="modal-fotos">
+  <div class="modal-fotos-card">
+    <h3 id="modal-fotos-titulo">Fotos del producto</h3>
+    <div class="foto-previews" id="mf-actuales"></div>
+    <div class="foto-drop" style="margin-top:1rem;" onclick="document.getElementById('mf-input').click()">📷 Click para agregar más fotos</div>
+    <input type="file" id="mf-input" accept="image/*" multiple style="display:none;" onchange="onFotosModalSeleccionadas(event)">
+    <div class="foto-previews" id="mf-nuevas"></div>
+    <div class="modal-fotos-actions">
+      <button class="btn-modal-cancelar" onclick="cerrarModalFotos()">Cancelar</button>
+      <button class="btn-modal-guardar" id="mf-btn-guardar" onclick="guardarFotosProducto()">Guardar fotos</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -319,7 +356,7 @@ function switchTab(tab) {
   document.getElementById('tab-nuevo').style.display = tab === 'nuevo' ? 'block' : 'none';
   document.getElementById('tabbtn-productos').classList.toggle('active', tab === 'productos');
   document.getElementById('tabbtn-nuevo').classList.toggle('active', tab === 'nuevo');
-  if (tab === 'nuevo') poblarDatalists();
+  if (tab === 'nuevo') { poblarDatalists(); mostrarProximoCodigo(); }
 }
 
 function poblarDatalists() {
@@ -327,6 +364,51 @@ function poblarDatalists() {
   const cats = [...new Set(todosLosProductos.map(p=>p.categoria).filter(Boolean))].sort();
   document.getElementById('np-marca-list').innerHTML = marcas.map(m=>`<option value="${m}">`).join('');
   document.getElementById('np-cat-list').innerHTML = cats.map(c=>`<option value="${c}">`).join('');
+}
+
+// ── CÓDIGO AUTOMÁTICO ───────────────────────────
+async function obtenerProximoCodigo() {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?select=codigo`, {headers:hdrs});
+    const rows = await res.json();
+    let max = 0;
+    rows.forEach(r => {
+      const n = parseInt(r.codigo, 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    return String(max + 1);
+  } catch(e) {
+    console.error('Error calculando próximo código', e);
+    // Fallback: usar lo que ya tenemos cargado en memoria
+    let max = 0;
+    todosLosProductos.forEach(p => {
+      const n = parseInt(p.codigo, 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    return String(max + 1);
+  }
+}
+
+async function mostrarProximoCodigo() {
+  const input = document.getElementById('np-codigo');
+  input.value = '...';
+  input.value = await obtenerProximoCodigo();
+}
+
+function actualizarCalcNuevo() {
+  const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const costoUsd = document.getElementById('np-costo-usd').value;
+  const impE = document.getElementById('np-imp-e').value;
+  const ganMin = document.getElementById('np-gan-min').value;
+  const ganMay = document.getElementById('np-gan-may').value;
+
+  const costoTotal = calcCostoPesos(costoUsd, impE, dolar);
+  const pub = calcPrecioDesde(costoTotal, 0, ganMin);
+  const may = calcPrecioDesde(costoTotal, 0, ganMay);
+
+  document.getElementById('np-costo-total-preview').textContent = costoTotal ? fmt(costoTotal) : '-';
+  document.getElementById('np-precio-pub-preview').textContent = pub ? fmt(pub) : '-';
+  document.getElementById('np-precio-may-preview').textContent = may ? fmt(may) : '-';
 }
 
 // ── NUEVO PRODUCTO / FOTOS ─────────────────────
@@ -405,9 +487,9 @@ function quitarFoto(i) {
   renderFotoPreviews();
 }
 
-async function subirFotos(codigo) {
+async function subirFotos(codigo, archivos) {
   const urls = [];
-  for (const file of fotosSeleccionadas) {
+  for (const file of archivos) {
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${codigo}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
     const res = await fetch(`${SUPA_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
@@ -424,33 +506,124 @@ async function subirFotos(codigo) {
   return urls;
 }
 
+// ── GESTIÓN DE FOTOS (producto existente) ──────
+let mfCodigo = null;
+let mfActuales = [];   // tokens/URLs ya guardados en la base
+let mfNuevas = [];     // Files nuevos, comprimidos, pendientes de subir
+
+function abrirModalFotos(codigo) {
+  const p = todosLosProductos.find(x => x.codigo === codigo);
+  if (!p) return;
+  mfCodigo = codigo;
+  mfActuales = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
+  mfNuevas = [];
+  document.getElementById('modal-fotos-titulo').textContent = `Fotos de ${p.nombre}`;
+  renderFotosModal();
+  document.getElementById('modal-fotos').classList.add('open');
+}
+
+function cerrarModalFotos() {
+  document.getElementById('modal-fotos').classList.remove('open');
+  mfCodigo = null; mfActuales = []; mfNuevas = [];
+}
+
+function renderFotosModal() {
+  document.getElementById('mf-actuales').innerHTML = mfActuales.map((token, i) => `
+    <div class="foto-preview">
+      <img src="${getImgUrl(token)}" onerror="this.style.opacity='0.2'">
+      <button class="del-foto" onclick="quitarFotoActual(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('mf-nuevas').innerHTML = mfNuevas.map((file, i) => `
+    <div class="foto-preview">
+      <img src="${URL.createObjectURL(file)}">
+      <button class="del-foto" onclick="quitarFotoNueva(${i})">×</button>
+      <div style="position:absolute;bottom:-2px;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;font-size:0.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0;">nueva</div>
+    </div>`).join('');
+}
+
+function quitarFotoActual(i) { mfActuales.splice(i, 1); renderFotosModal(); }
+function quitarFotoNueva(i) { mfNuevas.splice(i, 1); renderFotosModal(); }
+
+async function onFotosModalSeleccionadas(event) {
+  const nuevos = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!nuevos.length) return;
+  const drop = document.querySelector('#modal-fotos .foto-drop');
+  const textoOriginal = drop.textContent;
+  drop.textContent = '⏳ Comprimiendo...';
+  try {
+    const comprimidas = await Promise.all(nuevos.map(comprimirImagen));
+    mfNuevas = mfNuevas.concat(comprimidas);
+    renderFotosModal();
+  } catch (e) {
+    toast('Error al procesar alguna imagen', 'err');
+  } finally {
+    drop.textContent = textoOriginal;
+  }
+}
+
+async function guardarFotosProducto() {
+  const btn = document.getElementById('mf-btn-guardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    let urlsNuevas = [];
+    if (mfNuevas.length) {
+      btn.textContent = 'Subiendo fotos...';
+      urlsNuevas = await subirFotos(mfCodigo, mfNuevas);
+    }
+    const fotoField = [...mfActuales, ...urlsNuevas].join(',');
+
+    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria?codigo=eq.${encodeURIComponent(mfCodigo)}`, {
+      method: 'PATCH', headers: hdrs, body: JSON.stringify({ foto: fotoField || null })
+    });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(()=> '');
+      throw new Error(errTxt);
+    }
+
+    const p = todosLosProductos.find(x => x.codigo === mfCodigo);
+    if (p) p.foto = fotoField;
+
+    toast('Fotos actualizadas ✓', 'ok');
+    cerrarModalFotos();
+    filtrarTabla();
+  } catch (e) {
+    console.error(e);
+    toast('Error al guardar las fotos', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar fotos';
+  }
+}
+
 function limpiarFormNuevo() {
-  ['np-codigo','np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may','np-descripcion'].forEach(id => {
+  ['np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may','np-descripcion'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   fotosSeleccionadas = [];
   renderFotoPreviews();
   document.getElementById('np-foto-total').textContent = '';
+  document.getElementById('np-costo-total-preview').textContent = '-';
+  document.getElementById('np-precio-pub-preview').textContent = '-';
+  document.getElementById('np-precio-may-preview').textContent = '-';
+  mostrarProximoCodigo();
 }
 
 async function crearProducto() {
-  const codigo = document.getElementById('np-codigo').value.trim();
   const nombre = document.getElementById('np-nombre').value.trim();
-  if (!codigo || !nombre) { toast('Código y nombre son obligatorios', 'err'); return; }
-
-  if (todosLosProductos.some(p => p.codigo === codigo)) {
-    toast('Ya existe un producto con ese código', 'err');
-    return;
-  }
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
 
   const btn = document.getElementById('btn-crear-producto');
   btn.disabled = true; btn.textContent = 'Creando...';
 
   try {
+    // Recalculamos el código justo acá para minimizar la ventana de carrera
+    let codigo = await obtenerProximoCodigo();
+    document.getElementById('np-codigo').value = codigo;
+
     let fotoField = '';
     if (fotosSeleccionadas.length) {
       btn.textContent = 'Subiendo fotos...';
-      const urls = await subirFotos(codigo);
+      const urls = await subirFotos(codigo, fotosSeleccionadas);
       fotoField = urls.join(',');
     }
 
@@ -463,8 +636,8 @@ async function crearProducto() {
     const precioPublico = calcPrecioDesde(costoTotal, 0, ganMin) || null;
     const precioMayor = calcPrecioDesde(costoTotal, 0, ganMay) || null;
 
-    const body = {
-      codigo, nombre,
+    const bodyBase = {
+      nombre,
       marca: document.getElementById('np-marca').value.trim() || null,
       categoria: document.getElementById('np-categoria').value.trim() || null,
       stock: parseInt(document.getElementById('np-stock').value) || 0,
@@ -480,15 +653,29 @@ async function crearProducto() {
     };
 
     btn.textContent = 'Guardando...';
-    const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria`, {
-      method: 'POST', headers: hdrs, body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      const errTxt = await res.text().catch(()=> '');
-      throw new Error(errTxt);
+
+    let intentos = 0;
+    let guardado = false;
+    while (!guardado && intentos < 3) {
+      intentos++;
+      const res = await fetch(`${SUPA_URL}/rest/v1/lista_provisoria`, {
+        method: 'POST', headers: hdrs, body: JSON.stringify({ codigo, ...bodyBase })
+      });
+      if (res.ok) {
+        guardado = true;
+      } else {
+        const errTxt = await res.text().catch(()=> '');
+        const esConflicto = res.status === 409 || /duplicate|unique/i.test(errTxt);
+        if (esConflicto && intentos < 3) {
+          codigo = await obtenerProximoCodigo();
+          document.getElementById('np-codigo').value = codigo;
+        } else {
+          throw new Error(errTxt || `HTTP ${res.status}`);
+        }
+      }
     }
 
-    toast('Producto creado ✓', 'ok');
+    toast(`Producto ${codigo} creado ✓`, 'ok');
     limpiarFormNuevo();
     await cargarProductos();
     switchTab('productos');
@@ -717,7 +904,12 @@ function renderTabla(prods) {
           const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia_min);
           const precioMayor = calcPrecioDesde(costoBase, 0, p.ganancia_mayorista);
           return `<tr id="row-${p.codigo}">
-            <td><img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre}','${p.foto||''}')"></td>
+            <td>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre.replace(/'/g,"\\'")}','${(p.foto||'').replace(/'/g,"\\'")}')">
+                <button onclick="abrirModalFotos('${p.codigo}')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:0.62rem;padding:1px 5px;cursor:pointer;">🖼 Fotos</button>
+              </div>
+            </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
             <td style="font-weight:700;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.nombre}">${p.nombre}</td>
             <td style="color:var(--text2);">${p.marca||'-'}</td>
