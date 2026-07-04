@@ -1913,11 +1913,27 @@
         }
 
         async function aplicarSesion(user) {
-            const { data } = await supabaseClient
+            let { data, error } = await supabaseClient
                 .from('usuarios')
                 .select('rol, nombre, telefono, provincia, localidad')
                 .eq('id', user.id)
                 .single();
+
+            // Si no existe el perfil (típico de la primera vez con Google), lo creamos
+            if (!data) {
+                const nombreNuevo = user.user_metadata?.full_name || user.email.split('@')[0];
+                const { data: nuevoPerfil } = await supabaseClient
+                    .from('usuarios')
+                    .upsert({
+                        id: user.id,
+                        email: user.email,
+                        nombre: nombreNuevo,
+                        rol: 'minorista'
+                    })
+                    .select('rol, nombre, telefono, provincia, localidad')
+                    .single();
+                data = nuevoPerfil;
+            }
 
             const rol = data?.rol || 'minorista';
             const nombre = data?.nombre || user.user_metadata?.full_name || user.email;
