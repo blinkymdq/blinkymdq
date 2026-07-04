@@ -780,6 +780,11 @@ function actualizarCalc(codigo) {
   if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
 }
 
+function autoAltura(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 function marcarSinGuardar(codigo) {
   const btn = document.getElementById(`btn-${codigo}`);
   if(btn) { btn.textContent='Guardar'; btn.classList.remove('guardado'); }
@@ -940,7 +945,7 @@ function renderTabla(prods) {
     <table>
       <thead><tr>
         <th>Foto</th>
-        <th style="cursor:pointer;user-select:none;width:60px;" onclick="sortBy('codigo')">Código <span style="color:var(--violet-light);font-size:0.65rem;">${arrowCod}</span></th>
+        <th style="cursor:pointer;user-select:none;width:45px;" onclick="sortBy('codigo')">Código <span style="color:var(--violet-light);font-size:0.65rem;">${arrowCod}</span></th>
         <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${arrowNom}</span></th>
         <th>Marca</th>
         <th>Categoría</th>
@@ -972,12 +977,12 @@ function renderTabla(prods) {
               </div>
             </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
-            <td style="min-width:260px;max-width:340px;">
-              <textarea class="td-input" id="nombre-${p.codigo}" rows="2" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled>${p.nombre||''}</textarea>
+            <td style="min-width:320px;max-width:420px;">
+              <textarea class="td-input nombre-auto" id="nombre-${p.codigo}" rows="1" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;overflow:hidden;" oninput="marcarSinGuardar('${p.codigo}');autoAltura(this)" disabled>${p.nombre||''}</textarea>
             </td>
-            <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:80px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
-            <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:80px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
-            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:60px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:45px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
@@ -1001,6 +1006,8 @@ function renderTabla(prods) {
         }).join('')}
       </tbody>
     </table>`;
+
+  document.querySelectorAll('.nombre-auto').forEach(autoAltura);
 }
 
 function toast(msg, tipo) {
