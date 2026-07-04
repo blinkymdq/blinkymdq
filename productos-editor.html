@@ -348,7 +348,7 @@ async function iniciarApp() {
 
 function doLogin() {
   if (document.getElementById('pwd-input').value === PASS) {
-    sessionStorage.setItem('blinky_auth', '1');
+    localStorage.setItem('blinky_auth', '1');
     iniciarApp();
   } else {
     document.getElementById('login-error').style.display = 'block';
@@ -357,7 +357,7 @@ function doLogin() {
 }
 
 // Si ya está logueado en blinky-panel.html (misma sessionStorage), entra directo
-if (sessionStorage.getItem('blinky_auth') === '1') {
+if (localStorage.getItem('blinky_auth') === '1') {
   iniciarApp();
 }
 
@@ -786,7 +786,7 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`];
+  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `descripcion-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -797,7 +797,7 @@ function editarProducto(codigo) {
     btn.className = 'btn-guardar-row';
     btn.onclick = () => guardarProducto(codigo);
   }
-  document.getElementById(`costoUsd-${codigo}`)?.focus();
+  document.getElementById(`nombre-${codigo}`)?.focus();
 }
 
 async function guardarProducto(codigo) {
@@ -808,12 +808,22 @@ async function guardarProducto(codigo) {
   const ganM     = parseFloat(document.getElementById(`ganmay-${codigo}`)?.value) || null;
   const stock    = parseInt(document.getElementById(`stock-${codigo}`)?.value) || 0;
   const estado   = document.getElementById(`estado-${codigo}`)?.value || 'activo';
+  const nombre   = document.getElementById(`nombre-${codigo}`)?.value.trim();
+  const marca    = document.getElementById(`marca-${codigo}`)?.value.trim() || null;
+  const categoria = document.getElementById(`categoria-${codigo}`)?.value.trim() || null;
+  const descripcion = document.getElementById(`descripcion-${codigo}`)?.value.trim() || null;
+
+  if (!nombre) { toast('El nombre no puede quedar vacío', 'err'); return; }
 
   const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
   const precioPublico = calcPrecioDesde(costoTotal, 0, gan) || null;
   const precioMayor   = calcPrecioDesde(costoTotal, 0, ganM) || null;
 
   const body = {
+    nombre: nombre,
+    marca: marca,
+    categoria: categoria,
+    descripcion: descripcion,
     costo_usd: costoUsd,
     imp_e: impE,
     costo_final: costoTotal,
@@ -830,11 +840,11 @@ async function guardarProducto(codigo) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.descripcion=descripcion; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`].forEach(id => {
+    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`descripcion-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     setTimeout(() => {
@@ -842,6 +852,23 @@ async function guardarProducto(codigo) {
     }, 1500);
     toast('Guardado ✓', 'ok');
   } catch(e) { toast('Error al guardar', 'err'); }
+}
+
+async function eliminarProducto(codigo) {
+  const p = todosLosProductos.find(x=>x.codigo===codigo);
+  if (!confirm(`¿Eliminar "${p ? p.nombre : codigo}" (Cód. ${codigo})? Esta acción no se puede deshacer.`)) return;
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
+      method:'DELETE', headers:hdrs
+    });
+    if (!res.ok) { const t = await res.text().catch(()=> ''); throw new Error(t); }
+    todosLosProductos = todosLosProductos.filter(x=>x.codigo!==codigo);
+    toast('Producto eliminado ✓', 'ok');
+    filtrarTabla();
+  } catch(e) {
+    console.error(e);
+    toast('Error al eliminar el producto', 'err');
+  }
 }
 
 async function cargarProductos() {
@@ -918,7 +945,6 @@ function renderTabla(prods) {
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;">Stock</th>
-        <th>Estado</th>
         <th style="text-align:right;color:var(--yellow);">Costo USD</th>
         <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
         <th style="text-align:right;color:var(--yellow);">Costo Total</th>
@@ -926,6 +952,9 @@ function renderTabla(prods) {
         <th style="text-align:right;">P. Público</th>
         <th style="text-align:right;">Gan. May. %</th>
         <th style="text-align:right;">P. Mayor.</th>
+        <th>Descripción</th>
+        <th>Estado</th>
+        <th></th>
         <th></th>
       </tr></thead>
       <tbody>
@@ -943,17 +972,12 @@ function renderTabla(prods) {
               </div>
             </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
-            <td style="font-weight:700;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.nombre}">${p.nombre}</td>
-            <td style="color:var(--text2);">${p.marca||'-'}</td>
-            <td style="color:var(--text2);">${p.categoria||'-'}</td>
-            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:60px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
-            <td>
-              <select class="td-input" id="estado-${p.codigo}" style="width:90px;" oninput="marcarSinGuardar('${p.codigo}')" disabled>
-                <option value="activo" ${p.estado==='activo'?'selected':''}>Activo</option>
-                <option value="oferta" ${p.estado==='oferta'?'selected':''}>Oferta</option>
-                <option value="inactivo" ${p.estado==='inactivo'?'selected':''}>Inactivo</option>
-              </select>
+            <td style="min-width:160px;max-width:240px;">
+              <textarea class="td-input" id="nombre-${p.codigo}" rows="2" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled>${p.nombre||''}</textarea>
             </td>
+            <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:100px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:100px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:60px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
@@ -961,7 +985,18 @@ function renderTabla(prods) {
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
+            <td style="min-width:160px;">
+              <textarea class="td-input" id="descripcion-${p.codigo}" rows="2" style="width:100%;resize:vertical;white-space:normal;font-size:0.72rem;text-align:left;" placeholder="Sin descripción" oninput="marcarSinGuardar('${p.codigo}')" disabled>${p.descripcion||''}</textarea>
+            </td>
+            <td>
+              <select class="td-input" id="estado-${p.codigo}" style="width:90px;" oninput="marcarSinGuardar('${p.codigo}')" disabled>
+                <option value="activo" ${p.estado==='activo'?'selected':''}>Activo</option>
+                <option value="oferta" ${p.estado==='oferta'?'selected':''}>Oferta</option>
+                <option value="inactivo" ${p.estado==='inactivo'?'selected':''}>Inactivo</option>
+              </select>
+            </td>
             <td><button class="btn-editar-row" id="btn-${p.codigo}" onclick="editarProducto('${p.codigo}')">Editar</button></td>
+            <td><button onclick="eliminarProducto('${p.codigo}')" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:0.7rem;padding:4px 8px;cursor:pointer;">🗑</button></td>
           </tr>`;
         }).join('')}
       </tbody>

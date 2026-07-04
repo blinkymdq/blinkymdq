@@ -1395,7 +1395,7 @@
                     esOferta:     p.estado === 'oferta',
                     esMasVisto:   p.estado === 'oferta',
                     stock:        Number(p.stock || 0),
-                    sinStock:     p.stock === 0,
+                    sinStock:     Number(p.stock || 0) <= 0,
                     oculto:       false
                 }));
 

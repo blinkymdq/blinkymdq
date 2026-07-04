@@ -497,7 +497,7 @@ const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization
 
 function doLogin() {
   if (document.getElementById('pwd-input').value === PASS) {
-    sessionStorage.setItem('blinky_auth','1');
+    localStorage.setItem('blinky_auth','1');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     cargarStats(); cargarPedidos(); setFechasMes();
@@ -506,8 +506,8 @@ function doLogin() {
     document.getElementById('pwd-input').value='';
   }
 }
-function logout() { sessionStorage.removeItem('blinky_auth'); location.reload(); }
-if (sessionStorage.getItem('blinky_auth')==='1') {
+function logout() { localStorage.removeItem('blinky_auth'); location.reload(); }
+if (localStorage.getItem('blinky_auth')==='1') {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   cargarStats(); cargarPedidos(); setFechasMes();
