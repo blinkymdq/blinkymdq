@@ -2051,7 +2051,15 @@
             });
             if(error){ errEl.textContent = error.message; errEl.classList.remove('hidden'); return; }
 
-            // Guardar datos extra en usuarios
+            // Si el email ya estaba registrado, Supabase devuelve un usuario "fantasma"
+            // (identities vacío) por seguridad, sin crear una cuenta real.
+            if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+                errEl.textContent = 'Ya existe una cuenta con este email. Iniciá sesión o recuperá tu contraseña.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            // Guardar datos extra en usuarios (la fila base ya la crea el trigger de la base)
             if(data.user) {
                 await supabaseClient.from('usuarios').upsert({
                     id: data.user.id,
