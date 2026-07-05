@@ -2346,6 +2346,12 @@
             var esTarjeta = pago === 'Tarjeta de crédito/débito';
             document.getElementById('wrap-btn-tarjeta').style.display = esTarjeta ? 'block' : 'none';
             document.getElementById('wrap-btn-enviar').style.display = esTarjeta ? 'none' : (pago ? 'block' : 'none');
+
+            if (esTarjeta) {
+                var totalTxt = document.getElementById('checkoutTotal').textContent;
+                document.getElementById('btn-openpay').innerHTML =
+                    '<svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Pagar con Tarjeta ' + totalTxt;
+            }
         }
 
         function mostrarDireccion(mostrar) {
@@ -2453,7 +2459,7 @@
                 errEl.textContent = 'Error al conectar con el servicio de pago. Intentá por WhatsApp.';
                 errEl.classList.remove('hidden');
                 btn.disabled = false;
-                btn.innerHTML = '<svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Pagar con Tarjeta';
+                btn.innerHTML = '<svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Pagar con Tarjeta ' + document.getElementById('checkoutTotal').textContent;
             }
         }
 
