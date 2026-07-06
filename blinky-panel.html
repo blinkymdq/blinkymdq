@@ -460,7 +460,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div id="fc-consignacion-tabla"><div class="loading-txt">Cargando...</div></div>
 
         <div class="fc-form-row">
-          <input id="fc-nuevo-producto" type="text" list="fc-productos-list" placeholder="Nombre del producto...">
+          <input id="fc-nuevo-producto" type="text" list="fc-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioConsignacion(this.value)">
           <datalist id="fc-productos-list"></datalist>
           <input id="fc-nueva-cant" type="number" min="1" placeholder="Cantidad">
           <input id="fc-nuevo-precio" type="number" min="0" step="0.01" placeholder="Precio unit.">
@@ -1268,11 +1268,21 @@ function cerrarFichaCliente() {
   clienteActual = null;
 }
 
+let productosFichaCache = [];
+
 async function poblarDatalistProductosFicha() {
   try {
-    const prods = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre&order=nombre.asc`, {headers:hdrs})).json();
-    document.getElementById('fc-productos-list').innerHTML = prods.map(p=>`<option value="${p.nombre}" data-codigo="${p.codigo}">`).join('');
+    productosFichaCache = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista&order=nombre.asc`, {headers:hdrs})).json();
+    document.getElementById('fc-productos-list').innerHTML = productosFichaCache.map(p=>`<option value="${p.nombre}" data-codigo="${p.codigo}">`).join('');
   } catch(e){}
+}
+
+function autocompletarPrecioConsignacion(nombre) {
+  const prod = productosFichaCache.find(p => p.nombre === nombre);
+  if (!prod || !clienteActual) return;
+  const esMayorista = clienteActual.rol === 'mayorista';
+  const precio = esMayorista ? prod.precio_mayorista : prod.precio_publico;
+  if (precio) document.getElementById('fc-nuevo-precio').value = precio;
 }
 
 async function cargarConsignacionCliente() {
