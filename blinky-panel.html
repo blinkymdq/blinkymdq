@@ -194,6 +194,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .pago-forma.efectivo { color:var(--green); }
 .pago-forma.transferencia { color:var(--cyan); }
 .pago-forma.tarjeta { color:var(--violet-light); }
+.pago-forma.descuento { color:var(--yellow); }
 .pago-monto { font-weight:900; }
 .pago-fecha { font-size:0.72rem;color:var(--text3); }
 
@@ -1006,6 +1007,7 @@ async function verPedido(num, esEliminado) {
                 <span class="pago-forma ${pg.forma_pago}">${pg.forma_pago}</span>
                 <span class="pago-monto">$${Number(pg.monto).toLocaleString('es-AR')}</span>
                 <span class="pago-fecha">${new Date(pg.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+                <button onclick="eliminarPago(${pg.id},'${num}',${pg.monto})" title="Eliminar pago" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0 0 8px;">🗑️</button>
               </div>`).join('')}
             </div>
           </div>`:''}
@@ -1020,6 +1022,7 @@ async function verPedido(num, esEliminado) {
                 <option value="efectivo">💵 Efectivo</option>
                 <option value="transferencia">📲 Transferencia</option>
                 <option value="tarjeta">💳 Tarjeta</option>
+                <option value="descuento">🏷️ Descuento</option>
               </select>
             </div>
             <button class="btn-agregar-pago" onclick="agregarPago('${num}', ${total})">Agregar pago</button>
@@ -1079,6 +1082,29 @@ async function agregarPago(num, totalPedido) {
     cargarPedidos();
     cargarCajas();
   } catch(e){toast('Error al registrar pago','err');}
+}
+
+async function eliminarPago(pagoId, num, monto) {
+  if (!confirm(`¿Eliminar este pago de $${Number(monto).toLocaleString('es-AR')}?`)) return;
+  try {
+    // Eliminar el registro de pago
+    await fetch(`${SUPA_URL}/rest/v1/pagos?id=eq.${pagoId}`, {method:'DELETE', headers:hdrs});
+
+    // Restar el monto de monto_pagado en el pedido
+    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps = await pR.json();
+    const actual = Number(ps[0].monto_pagado||0);
+    const nuevo = Math.max(actual - Number(monto), 0);
+
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
+      method:'PATCH', headers:hdrs, body:JSON.stringify({monto_pagado:nuevo})
+    });
+
+    toast('Pago eliminado ✓','ok');
+    verPedido(num,false);
+    cargarPedidos();
+    cargarCajas();
+  } catch(e){toast('Error al eliminar el pago','err');}
 }
 
 async function cambiarEstado(num,estado) {
