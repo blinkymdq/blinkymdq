@@ -251,6 +251,9 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .fc-btn { background:var(--violet);color:white;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;padding:0.5rem 0.8rem;cursor:pointer;white-space:nowrap; }
 .fc-tab-btn { background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-size:0.85rem;font-weight:700;padding:0.5rem 0.9rem;cursor:pointer; }
 .fc-tab-btn.active { color:var(--violet-light);border-bottom-color:var(--violet); }
+.np-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:0.6rem; }
+.np-grid2 select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.82rem;padding:0.55rem 0.6rem; }
+.np-item-row { display:grid;grid-template-columns:1.8fr 0.4fr 0.6fr 0.6fr 0.3fr;gap:0.4rem;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem; }
 </style>
 </head>
 <body>
@@ -505,6 +508,53 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       </div>
     </div>
 
+    <!-- MODAL NUEVO PEDIDO (manual, por admin) -->
+    <div id="modal-nuevo-pedido" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:210;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;position:relative;">
+        <button onclick="cerrarModalNuevoPedido()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
+        <div style="font-weight:900;font-size:1.05rem;margin-bottom:1rem;">➕ Agregar pedido</div>
+
+        <div class="fc-section-title" style="margin-top:0;">Cliente</div>
+        <input id="np-cliente-input" type="text" list="np-clientes-list" placeholder="Buscar por nombre o email..." autocomplete="off" oninput="seleccionarClienteNP(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.6rem 0.75rem;">
+        <datalist id="np-clientes-list"></datalist>
+        <div id="np-cliente-info" style="font-size:0.8rem;color:var(--text2);margin-top:0.4rem;"></div>
+
+        <div class="fc-section-title">Productos</div>
+        <div id="np-carrito-tabla"><div style="color:var(--text3);font-size:0.8rem;">Sin productos agregados.</div></div>
+        <div class="fc-form-row">
+          <input id="np-producto-input" type="text" list="np-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioNP(this.value)">
+          <datalist id="np-productos-list"></datalist>
+          <input id="np-cantidad-input" type="number" min="1" value="1" placeholder="Cant.">
+          <input id="np-precio-input" type="number" min="0" step="0.01" placeholder="Precio unit.">
+          <button class="fc-btn" onclick="agregarItemNP()">+ Agregar</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.8rem;padding-top:0.6rem;border-top:1px solid var(--border);">
+          <span style="font-weight:700;color:var(--text2);">Total</span>
+          <span id="np-total" style="font-weight:900;font-size:1.3rem;color:var(--violet-light);">$0</span>
+        </div>
+
+        <div class="fc-section-title">Forma de pago y entrega</div>
+        <div class="np-grid2">
+          <select id="np-forma-pago">
+            <option value="Transferencia">📲 Transferencia</option>
+            <option value="Tarjeta de crédito/débito">💳 Tarjeta</option>
+            <option value="Coordinar por WhatsApp">💬 Coordinar por WP</option>
+          </select>
+          <select id="np-entrega">
+            <option value="envio">🚚 Envío a domicilio</option>
+            <option value="retiro">💬 Coordinar por WP</option>
+          </select>
+        </div>
+        <textarea id="np-notas" placeholder="Notas / aclaraciones (opcional)" style="width:100%;margin-top:0.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.82rem;padding:0.6rem;resize:vertical;" rows="2"></textarea>
+
+        <div style="display:flex;gap:0.6rem;margin-top:1.2rem;">
+          <button onclick="cerrarModalNuevoPedido()" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:0.7rem;font-weight:700;cursor:pointer;">Cancelar</button>
+          <button id="np-btn-confirmar" onclick="confirmarNuevoPedido()" style="flex:1;background:var(--green);color:white;border:none;border-radius:10px;padding:0.7rem;font-weight:700;cursor:pointer;">Confirmar pedido</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PEDIDOS -->
     <div id="panel-pedidos" class="panel">
       <div class="filters">
@@ -528,6 +578,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         </select>
         <input class="filter-input" id="filtro-busca" type="text" placeholder="Buscar nombre..." oninput="cargarPedidos()">
         <button class="btn-refresh" onclick="cargarPedidos()">↻ Actualizar</button>
+        <button class="btn-refresh" style="background:var(--violet);color:white;border-color:var(--violet);" onclick="abrirModalNuevoPedido()">➕ Agregar pedido</button>
       </div>
       <div id="lista-pedidos"><div class="loading-txt">Cargando...</div></div>
     </div>
@@ -1235,6 +1286,169 @@ async function usarSaldoFavor(num, totalPedido, email) {
     verPedido(num,false);
     cargarPedidos();
   } catch(e){toast('Error al aplicar el saldo','err');}
+}
+
+// ── NUEVO PEDIDO MANUAL (admin) ─────────────────
+let npUsuariosCache = [];
+let npProductosCache = [];
+let npClienteSeleccionado = null;
+let npCarrito = [];
+
+async function abrirModalNuevoPedido() {
+  npClienteSeleccionado = null;
+  npCarrito = [];
+  document.getElementById('np-cliente-input').value = '';
+  document.getElementById('np-cliente-info').textContent = '';
+  document.getElementById('np-producto-input').value = '';
+  document.getElementById('np-cantidad-input').value = '1';
+  document.getElementById('np-precio-input').value = '';
+  document.getElementById('np-notas').value = '';
+  renderCarritoNP();
+
+  try {
+    npUsuariosCache = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,provincia,localidad,direccion,rol&order=nombre.asc`, {headers:hdrs})).json();
+    document.getElementById('np-clientes-list').innerHTML = npUsuariosCache.map(u=>
+      `<option value="#${u.numero_usuario} - ${u.nombre} (${u.email})">`
+    ).join('');
+  } catch(e){}
+
+  try {
+    npProductosCache = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,estado&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
+    document.getElementById('np-productos-list').innerHTML = npProductosCache.map(p=>`<option value="${p.nombre}">`).join('');
+  } catch(e){}
+
+  document.getElementById('modal-nuevo-pedido').style.display = 'flex';
+}
+
+function cerrarModalNuevoPedido() {
+  document.getElementById('modal-nuevo-pedido').style.display = 'none';
+}
+
+function seleccionarClienteNP(valor) {
+  const match = npUsuariosCache.find(u => `#${u.numero_usuario} - ${u.nombre} (${u.email})` === valor);
+  npClienteSeleccionado = match || null;
+  const info = document.getElementById('np-cliente-info');
+  if (match) {
+    info.innerHTML = `✓ <strong>${match.nombre}</strong> — ${match.rol==='mayorista'?'Mayorista':'Minorista'}${match.telefono?` — 📱 ${match.telefono}`:''}`;
+    info.style.color = 'var(--green)';
+  } else {
+    info.textContent = '';
+  }
+}
+
+function autocompletarPrecioNP(nombre) {
+  const prod = npProductosCache.find(p => p.nombre === nombre);
+  if (!prod) return;
+  const esMayorista = npClienteSeleccionado?.rol === 'mayorista';
+  const precio = esMayorista ? prod.precio_mayorista : prod.precio_publico;
+  if (precio) document.getElementById('np-precio-input').value = precio;
+}
+
+function agregarItemNP() {
+  const nombreInput = document.getElementById('np-producto-input');
+  const nombre = nombreInput.value.trim();
+  const cantidad = parseInt(document.getElementById('np-cantidad-input').value) || 1;
+  const precio = parseFloat(document.getElementById('np-precio-input').value);
+
+  if (!nombre) { toast('Elegí un producto', 'err'); return; }
+  if (!precio || precio <= 0) { toast('Ingresá un precio válido', 'err'); return; }
+
+  const prod = npProductosCache.find(p => p.nombre === nombre);
+  npCarrito.push({
+    codigo: prod ? prod.codigo : null,
+    producto: nombre,
+    cantidad,
+    precio_unitario: precio,
+    subtotal: cantidad * precio
+  });
+
+  nombreInput.value = '';
+  document.getElementById('np-cantidad-input').value = '1';
+  document.getElementById('np-precio-input').value = '';
+  renderCarritoNP();
+}
+
+function quitarItemNP(idx) {
+  npCarrito.splice(idx, 1);
+  renderCarritoNP();
+}
+
+function renderCarritoNP() {
+  const cont = document.getElementById('np-carrito-tabla');
+  if (!npCarrito.length) {
+    cont.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;">Sin productos agregados.</div>';
+  } else {
+    cont.innerHTML = npCarrito.map((it, i) => `
+      <div class="np-item-row">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${it.producto}">${it.producto}</div>
+        <div>x${it.cantidad}</div>
+        <div>$${it.precio_unitario.toLocaleString('es-AR')}</div>
+        <div style="font-weight:700;">$${it.subtotal.toLocaleString('es-AR')}</div>
+        <button onclick="quitarItemNP(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button>
+      </div>`).join('');
+  }
+  const total = npCarrito.reduce((s,it)=>s+it.subtotal, 0);
+  document.getElementById('np-total').textContent = `$${total.toLocaleString('es-AR')}`;
+}
+
+async function confirmarNuevoPedido() {
+  if (!npClienteSeleccionado) { toast('Elegí un cliente registrado de la lista', 'err'); return; }
+  if (!npCarrito.length) { toast('Agregá al menos un producto', 'err'); return; }
+
+  if (!confirm(`¿Seguro que desea agregar este pedido al cliente "${npClienteSeleccionado.nombre}"?`)) return;
+
+  const btn = document.getElementById('np-btn-confirmar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  try {
+    const total = npCarrito.reduce((s,it)=>s+it.subtotal, 0);
+    const c = npClienteSeleccionado;
+
+    const pedidoRes = await fetch(`${SUPA_URL}/rest/v1/pedidos`, {
+      method: 'POST', headers: hdrs,
+      body: JSON.stringify({
+        nombre: c.nombre,
+        telefono: c.telefono || null,
+        email: c.email || null,
+        provincia: c.provincia || null,
+        localidad: c.localidad || null,
+        direccion: c.direccion || null,
+        tipo: c.rol === 'mayorista' ? 'mayorista' : 'minorista',
+        forma_pago: document.getElementById('np-forma-pago').value,
+        entrega: document.getElementById('np-entrega').value,
+        notas: document.getElementById('np-notas').value.trim() || null,
+        total,
+        estado: 'pendiente',
+        monto_pagado: 0,
+        user_id: c.id
+      })
+    });
+    const pedidoData = await pedidoRes.json();
+    const numeroPedido = pedidoData[0]?.numero_pedido;
+    if (!numeroPedido) throw new Error('No se pudo generar el número de pedido');
+
+    for (const it of npCarrito) {
+      await fetch(`${SUPA_URL}/rest/v1/pedido_items`, {
+        method: 'POST', headers: hdrs,
+        body: JSON.stringify({
+          numero_pedido: numeroPedido,
+          producto: it.producto,
+          cantidad: it.cantidad,
+          precio_unitario: it.precio_unitario,
+          subtotal: it.subtotal
+        })
+      });
+    }
+
+    toast(`Pedido ${numeroPedido} creado ✓`, 'ok');
+    cerrarModalNuevoPedido();
+    cargarPedidos();
+  } catch(e) {
+    console.error(e);
+    toast('Error al crear el pedido', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirmar pedido';
+  }
 }
 
 async function eliminarPago(pagoId, num, monto) {
