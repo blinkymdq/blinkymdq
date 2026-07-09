@@ -11,14 +11,20 @@
 <meta id="og-url" property="og:url" content="https://blinkymdq.com">
 <link rel="icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
+@keyframes tickerScroll { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Inter',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
   a { color:inherit; }
 
-  .header { background:white; border-bottom:1px solid #e2e8f0; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
-  .header img { height:36px; }
-  .btn-tienda { background:#7c3aed; color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.82rem; font-weight:700; cursor:pointer; text-decoration:none; }
+  .header { background:white; border-bottom:1px solid #e2e8f0; padding:12px 20px; display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:10; }
+  .header img { height:36px; flex-shrink:0; }
+  .header-busqueda { flex:1; position:relative; max-width:480px; }
+  .header-busqueda input { width:100%; height:38px; padding:0 40px 0 14px; border:2px solid #e2e8f0; border-radius:999px; font-size:0.8rem; outline:none; font-family:inherit; }
+  .header-busqueda input:focus { border-color:#7c3aed; }
+  .header-busqueda button { position:absolute; right:3px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%; background:#7c3aed; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .btn-tienda { background:#7c3aed; color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.82rem; font-weight:700; cursor:pointer; text-decoration:none; flex-shrink:0; white-space:nowrap; }
   .btn-tienda:hover { background:#6d28d9; }
 
   .breadcrumb { max-width:960px; margin:0 auto; padding:16px 16px 0; font-size:0.78rem; color:#94a3b8; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
@@ -75,10 +81,250 @@
 </head>
 <body>
 
-<div class="header">
-  <a href="https://blinkymdq.com"><img src="https://blinkymdq.com/blinkysinfondo.png" alt="Blinky MDQ"></a>
-  <a href="https://blinkymdq.com" class="btn-tienda">🛍 Ver tienda</a>
+<div style="background:#f3f0ff;border-bottom:1px solid #e5e0fa;width:100%;overflow:hidden;">
+    <div style="height:26px;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 12px;">
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/></svg>Productos originales
+        </span>
+        <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compra 100% segura
+        </span>
+        <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
+            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos a todo el país
+        </span>
+    </div>
 </div>
+
+<header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">
+
+    <!-- ── DESKTOP ── -->
+    <div class="hidden md:block">
+        <!-- Fila 1: logo + buscador + usuario + carrito -->
+        <div class="max-w-7xl mx-auto px-6 flex items-center gap-4" style="height:72px;">
+
+            <!-- Logo con glow -->
+            <a href="/" title="Volver al inicio" class="flex-shrink-0" style="filter:drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25));transition:filter 0.2s;" onmouseover="this.style.filter='drop-shadow(0 0 14px rgba(124,58,237,0.75)) drop-shadow(0 0 28px rgba(124,58,237,0.4))'" onmouseout="this.style.filter='drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25))'">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:65px;width:auto;object-fit:contain;">
+            </a>
+
+            <!-- Buscador grande -->
+            <div class="flex-1 search-wrapper">
+                <input type="text" id="inputBusqueda" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" readonly
+                    style="width:100%;height:44px;padding:0 3rem 0 1.25rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;outline:none;transition:border-color 0.15s,box-shadow 0.15s;color:#1e293b;"
+                    onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'"
+                    onblur="this.style.borderColor='#7c3aed';this.style.boxShadow='none'">
+                <button id="btnLimpiar" onclick="document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute right-14 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                    <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button onclick="irABuscarHeader()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+                    <svg id="iconLupa" style="width:16px;height:16px;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Usuario con dropdown -->
+            <div class="flex-shrink-0 relative">
+                <!-- Sin login -->
+                <button onclick="mostrarLogin()" id="btn-login" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                    <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div style="text-align:left;">
+                        <div style="font-size:9px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
+                        <div style="font-size:11px;font-weight:900;color:#1e293b;text-transform:uppercase;line-height:1.2;">Acceso</div>
+                    </div>
+                </button>
+                <!-- Logueado -->
+                <div id="user-badge" class="hidden relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                        <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <div style="text-align:left;">
+                            <div style="font-size:9px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
+                            <div id="user-badge-name" style="font-size:11px;font-weight:900;color:#1e293b;line-height:1.2;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                        </div>
+                        <svg style="width:13px;height:13px;color:#94a3b8;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="userDropdown" class="hidden absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 py-1" style="min-width:160px;z-index:50;">
+                        <button onclick="cerrarSesion();toggleUserMenu()" class="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                            <svg style="width:14px;height:14px;" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            <span style="font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:0.05em;">Cerrar sesión</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carrito header -->
+            <button onclick="abrirCarrito()" id="btnCarritoHeader" class="flex-shrink-0 relative" style="background:none;border:none;cursor:pointer;padding:8px;">
+                <svg style="width:26px;height:26px;" fill="none" stroke="#1e293b" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span id="carritoContadorHeader" class="hidden absolute -top-1 -right-1 bg-violet-600 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+            </button>
+
+        </div>
+
+        <!-- Fila 2: filtros + badges -->
+        <div class="border-t border-slate-100">
+            <!-- Desktop: categorías + marcas + badges -->
+            <div class="hidden md:flex max-w-7xl mx-auto px-6 items-center gap-3" style="height:44px;">
+                <div class="relative flex-shrink-0">
+                    <select id="selectCat" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;height:36px;background:#7c3aed;color:white;border:none;border-radius:999px;padding:0 2.5rem 0 2.75rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;min-width:140px;">
+                        <option value="">Categorías</option>
+                    </select>
+                    <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="relative flex-shrink-0">
+                    <select id="selectMarca" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;height:36px;background:white;color:#1e293b;border:none;border-radius:999px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;min-width:110px;">
+                        <option value="">Marcas</option>
+                    </select>
+                    <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#7c3aed"/></svg>
+                    <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div style="width:1px;height:20px;background:#e2e8f0;flex-shrink:0;margin:0 4px;"></div>
+                <div class="flex items-center gap-5 flex-1 justify-end" style="margin-left:auto;">
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">PROMOS</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Exclusivas</div></div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">3 CUOTAS SIN INTERÉS</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Con BBVA</div></div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">ENVÍOS EN MDP</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">En el día</div></div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">ATENCIÓN</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Personalizada</div></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile: ticker badges -->
+            <div class="md:hidden" style="height:36px;overflow:hidden;background:#fafafa;border-top:1px solid #f1f5f9;">
+                <div style="display:inline-flex;align-items:center;gap:20px;height:36px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MOBILE ── -->
+    <div class="md:hidden px-3 pt-1 pb-3 flex flex-col gap-3">
+        <!-- Fila 1: usuario + carrito (derecha) -->
+        <div class="flex items-center gap-2 justify-end">
+            <!-- Sin login -->
+            <button onclick="mostrarLogin()" id="btn-login-mobile" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
+                <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <div style="text-align:left;">
+                    <div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
+                    <div style="font-size:10px;font-weight:900;color:#1e293b;line-height:1.2;">Acceso</div>
+                </div>
+            </button>
+            <!-- Logueado -->
+            <div id="user-badge-mobile" class="hidden relative">
+                <button onclick="cerrarSesion()" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
+                    <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div style="text-align:left;">
+                        <div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
+                        <span id="user-badge-name-mobile" style="font-size:10px;font-weight:900;color:#1e293b;line-height:1.2;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;"></span>
+                    </div>
+                </button>
+            </div>
+            <!-- Carrito -->
+            <button onclick="abrirCarrito()" class="relative" style="background:none;border:none;cursor:pointer;padding:6px;">
+                <svg style="width:24px;height:24px;" fill="none" stroke="#1e293b" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span id="carritoContadorHeaderMobile" class="hidden absolute -top-1 -right-1 bg-violet-600 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+            </button>
+        </div>
+        <!-- Fila 2: logo + buscador -->
+        <div class="flex items-center gap-4 pr-3 pl-1">
+            <a href="/" title="Volver al inicio" style="filter:drop-shadow(0 0 5px rgba(124,58,237,0.35));flex-shrink:0;">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:72px;width:auto;object-fit:contain;">
+            </a>
+            <div class="search-wrapper flex-1">
+                <input type="text" id="inputBusquedaMobile" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
+                    style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
+                <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                    <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+        </div>
+        <!-- Fila 3: desplegables -->
+        <div class="flex gap-2 pr-3 pl-1">
+            <div class="relative flex-1">
+                <select id="selectCatMobile" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:#7c3aed;color:white;border:none;border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="">Categorías</option>
+                </select>
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="relative flex-1">
+                <select id="selectMarcaMobile" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:white;color:#1e293b;border:1.5px solid #e2e8f0;border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:700;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="">Marcas</option>
+                </select>
+                <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#7c3aed"/></svg>
+                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+        </div>
+        <!-- Fila 4: ticker badges mobile -->
+        <div style="margin:0 -12px;overflow:hidden;background:#fafafa;border-top:1px solid #f1f5f9;height:34px;">
+            <div style="display:inline-flex;align-items:center;gap:20px;height:34px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+            </div>
+        </div>
+        <!-- Fila 5: revender -->
+        <div style="text-align:center;padding:6px 0 4px;">
+            <span style="font-size:10px;font-weight:600;color:#64748b;">¿Te interesa revender nuestros productos?</span>
+            <a href="https://wa.me/5492235910492?text=Hola%2C%20me%20interesa%20revender%20productos%20de%20Blinky%2C%20me%20pasar%C3%ADas%20m%C3%A1s%20info%3F" target="_blank" rel="noopener"
+                style="display:inline-flex;align-items:center;gap:4px;margin-left:5px;font-size:10px;font-weight:900;color:#25D366;text-decoration:none;">
+                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.18-1.622A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.213-3.667.962.978-3.58-.234-.368A9.818 9.818 0 1 1 12 21.818z"/></svg>
+                Contactanos
+            </a>
+        </div>
+    </div>
+
+</header>
+
 
 <div id="breadcrumb" class="breadcrumb"></div>
 
@@ -92,6 +338,63 @@
 </div>
 
 <div id="toast"></div>
+
+<footer class="bg-slate-900 text-white mt-10">
+    <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 items-center">
+
+        <div class="flex items-center justify-center col-span-2 md:col-span-1">
+            <img src="https://blinkymdq.com/blinky_sin_fdo.svg" alt="Blinky MDQ" class="w-36 h-auto object-contain">
+        </div>
+
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación</div>
+                <div class="text-xs font-bold text-white leading-snug">Buenos Aires<br>Mar del Plata 7600</div>
+            </div>
+        </div>
+
+        <a href="https://wa.me/5492235910492" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-[#25D366]/20 flex items-center justify-center">
+                <svg class="w-4 h-4 fill-[#25D366]" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">WhatsApp</div>
+                <div class="text-xs font-bold text-white">+54 9 223 5 910492</div>
+            </div>
+        </a>
+
+        <a href="https://instagram.com/blinkymdq" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 fill-pink-400" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Instagram</div>
+                <div class="text-xs font-bold text-white">@blinkymdq</div>
+            </div>
+        </a>
+
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 stroke-violet-400" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Envíos</div>
+                <div class="text-xs font-bold text-white leading-snug">Envíos en Mar del Plata<br>en el día</div>
+            </div>
+        </div>
+
+    </div>
+    <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
+        © 2026 Blinky MDQ — Todos los derechos reservados
+    </div>
+</footer>
 
 <script>
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
@@ -119,6 +422,60 @@ function toast(msg) {
   clearTimeout(t._t);
   t._t = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 2500);
 }
+
+function irABuscar() {
+  const val = document.getElementById('headerBusqueda').value.trim();
+  window.location.href = val
+    ? `https://blinkymdq.com?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'https://blinkymdq.com';
+}
+
+// ── Funciones del header completo (igual a index.html) ──
+function irABuscarHeader() {
+  const val = (document.getElementById('inputBusqueda').value || '').trim();
+  window.location.href = val
+    ? `https://blinkymdq.com?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'https://blinkymdq.com';
+}
+
+function irAFiltrarHeader(valor, tipo) {
+  if (!valor) return;
+  window.location.href = `https://blinkymdq.com?${tipo}=${encodeURIComponent(valor)}`;
+}
+
+function mostrarLogin() {
+  window.location.href = 'https://blinkymdq.com';
+}
+
+function abrirCarrito() {
+  window.location.href = 'https://blinkymdq.com';
+}
+
+function toggleUserMenu() {}
+function cerrarSesion() {}
+
+// Trae solo categoría y marca de cada producto (consulta liviana) para
+// poblar los desplegables del header con opciones reales.
+async function poblarFiltrosHeader() {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?select=categoria,marca&estado=neq.inactivo`, {
+      headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY }
+    });
+    const data = await res.json();
+    const categorias = [...new Set(data.map(p => p.categoria).filter(Boolean))].sort();
+    const marcas = [...new Set(data.map(p => p.marca).filter(Boolean))].sort();
+
+    ['selectCat', 'selectCatMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Categorías</option>' + categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+    });
+    ['selectMarca', 'selectMarcaMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+    });
+  } catch(e) { console.error('Error cargando filtros del header', e); }
+}
+poblarFiltrosHeader();
 
 let fotos = [];
 let fotoActual = 0;

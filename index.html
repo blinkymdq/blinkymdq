@@ -1449,9 +1449,14 @@
 
                 const queryParam = new URLSearchParams(window.location.search).get('q');
                 const addParam   = new URLSearchParams(window.location.search).get('add');
+                const catParam   = new URLSearchParams(window.location.search).get('cat');
+                const marcaParam = new URLSearchParams(window.location.search).get('marca');
 
-                if (queryParam) {
-                    document.getElementById('inputBusqueda').value = queryParam.replace(/-/g, ' ');
+                if (catParam)   document.getElementById('selectCat').value = catParam;
+                if (marcaParam) document.getElementById('selectMarca').value = marcaParam;
+
+                if (queryParam || catParam || marcaParam) {
+                    if (queryParam) document.getElementById('inputBusqueda').value = queryParam.replace(/-/g, ' ');
                     ejecutarFiltros();
                     setTimeout(() => window.scrollTo({ top: document.getElementById('contenedor').offsetTop - 100, behavior: 'smooth' }), 800);
                 } else {
