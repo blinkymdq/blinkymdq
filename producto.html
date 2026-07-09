@@ -41,6 +41,12 @@
   .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
   .galeria { position:relative; background:#f8fafc; border-radius:14px; aspect-ratio:1; overflow:hidden; }
   .galeria img { width:100%; height:100%; object-fit:contain; cursor:zoom-in; transition:opacity 0.2s; }
+
+  .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; align-items:center; justify-content:center; padding:24px; cursor:zoom-out; }
+  .lightbox.open { display:flex; }
+  .lightbox img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:8px; }
+  .lightbox-cerrar { position:absolute; top:20px; right:24px; width:40px; height:40px; background:rgba(255,255,255,0.15); border:none; border-radius:50%; color:white; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .lightbox-cerrar:hover { background:rgba(255,255,255,0.25); }
   .galeria-iconos { position:absolute; top:12px; right:12px; display:flex; flex-direction:column; gap:8px; }
   .icono-flotante { width:38px; height:38px; background:white; border:none; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#334155; }
   .icono-flotante:hover { background:#f5f3ff; color:#7c3aed; }
@@ -341,6 +347,11 @@
 
 <div id="toast"></div>
 
+<div id="lightbox" class="lightbox" onclick="cerrarZoom()">
+  <button class="lightbox-cerrar" onclick="event.stopPropagation();cerrarZoom()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
 <footer class="bg-slate-900 text-white mt-10">
     <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 items-center">
 
@@ -403,10 +414,10 @@ const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const NRO_WSP = '5492235910492';
 
-function getImgUrl(foto) {
+function getImgUrl(foto, sz) {
   if (!foto || foto.trim() === '') return '';
   if (foto.startsWith('http')) return foto;
-  if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=800`;
+  if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=${sz || 1200}`;
   return `https://blinkymdq.com/Productos/${foto}.jpg`;
 }
 
@@ -486,12 +497,27 @@ let productoActual = null;
 function mostrarFoto(idx) {
   fotoActual = idx;
   const img = document.getElementById('foto-principal');
-  if (img) img.src = getImgUrl(fotos[idx]) || 'https://blinkymdq.com/blinkysinfondo.png';
+  if (img) img.src = getImgUrl(fotos[idx], 1600) || 'https://blinkymdq.com/blinkysinfondo.png';
   document.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i===idx));
 }
 
 function fotoAnterior() { if (fotoActual > 0) mostrarFoto(fotoActual - 1); }
 function fotoSiguiente() { if (fotoActual < fotos.length - 1) mostrarFoto(fotoActual + 1); }
+
+function abrirZoom() {
+  document.getElementById('lightbox-img').src = getImgUrl(fotos[fotoActual], 1600) || 'https://blinkymdq.com/blinkysinfondo.png';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarZoom() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') cerrarZoom();
+});
 
 async function cargarProducto() {
   const params = new URLSearchParams(window.location.search);
@@ -537,7 +563,7 @@ function renderProducto(p) {
     <div class="layout">
       <div class="galeria-wrap">
         <div class="galeria">
-          <img id="foto-principal" src="${getImgUrl(fotos[0]) || 'https://blinkymdq.com/blinkysinfondo.png'}" alt="${p.nombre}" onclick="mostrarFoto(fotoActual)" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
+          <img id="foto-principal" src="${getImgUrl(fotos[0], 1600) || 'https://blinkymdq.com/blinkysinfondo.png'}" alt="${p.nombre}" onclick="abrirZoom()" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
           <div class="galeria-iconos">
             <button class="icono-flotante" onclick="compartir()" title="Compartir">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
