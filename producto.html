@@ -11,7 +11,6 @@
 <meta id="og-url" property="og:url" content="https://blinkymdq.com">
 <link rel="icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Inter',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
@@ -76,7 +75,10 @@
 </head>
 <body>
 
-<script src="header-footer.js"></script>
+<div class="header">
+  <a href="https://blinkymdq.com"><img src="https://blinkymdq.com/blinkysinfondo.png" alt="Blinky MDQ"></a>
+  <a href="https://blinkymdq.com" class="btn-tienda">🛍 Ver tienda</a>
+</div>
 
 <div id="breadcrumb" class="breadcrumb"></div>
 
@@ -90,8 +92,6 @@
 </div>
 
 <div id="toast"></div>
-
-<div id="bk-footer"></div>
 
 <script>
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
@@ -232,7 +232,7 @@ function renderProducto(p) {
 }
 
 function agregarYVerCarrito(cod) {
-  window.location.href = `https://blinkymdq.com/tienda.html?add=${encodeURIComponent(cod)}`;
+  window.location.href = `https://blinkymdq.com?add=${encodeURIComponent(cod)}`;
 }
 
 function consultarWsp() {
