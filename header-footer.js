@@ -44,7 +44,7 @@ function renderBlinkyHeader() {
                 </button>
             </div>
 
-            <a href="https://blinkymdq.com" title="Iniciar sesión" class="flex-shrink-0 hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="text-decoration:none;">
+            <a href="https://blinkymdq.com/tienda.html" title="Iniciar sesión" class="flex-shrink-0 hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="text-decoration:none;">
                 <svg style="width:20px;height:20px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <div style="text-align:left;">
                     <div style="font-size:9px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
@@ -52,7 +52,7 @@ function renderBlinkyHeader() {
                 </div>
             </a>
 
-            <a href="https://blinkymdq.com" title="Ver carrito" class="flex-shrink-0" style="padding:8px;">
+            <a href="https://blinkymdq.com/tienda.html" title="Ver carrito" class="flex-shrink-0" style="padding:8px;">
                 <svg style="width:24px;height:24px;" fill="none" stroke="#1e293b" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
@@ -62,12 +62,9 @@ function renderBlinkyHeader() {
 
         <div class="border-t border-slate-100">
             <div class="max-w-7xl mx-auto px-4 md:px-6 flex items-center gap-3 overflow-x-auto" style="height:40px;">
-                <a href="https://blinkymdq.com" style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;height:32px;background:#7c3aed;color:white;border-radius:999px;padding:0 1rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;text-decoration:none;white-space:nowrap;">
+                <a href="https://blinkymdq.com/tienda.html" style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;height:32px;background:#7c3aed;color:white;border-radius:999px;padding:0 1rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;text-decoration:none;white-space:nowrap;">
                     <svg style="width:13px;height:13px;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                    Categorías
-                </a>
-                <a href="https://blinkymdq.com" style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;height:32px;background:#f1f5f9;color:#1e293b;border-radius:999px;padding:0 1rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;text-decoration:none;white-space:nowrap;">
-                    Marcas
+                    Ver todos los productos
                 </a>
             </div>
         </div>
@@ -139,14 +136,19 @@ function renderBlinkyFooter() {
 function bkIrABuscar() {
     const val = document.getElementById('bkHeaderBusqueda').value.trim();
     window.location.href = val
-        ? `https://blinkymdq.com?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
-        : 'https://blinkymdq.com';
+        ? `https://blinkymdq.com/tienda.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+        : 'https://blinkymdq.com/tienda.html';
 }
 
-// Inyecta automáticamente en los contenedores si existen en la página
+// El header se escribe DE INMEDIATO (document.write), apenas el navegador
+// llega a este script — así aparece primero, como una página tradicional,
+// sin esperar a que cargue el resto del contenido.
+// Requisito: el <script src="header-footer.js"> tiene que estar ubicado
+// en el HTML exactamente donde querés que aparezca el header.
+document.write(renderBlinkyHeader());
+
+// El footer sí puede esperar sin problema, porque va al final de la página.
 document.addEventListener('DOMContentLoaded', function () {
-    const h = document.getElementById('bk-header');
-    if (h) h.innerHTML = renderBlinkyHeader();
     const f = document.getElementById('bk-footer');
     if (f) f.innerHTML = renderBlinkyFooter();
 });
