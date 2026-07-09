@@ -11,6 +11,7 @@
 <meta id="og-url" property="og:url" content="https://blinkymdq.com">
 <link rel="icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Inter',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
@@ -75,10 +76,7 @@
 </head>
 <body>
 
-<div class="header">
-  <a href="https://blinkymdq.com"><img src="https://blinkymdq.com/blinkysinfondo.png" alt="Blinky MDQ"></a>
-  <a href="https://blinkymdq.com" class="btn-tienda">🛍 Ver tienda</a>
-</div>
+<div id="bk-header"></div>
 
 <div id="breadcrumb" class="breadcrumb"></div>
 
@@ -93,6 +91,9 @@
 
 <div id="toast"></div>
 
+<div id="bk-footer"></div>
+
+<script src="header-footer.js"></script>
 <script>
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
