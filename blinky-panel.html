@@ -535,7 +535,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <!-- USUARIOS -->
     <div id="panel-usuarios" class="panel">
       <div class="filters">
-        <input type="text" id="usuarios-buscar" class="filter-input" placeholder="Buscar por nombre o email..." oninput="cargarUsuarios()" style="flex:1;min-width:200px;">
+        <div style="position:relative;flex:1;min-width:200px;">
+          <input type="text" id="usuarios-buscar" class="filter-input" placeholder="Buscar por nombre o email..." oninput="cargarUsuarios();document.getElementById('usuarios-buscar-clear').style.display=this.value?'block':'none';" autocomplete="off" style="width:100%;padding-right:32px;">
+          <button id="usuarios-buscar-clear" onclick="document.getElementById('usuarios-buscar').value='';cargarUsuarios();this.style.display='none';" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:2px 4px;line-height:1;">✕</button>
+        </div>
         <select class="filter-select" id="usuarios-rol-filtro" onchange="cargarUsuarios()">
           <option value="">Todos los roles</option>
           <option value="minorista">Minorista</option>
