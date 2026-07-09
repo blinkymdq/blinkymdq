@@ -68,8 +68,9 @@
   .sin-stock { display:inline-block; background:#fee2e2; color:#ef4444; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
   .en-stock { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
 
-  .btns { display:grid; gap:10px; margin-top:6px; }
-  .btn-comprar { background:linear-gradient(135deg,#10b981,#059669); color:white; border:none; border-radius:14px; padding:16px; font-size:0.95rem; font-weight:900; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; text-transform:uppercase; letter-spacing:0.3px; }
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+  @media (max-width:420px) { .btns { grid-template-columns:1fr; } }
+  .btn-comprar { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; border-radius:14px; padding:16px; font-size:0.95rem; font-weight:900; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; text-transform:uppercase; letter-spacing:0.3px; }
   .btn-comprar:hover { filter:brightness(1.06); }
   .btn-comprar:disabled { background:#cbd5e1; cursor:not-allowed; }
   .btn-wsp { background:#25d366; color:white; border:none; border-radius:14px; padding:14px; font-size:0.9rem; font-weight:800; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
@@ -604,6 +605,7 @@ function renderProducto(p) {
             Consultar por WhatsApp
           </button>
         </div>
+        <div style="font-size:0.72rem;color:#64748b;font-family:Arial,sans-serif;margin-top:12px;">Los precios están sujetos a modificaciones sin previo aviso.</div>
       </div>
     </div>
 

@@ -74,6 +74,13 @@
 
         /* ─── Imagen producto ─── */
         .img-container { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 1.5rem; overflow: hidden; }
+
+        .card-hover-violeta { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .card-hover-violeta:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 12px 32px rgba(124,58,237,0.28), 0 4px 10px rgba(0,0,0,0.06); }
+
+        .btn-agregar-redondo { position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#6d28d9); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:1px; box-shadow:0 4px 10px rgba(124,58,237,0.35); transition:transform 0.15s; }
+        .btn-agregar-redondo:hover { transform:scale(1.1); }
+        .btn-agregar-redondo:active { transform:scale(0.95); }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
 
         /* ─── Imagen en modal ─── */
@@ -1683,7 +1690,7 @@
                 const badgeSinStock = p.sinStock ? `<div class="badge-sin-stock">Sin Stock</div>` : '';
 
                 return `
-                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between card-hover-violeta relative" style="padding-bottom:2.75rem;">
                         <div onclick="window.location.href=generarLink('${p.codigo}')" class="cursor-pointer">
                             <div class="relative overflow-hidden rounded-[1.5rem]">
                                 <div class="img-container">${badgeSinStock}<img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" ></div>
@@ -1702,20 +1709,14 @@
                                 ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}`}
                             </div>
                         </div>
-                        ${p.codigo ? `<p style="font-size:8px;font-family:Arial,sans-serif;font-weight:400;color:#1e293b;margin-top:6px;">Cód. ${p.codigo}</p>` : ''}
-                        <div class="flex gap-1 mt-1 pt-2 border-t border-slate-50">
-                            <a href="https://wa.me/${NRO_TELEFONO}?text=${msgConsulta}" target="_blank" rel="noopener"
-                                class="flex-[1.2] h-10 bg-slate-900 text-white rounded-xl text-[7px] font-black uppercase flex items-center justify-center gap-1.5 px-1">
-                                ${iconWA} Consultar
-                            </a>
-                            <button onclick="agregarAlCarrito(${realIdx})" id="btn-carrito-${realIdx}"
-                                class="btn-agregar-carrito${p.sinStock ? ' opacity-50 cursor-not-allowed' : ''}"
-                                ${p.sinStock ? 'disabled' : ''}>
-                                ${p.sinStock
-                                    ? '<svg class="w-3 h-3 fill-none stroke-current flex-shrink-0" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Sin Stock'
-                                    : '<svg class="w-3 h-3 fill-none stroke-current flex-shrink-0" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Agregar'}
-                            </button>
-                        </div>
+                        ${p.codigo ? `<p style="position:absolute;left:12px;bottom:12px;font-size:8px;font-family:Arial,sans-serif;font-weight:400;color:#1e293b;margin:0;">Cód. ${p.codigo}</p>` : ''}
+                        <button onclick="event.stopPropagation();agregarAlCarrito(${realIdx})" id="btn-carrito-${realIdx}"
+                            class="btn-agregar-redondo${p.sinStock ? ' opacity-50 cursor-not-allowed' : ''}"
+                            ${p.sinStock ? 'disabled' : ''} title="${p.sinStock ? 'Sin stock' : 'Agregar al carrito'}">
+                            ${p.sinStock
+                                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+                                : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'}
+                        </button>
                     </div>`;
             }).join('');
         }
