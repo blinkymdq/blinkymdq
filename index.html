@@ -885,7 +885,7 @@
                 <div id="carruselDots" class="hidden absolute bottom-2 left-0 right-0 flex justify-center gap-1.5"></div>
             </div>
             <h2 id="modalNombre" class="text-2xl font-black text-slate-900 leading-tight uppercase pr-10"></h2>
-            <div class="py-5 border-y border-slate-100 my-5 space-y-4">
+            <div id="modalPreciosWrap" class="py-5 border-y border-slate-100 my-5 space-y-4">
                 <div>
                     <div class="text-[10px] font-black text-violet-600 uppercase">Público</div>
                     <div id="modalPrecioPub" class="text-4xl font-black text-violet-600 tracking-tighter"></div>
@@ -895,6 +895,7 @@
                     <div id="modalPrecioMay" class="text-2xl font-black text-slate-400 tracking-tighter"></div>
                 </div>
             </div>
+            <div id="modalSinStockMsg" class="hidden py-5 border-y border-slate-100 my-5 text-center text-sm font-black text-slate-400 uppercase">Sin stock disponible</div>
             <div id="botonesModalContenedor" class="flex gap-2 h-14"></div>
         </div>
     </div>
@@ -1667,8 +1668,10 @@
                             <p class="text-[8px] font-black text-violet-400 uppercase mt-1 cursor-pointer hover:text-violet-600 transition-colors" onclick="event.stopPropagation();filtrarPorMarca('${p.marca}')">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
-                                <div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
-                                ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}
+                                ${p.sinStock
+                                    ? `<div class="text-[10px] font-bold text-slate-400 uppercase">Sin stock</div>`
+                                    : `<div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
+                                ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}`}
                             </div>
                         </div>
                         ${p.codigo ? `<p style="font-size:8px;font-family:Arial,sans-serif;font-weight:400;color:#1e293b;margin-top:6px;">Cód. ${p.codigo}</p>` : ''}
@@ -1753,10 +1756,15 @@
             document.getElementById('modalNombre').innerText = p.nombre;
 
             const precioPublicoTxt = formatPrecio(p.precioP);
-            document.getElementById('modalPrecioPub').innerText = precioPublicoTxt;
-
             const precioDinamico = getPrecioUsuario(p);
-            document.getElementById('modalPrecioMay').innerText = formatPrecio(precioDinamico);
+
+            document.getElementById('modalPreciosWrap').classList.toggle('hidden', p.sinStock);
+            document.getElementById('modalSinStockMsg').classList.toggle('hidden', !p.sinStock);
+
+            if (!p.sinStock) {
+                document.getElementById('modalPrecioPub').innerText = precioPublicoTxt;
+                document.getElementById('modalPrecioMay').innerText = formatPrecio(precioDinamico);
+            }
 
             const link = generarLink(p.nombre);
             const msgC = encodeURIComponent(`Hola! Me interesa: ${p.nombre}\n\n${link}`);
