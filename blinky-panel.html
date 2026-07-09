@@ -195,6 +195,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .pago-forma.transferencia { color:var(--cyan); }
 .pago-forma.tarjeta { color:var(--violet-light); }
 .pago-forma.descuento { color:var(--yellow); }
+.pago-forma.saldo_favor { color:var(--green); }
 .pago-monto { font-weight:900; }
 .pago-fecha { font-size:0.72rem;color:var(--text3); }
 
@@ -248,6 +249,8 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .fc-form-row { display:grid;grid-template-columns:1.6fr 0.8fr 0.8fr auto;gap:0.5rem;margin-top:0.5rem; }
 .fc-form-row input, .fc-form-row select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.82rem;padding:0.5rem 0.6rem; }
 .fc-btn { background:var(--violet);color:white;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;padding:0.5rem 0.8rem;cursor:pointer;white-space:nowrap; }
+.fc-tab-btn { background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-size:0.85rem;font-weight:700;padding:0.5rem 0.9rem;cursor:pointer; }
+.fc-tab-btn.active { color:var(--violet-light);border-bottom-color:var(--violet); }
 </style>
 </head>
 <body>
@@ -443,46 +446,61 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
         <button onclick="cerrarFichaCliente()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
 
-        <div style="display:flex;gap:0.9rem;align-items:center;margin-bottom:0.5rem;">
+        <div style="display:flex;gap:0.9rem;align-items:center;margin-bottom:0.75rem;">
           <img id="fc-avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--surface2);">
-          <div>
+          <div style="flex:1;">
             <div id="fc-nombre" style="font-weight:900;font-size:1.05rem;"></div>
             <div id="fc-email" style="font-size:0.78rem;color:var(--text2);"></div>
             <div id="fc-telefono" style="font-size:0.78rem;color:var(--text3);"></div>
           </div>
+          <div id="fc-saldo-favor-badge" style="display:none;background:rgba(16,185,129,0.15);border:1px solid var(--green);border-radius:10px;padding:6px 12px;text-align:center;">
+            <div style="font-size:0.62rem;color:var(--green);text-transform:uppercase;font-weight:700;">Saldo a favor</div>
+            <div id="fc-saldo-favor-val" style="font-size:1rem;font-weight:900;color:var(--green);"></div>
+          </div>
         </div>
 
-        <!-- CONSIGNACIÓN -->
-        <div class="fc-section-title">Consignación — Resumen</div>
-        <div class="fc-resumen" id="fc-resumen"></div>
-
-        <div class="fc-section-title">Productos en consignación</div>
-        <div id="fc-consignacion-tabla"><div class="loading-txt">Cargando...</div></div>
-
-        <div class="fc-form-row">
-          <input id="fc-nuevo-producto" type="text" list="fc-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioConsignacion(this.value)">
-          <datalist id="fc-productos-list"></datalist>
-          <input id="fc-nueva-cant" type="number" min="1" placeholder="Cantidad">
-          <input id="fc-nuevo-precio" type="number" min="0" step="0.01" placeholder="Precio unit.">
-          <button class="fc-btn" onclick="agregarConsignacion()">+ Agregar</button>
+        <div style="display:flex;gap:0.4rem;border-bottom:1px solid var(--border);margin-bottom:1rem;">
+          <button class="fc-tab-btn active" id="fc-tabbtn-pedidos" onclick="switchFichaTab('pedidos')">Pedidos</button>
+          <button class="fc-tab-btn" id="fc-tabbtn-consignacion" onclick="switchFichaTab('consignacion')">Consignación</button>
+          <button class="fc-tab-btn" id="fc-tabbtn-pagos" onclick="switchFichaTab('pagos')">Pagos</button>
         </div>
 
-        <!-- PAGOS DE CONSIGNACIÓN -->
-        <div class="fc-section-title">Pagos de consignación</div>
-        <div id="fc-pagos-lista"></div>
-        <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;">
-          <input id="fc-pago-monto" type="number" min="0" step="0.01" placeholder="Monto">
-          <select id="fc-pago-forma">
-            <option value="efectivo">💵 Efectivo</option>
-            <option value="transferencia">📲 Transferencia</option>
-            <option value="tarjeta">💳 Tarjeta</option>
-          </select>
-          <button class="fc-btn" onclick="agregarPagoConsignacion()">+ Agregar</button>
+        <!-- TAB PEDIDOS -->
+        <div id="fc-tab-pedidos">
+          <div id="fc-pedidos-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
-        <!-- PEDIDOS DEL CLIENTE -->
-        <div class="fc-section-title">Pedidos en la tienda</div>
-        <div id="fc-pedidos-lista"><div class="loading-txt">Cargando...</div></div>
+        <!-- TAB CONSIGNACIÓN -->
+        <div id="fc-tab-consignacion" style="display:none;">
+          <div class="fc-section-title" style="margin-top:0;">Resumen</div>
+          <div class="fc-resumen" id="fc-resumen"></div>
+
+          <div class="fc-section-title">Productos en consignación</div>
+          <div id="fc-consignacion-tabla"><div class="loading-txt">Cargando...</div></div>
+
+          <div class="fc-form-row">
+            <input id="fc-nuevo-producto" type="text" list="fc-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioConsignacion(this.value)">
+            <datalist id="fc-productos-list"></datalist>
+            <input id="fc-nueva-cant" type="number" min="1" placeholder="Cantidad">
+            <input id="fc-nuevo-precio" type="number" min="0" step="0.01" placeholder="Precio unit.">
+            <button class="fc-btn" onclick="agregarConsignacion()">+ Agregar</button>
+          </div>
+        </div>
+
+        <!-- TAB PAGOS -->
+        <div id="fc-tab-pagos" style="display:none;">
+          <div class="fc-section-title" style="margin-top:0;">Pagos de consignación</div>
+          <div id="fc-pagos-lista"></div>
+          <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;">
+            <input id="fc-pago-monto" type="number" min="0" step="0.01" placeholder="Monto">
+            <select id="fc-pago-forma">
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="transferencia">📲 Transferencia</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+            </select>
+            <button class="fc-btn" onclick="agregarPagoConsignacion()">+ Agregar</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1022,6 +1040,15 @@ async function verPedido(num, esEliminado) {
     const saldo=total-montoPagado;
     const esPagado=saldo<=0;
 
+    let saldoFavorCliente = 0;
+    if (!esEliminado && p.email) {
+      try {
+        const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(p.email)}&select=saldo_favor`,{headers:hdrs});
+        const us = await uR.json();
+        saldoFavorCliente = Number(us[0]?.saldo_favor||0);
+      } catch(e){}
+    }
+
     document.getElementById('modal-body').innerHTML=`
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
@@ -1075,6 +1102,12 @@ async function verPedido(num, esEliminado) {
 
         <!-- FORM AGREGAR PAGO -->
         ${!esPagado?`
+          ${saldoFavorCliente>0?`
+            <div style="background:rgba(16,185,129,0.1);border:1px solid var(--green);border-radius:10px;padding:0.7rem;margin-top:0.9rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+              <div style="font-size:0.78rem;color:var(--green);">💰 Este cliente tiene <strong>$${saldoFavorCliente.toLocaleString('es-AR')}</strong> a favor</div>
+              <button onclick="usarSaldoFavor('${num}', ${total}, '${p.email}')" style="background:var(--green);color:white;border:none;border-radius:8px;font-size:0.78rem;font-weight:700;padding:0.45rem 0.8rem;cursor:pointer;white-space:nowrap;">Usar saldo</button>
+            </div>
+          `:''}
           <div class="pago-form">
             <div class="pago-form-title">Agregar pago</div>
             <div class="pago-form-row">
@@ -1125,41 +1158,127 @@ async function agregarPago(num, totalPedido) {
   if(!monto||monto<=0){toast('Ingresá un monto válido','err');return;}
 
   try {
-    // Insertar pago
-    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma})});
+    // Calculamos el excedente ANTES de insertar, para guardarlo junto al pago
+    const pR0=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps0=await pR0.json();
+    const pedido = ps0[0];
+    const actual=Number(pedido.monto_pagado||0);
+    const restante = Math.max(totalPedido - actual, 0);
+    const exceso = Math.max(monto - restante, 0);
+    const nuevo = Math.min(actual+monto, totalPedido);
 
-    // Actualizar monto_pagado en pedido
-    const pR=await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
-    const ps=await pR.json();
-    const actual=Number(ps[0].monto_pagado||0);
-    const nuevo=Math.min(actual+monto, totalPedido);
+    // Insertar pago (con el excedente acreditado registrado)
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso})});
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})
     });
 
-    toast('Pago registrado ✓','ok');
+    // Si pagó de más, ese excedente queda como saldo a favor del cliente
+    if (exceso > 0 && pedido.email) {
+      const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(pedido.email)}`,{headers:hdrs});
+      const us = await uR.json();
+      if (us[0]) {
+        const saldoActual = Number(us[0].saldo_favor||0);
+        await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${us[0].id}`,{
+          method:'PATCH',headers:hdrs,body:JSON.stringify({saldo_favor: saldoActual + exceso})
+        });
+        toast(`Pago registrado — $${exceso.toLocaleString('es-AR')} quedaron a favor del cliente ✓`,'ok');
+      } else {
+        toast('Pago registrado (excedente no acreditado: cliente sin cuenta) ✓','ok');
+      }
+    } else {
+      toast('Pago registrado ✓','ok');
+    }
+
     verPedido(num,false);
     cargarPedidos();
     cargarCajas();
   } catch(e){toast('Error al registrar pago','err');}
 }
 
+async function usarSaldoFavor(num, totalPedido, email) {
+  try {
+    const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(email)}`,{headers:hdrs});
+    const us = await uR.json();
+    const cliente = us[0];
+    if (!cliente) { toast('No se encontró la cuenta del cliente', 'err'); return; }
+    const saldoFavor = Number(cliente.saldo_favor||0);
+    if (saldoFavor <= 0) { toast('El cliente no tiene saldo a favor', 'err'); return; }
+
+    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
+    const ps = await pR.json();
+    const pedido = ps[0];
+    const actual = Number(pedido.monto_pagado||0);
+    const restante = Math.max(totalPedido - actual, 0);
+    const aplicar = Math.min(saldoFavor, restante);
+
+    if (aplicar <= 0) { toast('Nada para aplicar', 'err'); return; }
+    if (!confirm(`¿Aplicar $${aplicar.toLocaleString('es-AR')} del saldo a favor a este pedido?`)) return;
+
+    // Registrar como pago (no genera cash real, se identifica con forma_pago 'saldo_favor')
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto:aplicar,forma_pago:'saldo_favor',exceso_acreditado:0})});
+
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
+      method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado: actual+aplicar})
+    });
+
+    await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${cliente.id}`,{
+      method:'PATCH',headers:hdrs,body:JSON.stringify({saldo_favor: saldoFavor-aplicar})
+    });
+
+    toast(`Se aplicaron $${aplicar.toLocaleString('es-AR')} de saldo a favor ✓`,'ok');
+    verPedido(num,false);
+    cargarPedidos();
+  } catch(e){toast('Error al aplicar el saldo','err');}
+}
+
 async function eliminarPago(pagoId, num, monto) {
   if (!confirm(`¿Eliminar este pago de $${Number(monto).toLocaleString('es-AR')}?`)) return;
   try {
+    // Traer el pago ANTES de borrarlo, para saber si generó excedente o usó saldo a favor
+    const pagoR = await fetch(`${SUPA_URL}/rest/v1/pagos?id=eq.${pagoId}`,{headers:hdrs});
+    const pagoRows = await pagoR.json();
+    const exceso = Number(pagoRows[0]?.exceso_acreditado||0);
+    const eraSaldoFavor = pagoRows[0]?.forma_pago === 'saldo_favor';
+
     // Eliminar el registro de pago
     await fetch(`${SUPA_URL}/rest/v1/pagos?id=eq.${pagoId}`, {method:'DELETE', headers:hdrs});
 
-    // Restar el monto de monto_pagado en el pedido
+    // Restar del monto_pagado solo la parte que realmente se había acreditado al pedido
     const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{headers:hdrs});
     const ps = await pR.json();
-    const actual = Number(ps[0].monto_pagado||0);
-    const nuevo = Math.max(actual - Number(monto), 0);
+    const pedido = ps[0];
+    const actual = Number(pedido.monto_pagado||0);
+    const nuevo = Math.max(actual - (Number(monto) - exceso), 0);
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH', headers:hdrs, body:JSON.stringify({monto_pagado:nuevo})
     });
+
+    // Si ese pago había generado saldo a favor, se lo revertimos al cliente
+    if (exceso > 0 && pedido.email) {
+      const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(pedido.email)}`,{headers:hdrs});
+      const us = await uR.json();
+      if (us[0]) {
+        const saldoActual = Number(us[0].saldo_favor||0);
+        await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${us[0].id}`,{
+          method:'PATCH', headers:hdrs, body:JSON.stringify({saldo_favor: Math.max(saldoActual - exceso, 0)})
+        });
+      }
+    }
+
+    // Si ese pago había usado saldo a favor, se lo devolvemos al cliente
+    if (eraSaldoFavor && pedido.email) {
+      const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(pedido.email)}`,{headers:hdrs});
+      const us = await uR.json();
+      if (us[0]) {
+        const saldoActual = Number(us[0].saldo_favor||0);
+        await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${us[0].id}`,{
+          method:'PATCH', headers:hdrs, body:JSON.stringify({saldo_favor: saldoActual + Number(monto)})
+        });
+      }
+    }
 
     toast('Pago eliminado ✓','ok');
     verPedido(num,false);
@@ -1255,12 +1374,30 @@ async function abrirFichaCliente(u) {
   document.getElementById('fc-nombre').textContent = u.nombre || 'Sin nombre';
   document.getElementById('fc-email').textContent = u.email || '';
   document.getElementById('fc-telefono').textContent = u.telefono || '';
+
+  const saldoFavor = Number(u.saldo_favor||0);
+  const badge = document.getElementById('fc-saldo-favor-badge');
+  if (saldoFavor > 0) {
+    badge.style.display = 'block';
+    document.getElementById('fc-saldo-favor-val').textContent = `$${saldoFavor.toLocaleString('es-AR')}`;
+  } else {
+    badge.style.display = 'none';
+  }
+
   document.getElementById('modal-cliente').style.display = 'flex';
+  switchFichaTab('pedidos');
 
   poblarDatalistProductosFicha();
   await cargarConsignacionCliente();
   await cargarPagosConsignacionCliente();
   await cargarPedidosCliente();
+}
+
+function switchFichaTab(tab) {
+  ['pedidos','consignacion','pagos'].forEach(t => {
+    document.getElementById(`fc-tab-${t}`).style.display = t===tab ? 'block' : 'none';
+    document.getElementById(`fc-tabbtn-${t}`).classList.toggle('active', t===tab);
+  });
 }
 
 function cerrarFichaCliente() {
