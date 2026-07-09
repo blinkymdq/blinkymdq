@@ -131,7 +131,7 @@
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <h1>📦 Editor de Productos — Blinky MDQ</h1>
+    <h1><a href="blinky-panel.html" style="color:inherit;text-decoration:none;">← 📦 Editor de Productos — Blinky MDQ</a></h1>
     <div class="header-right">
       <span id="total-prods"></span>
       <div style="display:flex;align-items:center;gap:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;">
@@ -923,6 +923,9 @@ function filtrarTabla() {
 
   if(sortField) {
     prods.sort((a, b) => {
+      const na = parseFloat(a[sortField]);
+      const nb = parseFloat(b[sortField]);
+      if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
       const va = (a[sortField]||'').toString().toLowerCase();
       const vb = (b[sortField]||'').toString().toLowerCase();
       return va < vb ? -sortDir : va > vb ? sortDir : 0;
@@ -940,6 +943,7 @@ function renderTabla(prods) {
 
   const arrowCod  = sortField==='codigo' ? (sortDir===1?'▲':'▼') : '⇅';
   const arrowNom  = sortField==='nombre' ? (sortDir===1?'▲':'▼') : '⇅';
+  const arrowStock = sortField==='stock' ? (sortDir===1?'▲':'▼') : '⇅';
 
   document.getElementById('tabla-contenido').innerHTML = `
     <table>
@@ -949,7 +953,7 @@ function renderTabla(prods) {
         <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${arrowNom}</span></th>
         <th>Marca</th>
         <th>Categoría</th>
-        <th style="text-align:right;">Stock</th>
+        <th style="text-align:right;cursor:pointer;user-select:none;" onclick="sortBy('stock')">Stock <span style="color:var(--violet-light);font-size:0.65rem;">${arrowStock}</span></th>
         <th style="text-align:right;color:var(--yellow);">Costo USD</th>
         <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
         <th style="text-align:right;color:var(--yellow);">Costo Total</th>
