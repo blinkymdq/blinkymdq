@@ -243,7 +243,13 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .fc-resumen-item { background:var(--surface2);border-radius:10px;padding:0.7rem;text-align:center; }
 .fc-resumen-item .label { font-size:0.65rem;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:2px; }
 .fc-resumen-item .val { font-size:1.05rem;font-weight:900; }
-.consig-row { display:grid;grid-template-columns:1.6fr 0.6fr 0.7fr 0.7fr 0.7fr 0.7fr 0.4fr;gap:0.4rem;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.78rem; }
+.consig-row { display:grid;grid-template-columns:1.6fr 0.5fr 0.5fr 0.5fr 0.6fr 0.6fr 1.3fr;gap:0.4rem;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.78rem; }
+.btn-consig { border:none;border-radius:6px;font-size:0.68rem;font-weight:700;padding:5px 8px;cursor:pointer;white-space:nowrap; }
+.btn-consig.vendido { background:rgba(16,185,129,0.15);color:var(--green); }
+.btn-consig.vendido:hover:not(:disabled) { background:var(--green);color:white; }
+.btn-consig.devuelto { background:rgba(245,158,11,0.15);color:var(--yellow); }
+.btn-consig.devuelto:hover:not(:disabled) { background:var(--yellow);color:#1a1a26; }
+.btn-consig:disabled { opacity:0.3;cursor:not-allowed; }
 .consig-row.header { color:var(--text3);font-size:0.65rem;text-transform:uppercase;font-weight:700;border-bottom:2px solid var(--border); }
 .consig-input { width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:3px 5px;text-align:center; }
 .fc-form-row { display:grid;grid-template-columns:1.6fr 0.8fr 0.8fr auto;gap:0.5rem;margin-top:0.5rem; }
@@ -446,7 +452,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 
     <!-- MODAL FICHA DE CLIENTE -->
     <div id="modal-cliente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;padding:1rem;">
-      <div style="background:#242433;border:3px solid #7c3aed;border-radius:16px;padding:1.5rem;max-width:920px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 25px 70px rgba(0,0,0,0.6), 0 0 70px rgba(124,58,237,0.35);">
+      <div style="background:#242433;border:3px solid #7c3aed;border-radius:16px;padding:1.5rem;max-width:1200px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 25px 70px rgba(0,0,0,0.6), 0 0 70px rgba(124,58,237,0.35);">
         <button onclick="cerrarFichaCliente()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
 
         <div style="display:flex;gap:0.9rem;align-items:center;margin-bottom:0.75rem;">
@@ -1728,18 +1734,22 @@ async function cargarConsignacionCliente() {
 
     cont.innerHTML = `
       <div class="consig-row header">
-        <div>Producto</div><div>Entreg.</div><div>Vend.</div><div>Devuel.</div><div>P. unit.</div><div>Pendiente</div><div></div>
+        <div>Producto</div><div>Entreg.</div><div>Vend.</div><div>Devuel.</div><div>P. unit.</div><div>Pendiente</div><div>Acciones</div>
       </div>
       ${items.map(it => {
         const pendiente = it.cantidad_entregada - it.cantidad_vendida - it.cantidad_devuelta;
         return `<div class="consig-row">
           <div title="${it.nombre_producto}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.nombre_producto}</div>
           <div>${it.cantidad_entregada}</div>
-          <input class="consig-input" type="number" min="0" value="${it.cantidad_vendida}" onchange="actualizarConsignacion(${it.id}, this.value, null)">
-          <input class="consig-input" type="number" min="0" value="${it.cantidad_devuelta}" onchange="actualizarConsignacion(${it.id}, null, this.value)">
+          <div style="color:var(--green);font-weight:700;">${it.cantidad_vendida}</div>
+          <div style="color:var(--yellow);font-weight:700;">${it.cantidad_devuelta}</div>
           <div>$${Number(it.precio_unitario).toLocaleString('es-AR')}</div>
           <div style="color:${pendiente>0?'var(--yellow)':'var(--text3)'};font-weight:700;">${pendiente}</div>
-          <button onclick="eliminarConsignacion(${it.id})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button>
+          <div style="display:flex;gap:4px;">
+            <button class="btn-consig vendido" ${pendiente<=0?'disabled':''} onclick="marcarConsignacion(${it.id}, 'vendida', ${it.cantidad_vendida})">Vendido</button>
+            <button class="btn-consig devuelto" ${pendiente<=0?'disabled':''} onclick="marcarConsignacion(${it.id}, 'devuelta', ${it.cantidad_devuelta})">Devuelto</button>
+            <button onclick="eliminarConsignacion(${it.id})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button>
+          </div>
         </div>`;
       }).join('')}
     `;
@@ -1775,6 +1785,16 @@ async function agregarConsignacion() {
     document.getElementById('fc-nuevo-precio').value = '';
     cargarConsignacionCliente();
   } catch(e) { toast('Error al registrar la entrega', 'err'); }
+}
+
+async function marcarConsignacion(id, campo, cantidadActual) {
+  const nueva = Number(cantidadActual) + 1;
+  const body = campo === 'vendida' ? { cantidad_vendida: nueva } : { cantidad_devuelta: nueva };
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/consignaciones?id=eq.${id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(body)});
+    toast(campo === 'vendida' ? 'Marcado como vendido ✓' : 'Marcado como devuelto ✓', 'ok');
+    cargarConsignacionCliente();
+  } catch(e) { toast('Error al actualizar', 'err'); }
 }
 
 async function actualizarConsignacion(id, vendida, devuelta) {
