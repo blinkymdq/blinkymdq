@@ -528,6 +528,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <input id="np-precio-input" type="number" min="0" step="0.01" placeholder="Precio unit.">
           <button class="fc-btn" onclick="agregarItemNP()">+ Agregar</button>
         </div>
+        <div id="np-tipo-precio" style="font-size:0.72rem;margin-top:4px;min-height:14px;"></div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.8rem;padding-top:0.6rem;border-top:1px solid var(--border);">
           <span style="font-weight:700;color:var(--text2);">Total</span>
@@ -1302,6 +1303,7 @@ async function abrirModalNuevoPedido() {
   document.getElementById('np-producto-input').value = '';
   document.getElementById('np-cantidad-input').value = '1';
   document.getElementById('np-precio-input').value = '';
+  document.getElementById('np-tipo-precio').textContent = '';
   document.getElementById('np-notas').value = '';
   renderCarritoNP();
 
@@ -1314,7 +1316,9 @@ async function abrirModalNuevoPedido() {
 
   try {
     npProductosCache = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,estado,stock&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
-    document.getElementById('np-productos-list').innerHTML = npProductosCache.filter(p=>Number(p.stock||0)>0).map(p=>`<option value="${p.nombre} (stock: ${p.stock})">`).join('');
+    document.getElementById('np-productos-list').innerHTML = npProductosCache.map(p=>
+      `<option value="${p.nombre} ${Number(p.stock||0)>0 ? `(stock: ${p.stock})` : '(Sin stock)'}">`
+    ).join('');
   } catch(e){}
 
   document.getElementById('modal-nuevo-pedido').style.display = 'flex';
@@ -1334,20 +1338,39 @@ function seleccionarClienteNP(valor) {
   } else {
     info.textContent = '';
   }
+  // Si ya hay un producto cargado, recalculamos el precio con el rol de este cliente
+  const productoActual = document.getElementById('np-producto-input').value;
+  if (productoActual) autocompletarPrecioNP(productoActual);
 }
 
 function autocompletarPrecioNP(valor) {
-  const nombre = valor.replace(/\s*\(stock:.*\)$/, '').trim();
+  const nombre = valor.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
   const prod = npProductosCache.find(p => p.nombre === nombre);
-  if (!prod) return;
+  const tipoLabel = document.getElementById('np-tipo-precio');
+  if (!prod) { if (tipoLabel) tipoLabel.textContent = ''; return; }
+
   const esMayorista = npClienteSeleccionado?.rol === 'mayorista';
   const precio = esMayorista ? prod.precio_mayorista : prod.precio_publico;
-  if (precio) document.getElementById('np-precio-input').value = precio;
+
+  if (!npClienteSeleccionado) {
+    if (tipoLabel) { tipoLabel.textContent = '⚠️ Elegí primero un cliente'; tipoLabel.style.color = 'var(--yellow)'; }
+    return;
+  }
+  if (!precio) {
+    if (tipoLabel) { tipoLabel.textContent = `⚠️ Sin precio ${esMayorista?'mayorista':'público'} cargado para este producto`; tipoLabel.style.color = 'var(--red)'; }
+    return;
+  }
+  document.getElementById('np-precio-input').value = precio;
+  const stockTxt = Number(prod.stock||0) <= 0 ? ` — ⚠️ SIN STOCK` : ` — stock: ${prod.stock}`;
+  if (tipoLabel) {
+    tipoLabel.textContent = `Precio ${esMayorista?'mayorista':'público'} aplicado${stockTxt}`;
+    tipoLabel.style.color = Number(prod.stock||0) <= 0 ? 'var(--red)' : 'var(--text3)';
+  }
 }
 
 function agregarItemNP() {
   const nombreInput = document.getElementById('np-producto-input');
-  const nombre = nombreInput.value.replace(/\s*\(stock:.*\)$/, '').trim();
+  const nombre = nombreInput.value.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
   const cantidad = parseInt(document.getElementById('np-cantidad-input').value) || 1;
   const precio = parseFloat(document.getElementById('np-precio-input').value);
 
@@ -1358,10 +1381,11 @@ function agregarItemNP() {
   if (!prod) { toast('Ese producto no existe en el catálogo', 'err'); return; }
 
   const stock = Number(prod.stock || 0);
-  if (stock <= 0) { toast(`"${nombre}" no tiene stock disponible`, 'err'); return; }
-
   const yaEnCarrito = npCarrito.filter(it => it.codigo === prod.codigo).reduce((s,it)=>s+it.cantidad, 0);
-  if (yaEnCarrito + cantidad > stock) {
+
+  if (stock <= 0) {
+    if (!confirm(`"${nombre}" no tiene stock disponible. ¿Agregarlo igual (por ejemplo, para reponer)?`)) return;
+  } else if (yaEnCarrito + cantidad > stock) {
     toast(`Solo hay ${stock} unidades de "${nombre}" (ya agregaste ${yaEnCarrito})`, 'err');
     return;
   }
