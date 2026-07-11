@@ -455,15 +455,35 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div style="background:#242433;border:3px solid #7c3aed;border-radius:16px;padding:1.5rem;max-width:1200px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 25px 70px rgba(0,0,0,0.6), 0 0 70px rgba(124,58,237,0.35);">
         <button onclick="cerrarFichaCliente()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
 
-        <div style="display:flex;gap:0.9rem;align-items:center;margin-bottom:0.75rem;">
-          <img id="fc-avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--surface2);">
+        <div style="display:flex;gap:0.9rem;align-items:flex-start;margin-bottom:0.75rem;">
+          <img id="fc-avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--surface2);flex-shrink:0;">
           <div style="flex:1;">
-            <div id="fc-nombre" style="font-weight:900;font-size:1.05rem;"></div>
-            <div id="fc-numero" style="font-size:0.72rem;color:var(--violet-light);font-weight:700;"></div>
-            <div id="fc-email" style="font-size:0.78rem;color:var(--text2);"></div>
-            <div id="fc-telefono" style="font-size:0.78rem;"></div>
+            <div id="fc-numero" style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin-bottom:2px;"></div>
+
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div id="fc-nombre" style="font-weight:900;font-size:1.05rem;"></div>
+              <input id="fc-nombre-input" style="display:none;font-weight:900;font-size:1.05rem;background:var(--surface2);border:1px solid var(--violet);border-radius:6px;color:var(--text);padding:2px 8px;">
+              <button id="fc-btn-editar" onclick="activarEdicionFicha()" title="Editar datos" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:0.68rem;padding:2px 7px;cursor:pointer;">✎ Editar</button>
+            </div>
+
+            <div id="fc-email" style="font-size:0.78rem;color:var(--text2);margin-top:2px;"></div>
+
+            <div style="margin-top:2px;">
+              <div id="fc-direccion" style="font-size:0.78rem;color:var(--text2);"></div>
+              <input id="fc-direccion-input" placeholder="Dirección" style="display:none;width:100%;max-width:320px;font-size:0.78rem;background:var(--surface2);border:1px solid var(--violet);border-radius:6px;color:var(--text);padding:4px 8px;margin-top:2px;">
+            </div>
+
+            <div style="margin-top:2px;">
+              <div id="fc-telefono" style="font-size:0.78rem;"></div>
+              <input id="fc-telefono-input" placeholder="Teléfono" style="display:none;width:100%;max-width:200px;font-size:0.78rem;background:var(--surface2);border:1px solid var(--violet);border-radius:6px;color:var(--text);padding:4px 8px;margin-top:2px;">
+            </div>
+
+            <div id="fc-edit-botones" style="display:none;gap:6px;margin-top:8px;">
+              <button onclick="guardarEdicionFicha()" style="background:var(--green);color:white;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;padding:5px 12px;cursor:pointer;">✓ Confirmar</button>
+              <button onclick="cancelarEdicionFicha()" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;font-size:0.72rem;font-weight:700;padding:5px 12px;cursor:pointer;">✕ Cancelar</button>
+            </div>
           </div>
-          <div id="fc-saldo-favor-badge" style="display:none;background:rgba(16,185,129,0.15);border:1px solid var(--green);border-radius:10px;padding:6px 12px;text-align:center;">
+          <div id="fc-saldo-favor-badge" style="display:none;background:rgba(16,185,129,0.15);border:1px solid var(--green);border-radius:10px;padding:6px 12px;text-align:center;flex-shrink:0;">
             <div style="font-size:0.62rem;color:var(--green);text-transform:uppercase;font-weight:700;">Saldo a favor</div>
             <div id="fc-saldo-favor-val" style="font-size:1rem;font-weight:900;color:var(--green);"></div>
           </div>
@@ -1656,11 +1676,13 @@ async function abrirFichaCliente(u) {
   document.getElementById('fc-nombre').textContent = u.nombre || 'Sin nombre';
   document.getElementById('fc-numero').textContent = u.numero_usuario ? `Cliente #${u.numero_usuario}` : '';
   document.getElementById('fc-email').textContent = u.email || '';
+  document.getElementById('fc-direccion').textContent = u.direccion || 'Sin dirección cargada';
   if (u.telefono) {
     document.getElementById('fc-telefono').innerHTML = `<a href="https://wa.me/549${u.telefono}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${u.telefono}</a>`;
   } else {
-    document.getElementById('fc-telefono').innerHTML = '';
+    document.getElementById('fc-telefono').innerHTML = 'Sin teléfono cargado';
   }
+  cancelarEdicionFicha();
 
   const saldoFavor = Number(u.saldo_favor||0);
   const badge = document.getElementById('fc-saldo-favor-badge');
@@ -1678,6 +1700,66 @@ async function abrirFichaCliente(u) {
   await cargarConsignacionCliente();
   await cargarPagosConsignacionCliente();
   await cargarPedidosCliente();
+}
+
+function activarEdicionFicha() {
+  document.getElementById('fc-nombre').style.display = 'none';
+  document.getElementById('fc-nombre-input').style.display = 'inline-block';
+  document.getElementById('fc-nombre-input').value = clienteActual.nombre || '';
+
+  document.getElementById('fc-direccion').style.display = 'none';
+  document.getElementById('fc-direccion-input').style.display = 'block';
+  document.getElementById('fc-direccion-input').value = clienteActual.direccion || '';
+
+  document.getElementById('fc-telefono').style.display = 'none';
+  document.getElementById('fc-telefono-input').style.display = 'block';
+  document.getElementById('fc-telefono-input').value = clienteActual.telefono || '';
+
+  document.getElementById('fc-btn-editar').style.display = 'none';
+  document.getElementById('fc-edit-botones').style.display = 'flex';
+}
+
+function cancelarEdicionFicha() {
+  document.getElementById('fc-nombre').style.display = 'block';
+  document.getElementById('fc-nombre-input').style.display = 'none';
+
+  document.getElementById('fc-direccion').style.display = 'block';
+  document.getElementById('fc-direccion-input').style.display = 'none';
+
+  document.getElementById('fc-telefono').style.display = 'block';
+  document.getElementById('fc-telefono-input').style.display = 'none';
+
+  document.getElementById('fc-btn-editar').style.display = 'inline-block';
+  document.getElementById('fc-edit-botones').style.display = 'none';
+}
+
+async function guardarEdicionFicha() {
+  const nombreNuevo = document.getElementById('fc-nombre-input').value.trim();
+  const direccionNueva = document.getElementById('fc-direccion-input').value.trim();
+  const telefonoNuevo = document.getElementById('fc-telefono-input').value.trim();
+
+  if (!nombreNuevo) { toast('El nombre no puede quedar vacío', 'err'); return; }
+  if (!confirm('¿Confirmás guardar los cambios en los datos del cliente?')) return;
+
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {
+      method:'PATCH', headers:hdrs,
+      body: JSON.stringify({ nombre: nombreNuevo, direccion: direccionNueva || null, telefono: telefonoNuevo || null })
+    });
+    clienteActual.nombre = nombreNuevo;
+    clienteActual.direccion = direccionNueva;
+    clienteActual.telefono = telefonoNuevo;
+
+    document.getElementById('fc-nombre').textContent = nombreNuevo;
+    document.getElementById('fc-direccion').textContent = direccionNueva || 'Sin dirección cargada';
+    document.getElementById('fc-telefono').innerHTML = telefonoNuevo
+      ? `<a href="https://wa.me/549${telefonoNuevo}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${telefonoNuevo}</a>`
+      : 'Sin teléfono cargado';
+
+    cancelarEdicionFicha();
+    toast('Datos actualizados ✓', 'ok');
+    cargarUsuarios();
+  } catch(e) { toast('Error al guardar los cambios', 'err'); }
 }
 
 function switchFichaTab(tab) {
