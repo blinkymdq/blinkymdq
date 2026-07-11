@@ -1468,12 +1468,12 @@ async function confirmarNuevoPedido() {
     if (!numeroPedido) throw new Error('No se pudo generar el número de pedido');
 
     // Insertar todos los productos del pedido en un solo lote
+    // (no mandamos "subtotal": es una columna generada automáticamente en la base)
     const itemsBody = npCarrito.map(it => ({
       numero_pedido: numeroPedido,
       producto: it.producto,
       cantidad: it.cantidad,
-      precio_unitario: it.precio_unitario,
-      subtotal: it.subtotal
+      precio_unitario: it.precio_unitario
     }));
     const itemsRes = await fetch(`${SUPA_URL}/rest/v1/pedido_items`, {
       method: 'POST', headers: hdrs, body: JSON.stringify(itemsBody)
