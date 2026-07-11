@@ -1435,21 +1435,43 @@ async function confirmarNuevoPedido() {
         user_id: c.id
       })
     });
+    if (!pedidoRes.ok) {
+      const errTxt = await pedidoRes.text().catch(()=> '');
+      throw new Error('Error creando el pedido: ' + errTxt);
+    }
     const pedidoData = await pedidoRes.json();
     const numeroPedido = pedidoData[0]?.numero_pedido;
     if (!numeroPedido) throw new Error('No se pudo generar el número de pedido');
 
+    // Insertar todos los productos del pedido en un solo lote
+    const itemsBody = npCarrito.map(it => ({
+      numero_pedido: numeroPedido,
+      producto: it.producto,
+      cantidad: it.cantidad,
+      precio_unitario: it.precio_unitario,
+      subtotal: it.subtotal
+    }));
+    const itemsRes = await fetch(`${SUPA_URL}/rest/v1/pedido_items`, {
+      method: 'POST', headers: hdrs, body: JSON.stringify(itemsBody)
+    });
+    if (!itemsRes.ok) {
+      const errTxt = await itemsRes.text().catch(()=> '');
+      throw new Error('El pedido se creó pero los productos no se pudieron guardar: ' + errTxt);
+    }
+
+    // Descontar stock de cada producto (igual que hace el checkout de la tienda)
     for (const it of npCarrito) {
-      await fetch(`${SUPA_URL}/rest/v1/pedido_items`, {
-        method: 'POST', headers: hdrs,
-        body: JSON.stringify({
-          numero_pedido: numeroPedido,
-          producto: it.producto,
-          cantidad: it.cantidad,
-          precio_unitario: it.precio_unitario,
-          subtotal: it.subtotal
-        })
-      });
+      if (!it.codigo) continue;
+      try {
+        const prodR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {headers:hdrs});
+        const prods = await prodR.json();
+        if (!prods.length) continue;
+        const stockActual = Number(prods[0].stock || 0);
+        const nuevoStock = Math.max(0, stockActual - it.cantidad);
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {
+          method:'PATCH', headers:hdrs, body: JSON.stringify({stock: nuevoStock})
+        });
+      } catch(se) { console.warn('Stock no actualizado para', it.codigo, se); }
     }
 
     toast(`Pedido ${numeroPedido} creado ✓`, 'ok');
@@ -1457,7 +1479,7 @@ async function confirmarNuevoPedido() {
     cargarPedidos();
   } catch(e) {
     console.error(e);
-    toast('Error al crear el pedido', 'err');
+    toast(e.message || 'Error al crear el pedido', 'err');
   } finally {
     btn.disabled = false; btn.textContent = 'Confirmar pedido';
   }
