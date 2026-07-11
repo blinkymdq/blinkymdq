@@ -1153,6 +1153,8 @@
                 <div class="space-y-3">
                     <input id="reg-email" type="email" placeholder="Email *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                     <input id="reg-pass" type="password" placeholder="Contraseña * (mínimo 6 caracteres)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="reg-nombre" type="text" placeholder="Nombre completo *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="reg-dni" type="text" placeholder="DNI *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Fecha de nacimiento *</label>
                         <div class="flex gap-2">
@@ -1200,6 +1202,45 @@
                 <button onclick="mostrarVista('login')" class="w-full bg-violet-600 text-white p-3.5 rounded-2xl font-black text-sm uppercase hover:bg-violet-700 transition-colors">Volver al login</button>
             </div>
 
+        </div>
+    </div>
+
+    <!-- MODAL: COMPLETAR PERFIL (obligatorio, típico de usuarios de Google) -->
+    <div id="modalCompletarPerfil" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-y-auto" style="max-height:92vh;">
+            <div style="padding:2rem;">
+                <h3 class="text-xl font-black text-slate-800 uppercase mb-1">Completá tus datos</h3>
+                <p class="text-slate-500 text-xs mb-5">Nos falta esta información para poder procesar tus pedidos.</p>
+
+                <div class="space-y-3">
+                    <input id="cp-nombre" type="text" placeholder="Nombre completo *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="cp-dni" type="text" placeholder="DNI *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1 block">Fecha de nacimiento *</label>
+                    <div class="flex gap-2">
+                        <select id="cp-dia" class="w-1/3 p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;"><option value="">Día</option></select>
+                        <select id="cp-mes" class="w-1/3 p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;">
+                            <option value="">Mes</option>
+                            <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+                            <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+                            <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+                            <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+                        </select>
+                        <select id="cp-anio" class="w-1/3 p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;"><option value="">Año</option></select>
+                    </div>
+
+                    <input id="cp-telefono" type="tel" placeholder="Teléfono * (Ej: 2235123456)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input id="cp-provincia" type="text" placeholder="Provincia *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                        <input id="cp-localidad" type="text" placeholder="Localidad *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    </div>
+                    <input id="cp-direccion" type="text" placeholder="Dirección *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                </div>
+
+                <div id="cp-error" class="hidden text-xs text-red-500 font-bold mt-3 text-center"></div>
+                <button onclick="guardarCompletarPerfil()" class="w-full bg-violet-600 text-white p-3.5 rounded-2xl font-black text-sm uppercase mt-4 hover:bg-violet-700 transition-colors">Guardar y continuar</button>
+            </div>
         </div>
     </div>
 
@@ -1976,7 +2017,7 @@
         async function aplicarSesion(user) {
             let { data, error } = await supabaseClient
                 .from('usuarios')
-                .select('rol, nombre, telefono, provincia, localidad')
+                .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento')
                 .eq('id', user.id)
                 .single();
 
@@ -1991,7 +2032,7 @@
                         nombre: nombreNuevo,
                         rol: 'minorista'
                     })
-                    .select('rol, nombre, telefono, provincia, localidad')
+                    .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento')
                     .single();
                 data = nuevoPerfil;
             }
@@ -2019,6 +2060,56 @@
             document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
             cerrarLogin();
             render(filtrados.length > 0 ? filtrados : productos);
+
+            // Si falta algún dato obligatorio (típico de Google, que no los provee),
+            // pedimos que los complete antes de poder seguir usando el sitio.
+            if (!data?.telefono || !data?.dni || !data?.provincia || !data?.localidad || !data?.direccion || !data?.nacimiento) {
+                mostrarCompletarPerfil();
+            }
+        }
+
+        function mostrarCompletarPerfil() {
+            document.getElementById('cp-nombre').value = window._userData?.nombre || '';
+            document.getElementById('modalCompletarPerfil').classList.remove('hidden');
+        }
+
+        async function guardarCompletarPerfil() {
+            const nombre    = document.getElementById('cp-nombre').value.trim();
+            const telefono  = document.getElementById('cp-telefono').value.trim();
+            const dni       = document.getElementById('cp-dni').value.trim();
+            const dia       = document.getElementById('cp-dia').value;
+            const mes       = document.getElementById('cp-mes').value;
+            const anio      = document.getElementById('cp-anio').value;
+            const nac       = (dia && mes && anio) ? `${anio}-${mes}-${dia.padStart(2,'0')}` : '';
+            const provincia = document.getElementById('cp-provincia').value.trim();
+            const localidad = document.getElementById('cp-localidad').value.trim();
+            const direccion = document.getElementById('cp-direccion').value.trim();
+            const errEl = document.getElementById('cp-error');
+            errEl.classList.add('hidden');
+
+            if (!nombre || !telefono || !dni || !nac || !provincia || !localidad || !direccion) {
+                errEl.textContent = 'Completá todos los campos obligatorios.'; errEl.classList.remove('hidden'); return;
+            }
+
+            try {
+                await supabaseClient.from('usuarios').update({
+                    nombre, telefono, dni, nacimiento: nac, provincia, localidad, direccion
+                }).eq('id', window._userId);
+
+                window._userData.nombre = nombre;
+                window._userData.telefono = telefono;
+                window._userData.provincia = provincia;
+                window._userData.localidad = localidad;
+
+                const nombreCortoNuevo = nombre.split(' ')[0].toUpperCase();
+                document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCortoNuevo}`;
+                document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCortoNuevo}`;
+
+                document.getElementById('modalCompletarPerfil').classList.add('hidden');
+                toast('¡Datos guardados! ✓');
+            } catch(e) {
+                errEl.textContent = 'Error al guardar. Probá de nuevo.'; errEl.classList.remove('hidden');
+            }
         }
 
         function validarAcceso() {} // legacy — ya no se usa
@@ -2063,13 +2154,15 @@
             const regAnio   = document.getElementById('reg-anio').value;
             const nac       = (regDia && regMes && regAnio) ? `${regAnio}-${regMes}-${regDia.padStart(2,'0')}` : '';
             const telefono  = document.getElementById('reg-telefono').value.trim();
+            const nombre    = document.getElementById('reg-nombre').value.trim();
+            const dni       = document.getElementById('reg-dni').value.trim();
             const provincia = document.getElementById('reg-provincia').value.trim();
             const localidad = document.getElementById('reg-localidad').value.trim();
             const direccion = document.getElementById('reg-direccion').value.trim();
             const errEl = document.getElementById('reg-error');
             errEl.classList.add('hidden');
 
-            if(!email||!pass||!nac||!telefono||!provincia||!localidad||!direccion){
+            if(!email||!pass||!nombre||!nac||!telefono||!dni||!provincia||!localidad||!direccion){
                 errEl.textContent='Completá todos los campos obligatorios.'; errEl.classList.remove('hidden'); return;
             }
             if(pass.length < 6){
@@ -2103,27 +2196,28 @@
                 await supabaseClient.from('usuarios').upsert({
                     id: data.user.id,
                     email,
-                    nombre: email.split('@')[0],
-                    telefono, provincia, localidad, direccion: direccion,
+                    nombre,
+                    telefono, dni, provincia, localidad, direccion: direccion,
                     rol: 'minorista'
                 });
             }
             mostrarVista('verificacion');
         }
 
-        function poblarSelectsFecha() {
-            const diaSel = document.getElementById('reg-dia');
+        function poblarSelectsFecha(idDia, idAnio) {
+            const diaSel = document.getElementById(idDia || 'reg-dia');
             for (let d = 1; d <= 31; d++) {
                 const v = String(d).padStart(2,'0');
                 diaSel.innerHTML += `<option value="${v}">${d}</option>`;
             }
-            const anioSel = document.getElementById('reg-anio');
+            const anioSel = document.getElementById(idAnio || 'reg-anio');
             const anioActual = new Date().getFullYear();
             for (let a = anioActual - 18; a >= anioActual - 100; a--) {
                 anioSel.innerHTML += `<option value="${a}">${a}</option>`;
             }
         }
-        poblarSelectsFecha();
+        poblarSelectsFecha('reg-dia', 'reg-anio');
+        poblarSelectsFecha('cp-dia', 'cp-anio');
 
         initAuth();
 
