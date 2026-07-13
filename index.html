@@ -1154,7 +1154,7 @@
                     <input id="reg-email" type="email" placeholder="Email *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                     <input id="reg-pass" type="password" placeholder="Contraseña * (mínimo 6 caracteres)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                     <input id="reg-nombre" type="text" placeholder="Nombre completo *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
-                    <input id="reg-dni" type="text" placeholder="DNI *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="reg-dni" type="text" placeholder="DNI (opcional)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Fecha de nacimiento *</label>
                         <div class="flex gap-2">
@@ -1214,7 +1214,7 @@
 
                 <div class="space-y-3">
                     <input id="cp-nombre" type="text" placeholder="Nombre completo *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
-                    <input id="cp-dni" type="text" placeholder="DNI *" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
+                    <input id="cp-dni" type="text" placeholder="DNI (opcional)" class="w-full p-3.5 bg-slate-100 rounded-2xl text-sm font-medium outline-none" style="border:1.5px solid transparent;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
 
                     <label class="text-xs font-bold text-slate-500 uppercase ml-1 block">Fecha de nacimiento *</label>
                     <div class="flex gap-2">
@@ -2063,7 +2063,7 @@
 
             // Si falta algún dato obligatorio (típico de Google, que no los provee),
             // pedimos que los complete antes de poder seguir usando el sitio.
-            if (!data?.telefono || !data?.dni || !data?.provincia || !data?.localidad || !data?.direccion || !data?.nacimiento) {
+            if (!data?.telefono || !data?.provincia || !data?.localidad || !data?.direccion || !data?.nacimiento) {
                 mostrarCompletarPerfil();
             }
         }
@@ -2087,7 +2087,7 @@
             const errEl = document.getElementById('cp-error');
             errEl.classList.add('hidden');
 
-            if (!nombre || !telefono || !dni || !nac || !provincia || !localidad || !direccion) {
+            if (!nombre || !telefono || !nac || !provincia || !localidad || !direccion) {
                 errEl.textContent = 'Completá todos los campos obligatorios.'; errEl.classList.remove('hidden'); return;
             }
 
@@ -2162,7 +2162,7 @@
             const errEl = document.getElementById('reg-error');
             errEl.classList.add('hidden');
 
-            if(!email||!pass||!nombre||!nac||!telefono||!dni||!provincia||!localidad||!direccion){
+            if(!email||!pass||!nombre||!nac||!telefono||!provincia||!localidad||!direccion){
                 errEl.textContent='Completá todos los campos obligatorios.'; errEl.classList.remove('hidden'); return;
             }
             if(pass.length < 6){
