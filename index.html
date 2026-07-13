@@ -2022,8 +2022,10 @@
                 .eq('id', user.id)
                 .single();
 
-            // Si no existe el perfil (típico de la primera vez con Google), lo creamos
+            // Si no existe el perfil, es una cuenta recién creada (típico de la primera vez con Google)
+            let esCuentaNueva = false;
             if (!data) {
+                esCuentaNueva = true;
                 const nombreNuevo = user.user_metadata?.full_name || user.email.split('@')[0];
                 const { data: nuevoPerfil } = await supabaseClient
                     .from('usuarios')
@@ -2062,9 +2064,10 @@
             cerrarLogin();
             render(filtrados.length > 0 ? filtrados : productos);
 
-            // Si falta algún dato obligatorio (típico de Google, que no los provee),
-            // pedimos que los complete antes de poder seguir usando el sitio.
-            if (!data?.telefono || !data?.provincia || !data?.localidad || !data?.direccion || !data?.nacimiento) {
+            // Solo a cuentas recién creadas les pedimos completar los datos —
+            // a las cuentas que ya existían nunca las bloqueamos, tengan o no
+            // algún campo sin cargar de antes.
+            if (esCuentaNueva && (!data?.telefono || !data?.provincia || !data?.localidad || !data?.direccion || !data?.nacimiento)) {
                 mostrarCompletarPerfil();
             }
         }
