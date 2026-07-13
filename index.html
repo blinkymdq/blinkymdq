@@ -78,9 +78,10 @@
         .card-hover-violeta { transition: transform 0.25s ease, box-shadow 0.25s ease; }
         .card-hover-violeta:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 12px 32px rgba(124,58,237,0.28), 0 4px 10px rgba(0,0,0,0.06); }
 
-        .btn-agregar-redondo { position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#6d28d9); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:1px; box-shadow:0 4px 10px rgba(124,58,237,0.35); transition:transform 0.15s; }
-        .btn-agregar-redondo:hover { transform:scale(1.1); }
+        .btn-agregar-redondo { position:absolute; right:8px; bottom:8px; height:26px; padding:0 10px; border-radius:8px; background:linear-gradient(135deg,#7c3aed,#6d28d9); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:0 3px 8px rgba(124,58,237,0.35); transition:transform 0.15s, background 0.2s; color:white; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap; }
+        .btn-agregar-redondo:hover { transform:scale(1.05); }
         .btn-agregar-redondo:active { transform:scale(0.95); }
+        .btn-agregar-redondo.agregado { background:linear-gradient(135deg,#16a34a,#15803d); }
         .img-container img { max-width: 90%; max-height: 90%; object-fit: contain; }
 
         /* ─── Imagen en modal ─── */
@@ -1755,8 +1756,8 @@
                             class="btn-agregar-redondo${p.sinStock ? ' opacity-50 cursor-not-allowed' : ''}"
                             ${p.sinStock ? 'disabled' : ''} title="${p.sinStock ? 'Sin stock' : 'Agregar al carrito'}">
                             ${p.sinStock
-                                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-                                : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'}
+                                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Sin stock'
+                                : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Agregar'}
                         </button>
                     </div>`;
             }).join('');
@@ -2269,10 +2270,10 @@
             const btn = document.getElementById('btn-carrito-' + idx);
             if (!btn) return;
             btn.classList.add('agregado');
-            btn.innerHTML = '<svg class="w-3 h-3 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Agregado';
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Agregado';
             setTimeout(() => {
                 btn.classList.remove('agregado');
-                btn.innerHTML = '<svg class="w-3 h-3 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Agregar';
+                btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Agregar';
             }, 1800);
         }
 
