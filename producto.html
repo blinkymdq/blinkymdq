@@ -12,6 +12,7 @@
 <link rel="icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @keyframes tickerScroll { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
 .search-wrapper { position: relative; flex-grow: 1; }
@@ -65,6 +66,12 @@
   .codigo-row:hover { background:#e2e8f0; }
   .nombre { font-size:1.35rem; font-weight:900; line-height:1.3; margin-bottom:16px; }
   .precio { font-size:2.1rem; font-weight:900; color:#7c3aed; margin-bottom:4px; letter-spacing:-1px; }
+  .precio-mayorista { display:none; font-size:1rem; font-weight:800; color:#16a34a; margin-bottom:12px; }
+  body.is-logged-in.es-mayorista .precio-mayorista { display:block; }
+  body.is-logged-in #btn-login { display:none; }
+  body.is-logged-in #user-badge { display:flex; }
+  body.is-logged-in #btn-login-mobile { display:none; }
+  body.is-logged-in #user-badge-mobile { display:flex; }
   .sin-stock { display:inline-block; background:#fee2e2; color:#ef4444; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
   .en-stock { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
 
@@ -465,8 +472,63 @@ function abrirCarrito() {
   window.location.href = 'https://blinkymdq.com';
 }
 
-function toggleUserMenu() {}
-function cerrarSesion() {}
+function toggleUserMenu() {
+  const dd = document.getElementById('userDropdown');
+  if (dd) dd.classList.toggle('hidden');
+}
+
+// ════════════════════════════════════════
+// AUTH (misma lógica que index.html): Supabase Auth + tabla "usuarios".rol
+// ════════════════════════════════════════
+const supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function cerrarSesion() {
+  await supabaseClient.auth.signOut();
+  window._userRol = null;
+  document.body.classList.remove('is-logged-in', 'es-mayorista');
+  if (productoActual) renderProducto(productoActual);
+}
+
+async function initAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await aplicarSesion(session.user);
+
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      await aplicarSesion(session.user);
+    } else {
+      window._userRol = null;
+      document.body.classList.remove('is-logged-in', 'es-mayorista');
+      if (productoActual) renderProducto(productoActual);
+    }
+  });
+}
+
+async function aplicarSesion(user) {
+  const { data } = await supabaseClient
+    .from('usuarios')
+    .select('rol, nombre')
+    .eq('id', user.id)
+    .single();
+
+  const rol = data?.rol || 'minorista';
+  const nombre = data?.nombre || user.user_metadata?.full_name || user.email;
+  const esMayorista = rol === 'mayorista';
+
+  window._userRol = rol;
+
+  document.body.classList.add('is-logged-in');
+  if (esMayorista) document.body.classList.add('es-mayorista');
+  else document.body.classList.remove('es-mayorista');
+
+  const nombreCorto = (nombre || '').split(' ')[0].toUpperCase();
+  const nameEl = document.getElementById('user-badge-name');
+  const nameElM = document.getElementById('user-badge-name-mobile');
+  if (nameEl) nameEl.innerText = `HOLA, ${nombreCorto}`;
+  if (nameElM) nameElM.innerText = `HOLA, ${nombreCorto}`;
+
+  if (productoActual) renderProducto(productoActual);
+}
 
 // Trae solo categoría y marca de cada producto (consulta liviana) para
 // poblar los desplegables del header con opciones reales.
@@ -541,6 +603,7 @@ function renderProducto(p) {
   productoActual = p;
   const precio = formatPrecio(p.precio_publico);
   const sinStock = !p.stock || p.stock <= 0;
+  const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
@@ -593,6 +656,7 @@ function renderProducto(p) {
         ` : ''}
         <br>
         <div class="precio">${precio}</div>
+        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : ''}
         <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
 
         <div class="btns">
@@ -659,6 +723,7 @@ function mostrarError(msg) {
   `;
 }
 
+initAuth();
 cargarProducto();
 </script>
 </body>
