@@ -1752,7 +1752,7 @@
                             <p class="text-[8px] font-black text-violet-400 uppercase mt-1 cursor-pointer hover:text-violet-600 transition-colors" onclick="event.stopPropagation();filtrarPorMarca('${p.marca}')">${p.marca}</p>
                             <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
-                                ${(p.sinStock && !(logueado && window._userRol === 'mayorista'))
+                                ${p.sinStock
                                     ? `<div class="text-[10px] font-bold text-slate-400 uppercase">Sin stock</div>`
                                     : `<div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
                                 ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}`}
@@ -1836,7 +1836,7 @@
 
             const precioPublicoTxt = formatPrecio(p.precioP);
             const precioDinamico = getPrecioUsuario(p);
-            const ocultarPrecio = p.sinStock && !(logueado && window._userRol === 'mayorista');
+            const ocultarPrecio = p.sinStock;
 
             document.getElementById('modalPreciosWrap').classList.toggle('hidden', ocultarPrecio);
             document.getElementById('modalSinStockMsg').classList.toggle('hidden', !ocultarPrecio);
