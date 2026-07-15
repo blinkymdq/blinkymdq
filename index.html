@@ -1631,7 +1631,7 @@
             const img    = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
             const logueado = document.body.classList.contains('is-logged-in');
             const esMayorista = logueado && window._userRol === 'mayorista';
-            const ocultarPrecio = p.sinStock && !esMayorista;
+            const ocultarPrecio = p.sinStock;
             const precio = formatPrecio(p.precioP);
             const precioDinamico = getPrecioUsuario(p);
             const idx    = productos.indexOf(p);

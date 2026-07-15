@@ -602,7 +602,7 @@ function renderProducto(p) {
   const precio = formatPrecio(p.precio_publico);
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
-  const mostrarPrecio = !sinStock || esMayoristaLogueado;
+  const mostrarPrecio = !sinStock;
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
