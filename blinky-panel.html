@@ -693,12 +693,14 @@ function switchTab(tab, btn) {
 // ── STATS ──────────────────────────────────────
 async function cargarStats() {
   try {
-    const [pR,iR] = await Promise.all([
+    const [pR,iR,prR] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/pedidos?select=*&order=created_at.desc`,{headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/pedido_items?select=*`,{headers:hdrs})
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?select=*`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/productos?select=stock,precio_publico,precio_mayorista,estado`,{headers:hdrs})
     ]);
     const pedidos = await pR.json();
     const items = await iR.json();
+    const productos = await prR.json();
     if(!Array.isArray(pedidos)) return;
 
     const hoy=new Date(); hoy.setHours(0,0,0,0);
@@ -711,12 +713,22 @@ async function cargarStats() {
     const pendientes=pedidos.filter(p=>p.estado==='pendiente').length;
     const conSaldo=pedidos.filter(p=>Number(p.monto_pagado||0)<Number(p.total)).length;
 
+    const productosActivos = Array.isArray(productos) ? productos.filter(p=>p.estado!=='inactivo') : [];
+    const unidadesStock = productosActivos.reduce((s,p)=>s+Number(p.stock||0),0);
+    const valorMinorista = productosActivos.reduce((s,p)=>s+Number(p.stock||0)*Number(p.precio_publico||0),0);
+    const valorMayorista = productosActivos.reduce((s,p)=>s+Number(p.stock||0)*Number(p.precio_mayorista||0),0);
+
     document.getElementById('stats-cards').innerHTML=`
       <div class="stat-card violet"><div class="stat-label">Ventas hoy</div><div class="stat-val">$${pedidosHoy.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosHoy.length} pedidos</div></div>
       <div class="stat-card green"><div class="stat-label">Esta semana</div><div class="stat-val">$${pedidosSem.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosSem.length} pedidos</div></div>
       <div class="stat-card cyan"><div class="stat-label">Este mes</div><div class="stat-val">$${pedidosMes.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosMes.length} pedidos</div></div>
       <div class="stat-card yellow"><div class="stat-label">Pendientes</div><div class="stat-val">${pendientes}</div><div class="stat-sub">sin confirmar</div></div>
       <div class="stat-card red"><div class="stat-label">Con saldo</div><div class="stat-val">${conSaldo}</div><div class="stat-sub">pagos incompletos</div></div>
+      <div class="stat-card" style="grid-column:span 2;border-color:rgba(6,182,212,0.3);display:flex;flex-direction:column;justify-content:center;gap:0.5rem;">
+        <div style="font-size:0.82rem;color:var(--text2);">Artículos en stock: <strong style="color:var(--text);font-size:0.95rem;">${unidadesStock.toLocaleString('es-AR')}</strong></div>
+        <div style="font-size:0.82rem;color:var(--text2);">Valor minorista: <strong style="color:var(--green);font-size:0.95rem;">$${valorMinorista.toLocaleString('es-AR')}</strong></div>
+        <div style="font-size:0.82rem;color:var(--text2);">Valor mayorista: <strong style="color:var(--cyan);font-size:0.95rem;">$${valorMayorista.toLocaleString('es-AR')}</strong></div>
+      </div>
     `;
 
     const conteo={};
