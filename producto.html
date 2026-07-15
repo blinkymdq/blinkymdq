@@ -231,8 +231,6 @@
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
-                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
@@ -604,6 +602,7 @@ function renderProducto(p) {
   const precio = formatPrecio(p.precio_publico);
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
+  const mostrarPrecio = !sinStock || esMayoristaLogueado;
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
@@ -655,8 +654,10 @@ function renderProducto(p) {
           </div>
         ` : ''}
         <br>
+        ${mostrarPrecio ? `
         <div class="precio">${precio}</div>
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : ''}
+        ` : ''}
         <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
 
         <div class="btns">
@@ -688,8 +689,12 @@ function agregarYVerCarrito(cod) {
 
 function consultarWsp() {
   const p = productoActual;
+  const sinStock = !p.stock || p.stock <= 0;
+  const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const precio = formatPrecio(p.precio_publico);
-  const msg = `Hola! Me interesa el producto: *${p.nombre}* (${precio}). ¿Está disponible?\n\n${window.location.href}`;
+  const msg = (sinStock && !esMayoristaLogueado)
+    ? `Hola! Me interesa el producto: *${p.nombre}*. ¿Está disponible?\n\n${window.location.href}`
+    : `Hola! Me interesa el producto: *${p.nombre}* (${precio}). ¿Está disponible?\n\n${window.location.href}`;
   window.open(`https://wa.me/${NRO_WSP}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -698,7 +703,7 @@ async function compartir() {
   const url = window.location.href;
   if (navigator.share) {
     try {
-      await navigator.share({ title: p.nombre, text: `${p.nombre} · ${formatPrecio(p.precio_publico)}`, url });
+      await navigator.share({ title: p.nombre, text: p.nombre, url });
     } catch(e) {}
   } else {
     navigator.clipboard.writeText(url);
