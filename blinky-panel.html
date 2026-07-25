@@ -1285,7 +1285,10 @@ async function agregarPago(num, totalPedido) {
     const nuevo = Math.min(actual+monto, totalPedido);
 
     // Insertar pago (con el excedente acreditado registrado)
-    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso,descripcion:descripcion||null})});
+    const pagoBody={numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso};
+    if(descripcion) pagoBody.descripcion=descripcion;
+    const pagoRes=await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify(pagoBody)});
+    if(!pagoRes.ok){ toast('Error al registrar el pago','err'); return; }
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})
