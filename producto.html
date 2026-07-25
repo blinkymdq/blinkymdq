@@ -74,6 +74,7 @@
   body.is-logged-in #user-badge-mobile { display:flex; }
   .sin-stock { display:inline-block; background:#fee2e2; color:#ef4444; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
   .en-stock { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
+  .reposicion-aviso { display:flex; align-items:center; gap:5px; color:#ef4444; font-size:0.72rem; font-weight:700; margin:-10px 0 16px; font-family:Arial,sans-serif; }
 
   .btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
   @media (max-width:420px) { .btns { grid-template-columns:1fr; } }
@@ -602,7 +603,7 @@ function renderProducto(p) {
   const precio = formatPrecio(p.precio_publico);
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
-  const mostrarPrecio = !sinStock;
+  const mostrarPrecio = !sinStock || esMayoristaLogueado;
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
@@ -659,6 +660,7 @@ function renderProducto(p) {
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : ''}
         ` : ''}
         <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
+        ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
 
         <div class="btns">
           <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
