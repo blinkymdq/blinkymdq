@@ -91,6 +91,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .caja-sub { font-size:0.75rem;margin-top:0.3rem;opacity:0.65; }
 .caja-efectivo { border-color:rgba(16,185,129,0.3); } .caja-efectivo .caja-val { color:var(--green); }
 .caja-transferencia { border-color:rgba(6,182,212,0.3); } .caja-transferencia .caja-val { color:var(--cyan); }
+.caja-transferencia_rm { border-color:rgba(244,114,182,0.3); } .caja-transferencia_rm .caja-val { color:#f472b6; }
 .caja-tarjeta { border-color:rgba(124,58,237,0.3); } .caja-tarjeta .caja-val { color:var(--violet-light); }
 .caja-val.negativo { color:var(--red) !important; }
 
@@ -196,6 +197,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .pago-forma.tarjeta { color:var(--violet-light); }
 .pago-forma.descuento { color:var(--yellow); }
 .pago-forma.saldo_favor { color:var(--green); }
+.pago-forma.transferencia_rm { color:#f472b6; }
 .pago-monto { font-weight:900; }
 .pago-fecha { font-size:0.72rem;color:var(--text3); }
 
@@ -351,7 +353,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <option value="">Todos los métodos</option>
           <option value="efectivo">💵 Efectivo</option>
           <option value="transferencia">📲 Transferencia</option>
+          <option value="transferencia_rm">🏦 Transferencia RM</option>
           <option value="tarjeta">💳 Tarjeta</option>
+          <option value="descuento">🏷️ Descuento</option>
+          <option value="saldo_favor">💰 Saldo a favor</option>
         </select>
         <button class="btn-refresh" onclick="cargarPagos()">↻ Actualizar</button>
       </div>
@@ -374,6 +379,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
             <option value="">Método de pago</option>
             <option value="efectivo">💵 Efectivo</option>
             <option value="transferencia">📲 Transferencia</option>
+            <option value="transferencia_rm">🏦 Transferencia RM</option>
             <option value="tarjeta">💳 Tarjeta</option>
           </select>
         </div>
@@ -387,6 +393,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <option value="">Todos los métodos</option>
           <option value="efectivo">💵 Efectivo</option>
           <option value="transferencia">📲 Transferencia</option>
+          <option value="transferencia_rm">🏦 Transferencia RM</option>
           <option value="tarjeta">💳 Tarjeta</option>
         </select>
         <button class="btn-refresh" onclick="cargarGastos()">↻ Actualizar</button>
@@ -526,6 +533,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
             <select id="fc-pago-forma">
               <option value="efectivo">💵 Efectivo</option>
               <option value="transferencia">📲 Transferencia</option>
+              <option value="transferencia_rm">🏦 Transferencia RM</option>
               <option value="tarjeta">💳 Tarjeta</option>
             </select>
             <button class="fc-btn" onclick="agregarPagoConsignacion()">+ Agregar</button>
@@ -565,6 +573,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div class="np-grid2">
           <select id="np-forma-pago">
             <option value="Transferencia">📲 Transferencia</option>
+            <option value="Transferencia RM">🏦 Transferencia RM</option>
             <option value="Tarjeta de crédito/débito">💳 Tarjeta</option>
             <option value="Coordinar por WhatsApp">💬 Coordinar por WP</option>
           </select>
@@ -819,16 +828,16 @@ async function cargarCajas() {
     const gastos = await gastosR.json();
     if(!Array.isArray(pagos)){document.getElementById('cajas-cards').innerHTML='<div class="loading-txt">Error</div>';return;}
 
-    const ing = { efectivo:0, transferencia:0, tarjeta:0 };
-    const gas = { efectivo:0, transferencia:0, tarjeta:0 };
+    const ing = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
+    const gas = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
     pagos.forEach(p=>{ if(ing[p.forma_pago]!==undefined) ing[p.forma_pago]+=Number(p.monto); });
     if(Array.isArray(gastos)) gastos.forEach(g=>{ if(gas[g.forma_pago]!==undefined) gas[g.forma_pago]+=Number(g.monto); });
 
     const fmt = n => (n<0?'-$'+Math.abs(n).toLocaleString('es-AR'):'$'+n.toLocaleString('es-AR'));
     const netoClass = n => n < 0 ? 'negativo' : '';
 
-    const totalIng = ing.efectivo+ing.transferencia+ing.tarjeta;
-    const totalGas = gas.efectivo+gas.transferencia+gas.tarjeta;
+    const totalIng = ing.efectivo+ing.transferencia+ing.transferencia_rm+ing.tarjeta;
+    const totalGas = gas.efectivo+gas.transferencia+gas.transferencia_rm+gas.tarjeta;
     const totalNeto = totalIng-totalGas;
 
     document.getElementById('cajas-cards').innerHTML=`
@@ -845,6 +854,13 @@ async function cargarCajas() {
         <div class="caja-val ${netoClass(ing.transferencia-gas.transferencia)}">${fmt(ing.transferencia-gas.transferencia)}</div>
         <div class="caja-sub">Ingresos: $${ing.transferencia.toLocaleString('es-AR')}</div>
         <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.transferencia.toLocaleString('es-AR')}</div>
+      </div>
+      <div class="caja-card caja-transferencia_rm">
+        <div class="caja-icon">🏦</div>
+        <div class="caja-label">Transferencia RM</div>
+        <div class="caja-val ${netoClass(ing.transferencia_rm-gas.transferencia_rm)}">${fmt(ing.transferencia_rm-gas.transferencia_rm)}</div>
+        <div class="caja-sub">Ingresos: $${ing.transferencia_rm.toLocaleString('es-AR')}</div>
+        <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.transferencia_rm.toLocaleString('es-AR')}</div>
       </div>
       <div class="caja-card caja-tarjeta">
         <div class="caja-icon">💳</div>
@@ -873,7 +889,7 @@ async function cargarCajas() {
         </tr></thead>
         <tbody>${pagos.map(p=>`<tr>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:700;">${p.numero_pedido}</td>
-          <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${p.forma_pago}</span></td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${formaLabel(p.forma_pago)}</span></td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;">$${Number(p.monto).toLocaleString('es-AR')}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
         </tr>`).join('')}</tbody>
@@ -894,7 +910,7 @@ async function cargarCajas() {
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text3);font-size:0.78rem;">${g.fecha}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);font-weight:600;">${g.proveedor}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2);">${g.descripcion}</td>
-          <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${g.forma_pago}">${g.forma_pago}</span></td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${g.forma_pago}">${formaLabel(g.forma_pago)}</span></td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--red);">-$${Number(g.monto).toLocaleString('es-AR')}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;"><button class="btn-trash-card" title="Eliminar gasto" onclick="eliminarGasto(${g.id})">🗑</button></td>
         </tr>`).join('')}</tbody>
@@ -983,7 +999,7 @@ async function cargarPagos() {
           </tr></thead>
           <tbody>${pagos.map(p=>`<tr style="cursor:pointer;" onclick="verPedido('${p.numero_pedido}',false)">
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:700;">${p.numero_pedido}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${p.forma_pago}</span></td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${formaLabel(p.forma_pago)}</span>${p.descripcion?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${p.descripcion}</div>`:''}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--green);">$${Number(p.monto).toLocaleString('es-AR')}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
           </tr>`).join('')}</tbody>
@@ -1029,7 +1045,7 @@ async function cargarGastos() {
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-size:0.78rem;white-space:nowrap;">${g.fecha}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;">${g.proveedor}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);">${g.descripcion}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${g.forma_pago}">${g.forma_pago}</span></td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${g.forma_pago}">${formaLabel(g.forma_pago)}</span></td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--red);">-$${Number(g.monto).toLocaleString('es-AR')}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center;"><button class="btn-trash-card" title="Eliminar" onclick="eliminarGasto(${g.id})">🗑</button></td>
           </tr>`).join('')}</tbody>
@@ -1114,6 +1130,7 @@ async function cargarEliminados() {
 }
 
 function estadoLabel(e){return{pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e;}
+function formaLabel(f){return{efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento',saldo_favor:'Saldo a favor'}[f]||f;}
 
 // ── VER PEDIDO ─────────────────────────────────
 async function verPedido(num, esEliminado) {
@@ -1186,7 +1203,10 @@ async function verPedido(num, esEliminado) {
             <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.5rem;">Historial de pagos</div>
             <div class="pagos-list">
               ${pagos.map(pg=>`<div class="pago-item">
-                <span class="pago-forma ${pg.forma_pago}">${pg.forma_pago}</span>
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                  <span class="pago-forma ${pg.forma_pago}">${formaLabel(pg.forma_pago)}</span>
+                  ${pg.descripcion?`<span style="font-size:0.7rem;color:var(--text3);font-weight:400;">${pg.descripcion}</span>`:''}
+                </span>
                 <span class="pago-monto">$${Number(pg.monto).toLocaleString('es-AR')}</span>
                 <span class="pago-fecha">${new Date(pg.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
                 <button onclick="eliminarPago(${pg.id},'${num}',${pg.monto})" title="Eliminar pago" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0 0 8px;">🗑️</button>
@@ -1209,10 +1229,12 @@ async function verPedido(num, esEliminado) {
               <select class="pago-select" id="pago-forma">
                 <option value="efectivo">💵 Efectivo</option>
                 <option value="transferencia">📲 Transferencia</option>
+                <option value="transferencia_rm">🏦 Transferencia RM</option>
                 <option value="tarjeta">💳 Tarjeta</option>
                 <option value="descuento">🏷️ Descuento</option>
               </select>
             </div>
+            <input type="text" class="pago-input" id="pago-descripcion" placeholder="Descripción (opcional)" style="width:100%;margin-bottom:0.5rem;">
             <button class="btn-agregar-pago" onclick="agregarPago('${num}', ${total})">Agregar pago</button>
             <div class="post-pago-btns">
               <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
@@ -1249,6 +1271,7 @@ async function verPedido(num, esEliminado) {
 async function agregarPago(num, totalPedido) {
   const monto=parseFloat(document.getElementById('pago-monto').value);
   const forma=document.getElementById('pago-forma').value;
+  const descripcion=(document.getElementById('pago-descripcion')?.value||'').trim();
   if(!monto||monto<=0){toast('Ingresá un monto válido','err');return;}
 
   try {
@@ -1262,7 +1285,7 @@ async function agregarPago(num, totalPedido) {
     const nuevo = Math.min(actual+monto, totalPedido);
 
     // Insertar pago (con el excedente acreditado registrado)
-    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso})});
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso,descripcion:descripcion||null})});
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})
@@ -1311,7 +1334,7 @@ async function usarSaldoFavor(num, totalPedido, email) {
     if (!confirm(`¿Aplicar $${aplicar.toLocaleString('es-AR')} del saldo a favor a este pedido?`)) return;
 
     // Registrar como pago (no genera cash real, se identifica con forma_pago 'saldo_favor')
-    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto:aplicar,forma_pago:'saldo_favor',exceso_acreditado:0})});
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto:aplicar,forma_pago:'saldo_favor',exceso_acreditado:0,descripcion:'Aplicado desde saldo a favor'})});
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado: actual+aplicar})
