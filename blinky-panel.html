@@ -544,7 +544,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 
     <!-- MODAL NUEVO PEDIDO (manual, por admin) -->
     <div id="modal-nuevo-pedido" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:210;align-items:center;justify-content:center;padding:1rem;">
-      <div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:1066px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 0 0 1px rgba(124,58,237,0.35), 0 25px 70px rgba(0,0,0,0.6), 0 0 60px rgba(124,58,237,0.15);">
+      <div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:820px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 0 0 1px rgba(124,58,237,0.35), 0 25px 70px rgba(0,0,0,0.6), 0 0 60px rgba(124,58,237,0.15);">
         <button onclick="cerrarModalNuevoPedido()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
         <div style="font-weight:900;font-size:1.05rem;margin-bottom:1rem;">➕ Agregar pedido</div>
 
@@ -556,7 +556,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div class="fc-section-title">Productos</div>
         <div id="np-carrito-tabla"><div style="color:var(--text3);font-size:0.8rem;">Sin productos agregados.</div></div>
         <div class="fc-form-row">
-          <input id="np-producto-input" type="text" list="np-productos-list" placeholder="Buscar por nombre o código..." oninput="autocompletarPrecioNP(this.value)">
+          <input id="np-producto-input" type="text" list="np-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioNP(this.value)">
           <datalist id="np-productos-list"></datalist>
           <input id="np-cantidad-input" type="number" min="1" value="1" placeholder="Cant.">
           <input id="np-precio-input" type="number" min="0" step="0.01" placeholder="Precio unit.">
@@ -1098,6 +1098,7 @@ async function cargarPedidos() {
           <span class="pago-status ${esPagado?'pagado':'debe'}" style="margin-left:auto;">
             ${esPagado?'✓ PAGADO':'Debe $'+saldo.toLocaleString('es-AR')}
           </span>
+          <button class="btn-trash-card" title="Imprimir / PDF" onclick="event.stopPropagation();imprimirPedido('${p.numero_pedido}')">🖨️</button>
           <button class="btn-trash-card" title="Eliminar pedido" onclick="event.stopPropagation();eliminarPedidoDirecto('${p.numero_pedido}')">🗑</button>
         </div>
       </div>`;
@@ -1133,6 +1134,13 @@ function estadoLabel(e){return{pendiente:'Pendiente',confirmado:'Confirmado',en_
 function formaLabel(f){return{efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento',saldo_favor:'Saldo a favor'}[f]||f;}
 
 // ── VER PEDIDO ─────────────────────────────────
+function imprimirPedido(num) {
+  // Abre el mismo comprobante A4 que el del mail; la pagina busca el pedido en la base por su numero (una sola fuente de datos)
+  const printUrl = `https://blinkymdq.github.io/blinkymdq/pedido-imprimir.html?id=${encodeURIComponent(num)}`;
+  const win = window.open(printUrl, '_blank');
+  if (!win) toast('Permití las ventanas emergentes para abrir el comprobante','err');
+}
+
 async function verPedido(num, esEliminado) {
   document.getElementById('overlay').classList.add('open');
   document.getElementById('modal-title').textContent='Pedido '+num;
@@ -1285,10 +1293,7 @@ async function agregarPago(num, totalPedido) {
     const nuevo = Math.min(actual+monto, totalPedido);
 
     // Insertar pago (con el excedente acreditado registrado)
-    const pagoBody={numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso};
-    if(descripcion) pagoBody.descripcion=descripcion;
-    const pagoRes=await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify(pagoBody)});
-    if(!pagoRes.ok){ toast('Error al registrar el pago','err'); return; }
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num,monto,forma_pago:forma,exceso_acreditado:exceso,descripcion:descripcion||null})});
 
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{
       method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})
@@ -1381,7 +1386,7 @@ async function abrirModalNuevoPedido() {
   try {
     npProductosCache = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,estado,stock&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
     document.getElementById('np-productos-list').innerHTML = npProductosCache.map(p=>
-      `<option value="${npOptionText(p)}">`
+      `<option value="${p.nombre} ${Number(p.stock||0)>0 ? `(stock: ${p.stock})` : '(Sin stock)'}">`
     ).join('');
   } catch(e){}
 
@@ -1407,22 +1412,9 @@ function seleccionarClienteNP(valor) {
   if (productoActual) autocompletarPrecioNP(productoActual);
 }
 
-function npOptionText(p){
-  const stockTxt = Number(p.stock||0) > 0 ? `(stock: ${p.stock})` : '(Sin stock)';
-  return `${p.codigo} - ${p.nombre} ${stockTxt}`;
-}
-function npFindProducto(valor){
-  const v = (valor||'').trim();
-  let prod = npProductosCache.find(p => npOptionText(p) === v);
-  if (prod) return prod;
-  const codigo = v.split(' - ')[0].trim();
-  prod = npProductosCache.find(p => String(p.codigo) === codigo);
-  if (prod) return prod;
-  const nombre = v.replace(/^\d+\s*-\s*/, '').replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
-  return npProductosCache.find(p => p.nombre === nombre) || null;
-}
 function autocompletarPrecioNP(valor) {
-  const prod = npFindProducto(valor);
+  const nombre = valor.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
+  const prod = npProductosCache.find(p => p.nombre === nombre);
   const tipoLabel = document.getElementById('np-tipo-precio');
   if (!prod) { if (tipoLabel) tipoLabel.textContent = ''; return; }
 
@@ -1447,15 +1439,15 @@ function autocompletarPrecioNP(valor) {
 
 function agregarItemNP() {
   const nombreInput = document.getElementById('np-producto-input');
+  const nombre = nombreInput.value.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
   const cantidad = parseInt(document.getElementById('np-cantidad-input').value) || 1;
   const precio = parseFloat(document.getElementById('np-precio-input').value);
 
-  if (!nombreInput.value.trim()) { toast('Elegí un producto', 'err'); return; }
+  if (!nombre) { toast('Elegí un producto', 'err'); return; }
   if (!precio || precio <= 0) { toast('Ingresá un precio válido', 'err'); return; }
 
-  const prod = npFindProducto(nombreInput.value);
+  const prod = npProductosCache.find(p => p.nombre === nombre);
   if (!prod) { toast('Ese producto no existe en el catálogo', 'err'); return; }
-  const nombre = prod.nombre;
 
   const stock = Number(prod.stock || 0);
   const yaEnCarrito = npCarrito.filter(it => it.codigo === prod.codigo).reduce((s,it)=>s+it.cantidad, 0);
@@ -1548,7 +1540,6 @@ async function confirmarNuevoPedido() {
     // (no mandamos "subtotal": es una columna generada automáticamente en la base)
     const itemsBody = npCarrito.map(it => ({
       numero_pedido: numeroPedido,
-      codigo: it.codigo || null,
       producto: it.producto,
       cantidad: it.cantidad,
       precio_unitario: it.precio_unitario
@@ -2169,20 +2160,16 @@ async function guardarStock() {
 async function ajustarStock(items, signo) {
   // signo: +1 para devolver stock, -1 para restar
   for (const item of items) {
+    if (!item.codigo) continue;
     try {
-      // Buscar el producto por código; si el ítem no tiene código, por nombre exacto
-      let url;
-      if (item.codigo) url = `${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(item.codigo)}`;
-      else if (item.producto) url = `${SUPA_URL}/rest/v1/productos?nombre=eq.${encodeURIComponent(item.producto)}`;
-      else continue;
-      const r = await fetch(url,{headers:hdrs});
+      const r = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(item.codigo)}`,{headers:hdrs});
       const prods = await r.json();
       if (!prods.length) continue;
       const nuevoStock = Math.max(0, Number(prods[0].stock || 0) + signo * Number(item.cantidad));
-      await fetch(`${SUPA_URL}/rest/v1/productos?id=eq.${prods[0].id}`,{
+      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(item.codigo)}`,{
         method:'PATCH', headers:hdrs, body:JSON.stringify({stock: nuevoStock})
       });
-    } catch(e){ console.warn('Stock no actualizado para', item.codigo||item.producto, e); }
+    } catch(e){ console.warn('Stock no actualizado para', item.codigo, e); }
   }
 }
 

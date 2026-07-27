@@ -168,15 +168,14 @@
 </div>
 
 <script>
-try {
-  const params = new URLSearchParams(window.location.search);
-  const raw = params.get('d');
-  if (!raw) throw new Error('Sin datos');
-  const d = JSON.parse(decodeURIComponent(raw));
+// Config Supabase (clave anónima pública, igual que la tienda)
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 
+function render(d) {
   document.getElementById('num-pedido').textContent = d.num || '';
   document.getElementById('fecha-pedido').textContent = d.fecha || '';
-  document.title = 'Pedido ' + d.num + ' - Blinky MDQ';
+  document.title = 'Pedido ' + (d.num || '') + ' - Blinky MDQ';
 
   const datos = [
     ['Cliente', d.nombre],
@@ -201,10 +200,62 @@ try {
   ).join('');
 
   document.getElementById('total-val').textContent = '$' + Number(d.total).toLocaleString('es-AR');
-
-} catch(e) {
-  document.getElementById('pagina').innerHTML = '<p style="padding:2rem;color:red;">Error al cargar el pedido.</p>';
 }
+
+// Trae el pedido en vivo desde la base (una sola fuente de datos)
+async function cargarPorId(num) {
+  const headers = { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY };
+  const [pR, iR] = await Promise.all([
+    fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}&limit=1`, { headers }),
+    fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(num)}&order=id.asc`, { headers })
+  ]);
+  const p = (await pR.json())[0];
+  const items = await iR.json();
+  if (!p) throw new Error('Pedido no encontrado');
+
+  const fecha = new Date(p.created_at).toLocaleString('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  return {
+    num: p.numero_pedido,
+    fecha,
+    nombre: p.nombre,
+    telefono: p.telefono || '',
+    tipo: p.tipo === 'mayorista' ? 'Mayorista' : 'Minorista',
+    pago: p.forma_pago,
+    entrega: p.entrega === 'envio' ? 'Envio a domicilio' : 'Coordinar por WhatsApp',
+    notas: p.notas || '',
+    total: p.total,
+    items: (Array.isArray(items) ? items : []).map(i => ({
+      producto: i.producto,
+      cantidad: i.cantidad,
+      precio: i.precio_unitario,
+      subtotal: i.subtotal
+    }))
+  };
+}
+
+(async function () {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const raw = params.get('d');
+    let d;
+    if (id) {
+      d = await cargarPorId(id);          // nuevo: busca siempre el mismo pedido en la base
+    } else if (raw) {
+      d = JSON.parse(decodeURIComponent(raw));   // compatibilidad con mails viejos (?d=)
+    } else {
+      throw new Error('Sin datos');
+    }
+    render(d);
+  } catch (e) {
+    document.getElementById('pagina').innerHTML = '<p style="padding:2rem;color:red;">Error al cargar el pedido.</p>';
+  }
+})();
 </script>
 </body>
 </html>
