@@ -110,7 +110,7 @@
         }
 
         /* ─── Título producto truncado ─── */
-        .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .product-title { height: 3rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
         /* ─── Animación de entrada ─── */
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -1661,7 +1661,7 @@
                 </div>
                 <div class="p-3 flex flex-col flex-1">
                     <p class="text-[7px] font-black text-violet-400 uppercase truncate mb-0.5">${p.marca}</p>
-                    <p class="text-[8.5px] font-bold text-slate-700 uppercase leading-tight mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.nombre}</p>
+                    <p class="text-[10.5px] font-bold text-slate-700 uppercase leading-tight mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.nombre}</p>
                     ${ocultarPrecio
                         ? `<p class="text-[10px] font-bold text-slate-400 uppercase mt-auto">Sin stock</p>`
                         : `<p class="text-[17px] font-black text-violet-600 mt-auto">${precio}</p>${esMayorista ? `<p class="text-[9px] font-bold text-slate-500 mt-0.5">Tu Precio: ${formatPrecio(precioDinamico)}</p>` : ''}`}
@@ -1768,7 +1768,7 @@
                                 </button>
                             </div>
                             <p class="text-[8px] font-black text-violet-400 uppercase mt-1 cursor-pointer hover:text-violet-600 transition-colors" onclick="event.stopPropagation();filtrarPorMarca('${p.marca}')">${p.marca}</p>
-                            <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
+                            <h2 class="text-[11px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
                                 ${ocultarPrecioCard
                                     ? `<div class="text-[10px] font-bold text-slate-400 uppercase">Sin stock</div>`
@@ -2705,67 +2705,32 @@
                     var logueado = document.body.classList.contains('is-logged-in');
                     var totalNum = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
 
-                    // Insertar pedido — numero_pedido lo genera Supabase con la secuencia
-                    var pedidoRes = await fetch(SUPA_URL + '/rest/v1/pedidos', {
+                    // Crear pedido + items + descuento de stock en una sola funcion segura (server-side)
+                    var pedidoBody = {
+                        nombre: nombre,
+                        telefono: telefono || null,
+                        email: email || null,
+                        provincia: provincia || null,
+                        localidad: localidad || null,
+                        direccion: direccion || null,
+                        tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
+                        forma_pago: pago,
+                        entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
+                        notas: nota || null,
+                        total: totalNum,
+                        user_id: window._userId || null
+                    };
+                    var itemsBody = carrito.map(function(i) {
+                        return { producto: i.nombre, codigo: i.codigo || null, cantidad: i.cantidad, precio_unitario: i.precio };
+                    });
+                    var pedidoRes = await fetch(SUPA_URL + '/rest/v1/rpc/crear_pedido', {
                         method: 'POST',
                         headers: hdrs,
-                        body: JSON.stringify({
-                            nombre: nombre,
-                            telefono: telefono,
-                            email: email || null,
-                            provincia: provincia || null,
-                            localidad: localidad || null,
-                            direccion: direccion || null,
-                            tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
-                            forma_pago: pago,
-                            entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
-                            notas: nota || null,
-                            total: totalNum,
-                            estado: 'pendiente',
-                            user_id: window._userId || null
-                        })
+                        body: JSON.stringify({ p_pedido: pedidoBody, p_items: itemsBody })
                     });
-                    var pedidoData = await pedidoRes.json();
-                    var numeroPedido = pedidoData[0] ? pedidoData[0].numero_pedido : '';
-
-                    // Insertar items
-                    var items = carrito.map(function(i) {
-                        return {
-                            numero_pedido: numeroPedido,
-                            producto: i.nombre,
-                            codigo: i.codigo || null,
-                            cantidad: i.cantidad,
-                            precio_unitario: i.precio
-                        };
-                    });
-                    console.log('numeroPedido:', numeroPedido);
-                    console.log('items a insertar:', JSON.stringify(items));
-                    var itemsRes = await fetch(SUPA_URL + '/rest/v1/pedido_items', {
-                        method: 'POST',
-                        headers: hdrs,
-                        body: JSON.stringify(items)
-                    });
-                    console.log('pedido_items status:', itemsRes.status);
-                    var itemsData = await itemsRes.text();
-                    console.log('pedido_items response:', itemsData);
-
-                    // Restar stock por cada ítem con codigo
-                    for (var i = 0; i < carrito.length; i++) {
-                        var item = carrito[i];
-                        if (!item.codigo) continue;
-                        try {
-                            var prodR = await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), { headers: hdrs });
-                            var prods = await prodR.json();
-                            if (!prods.length) continue;
-                            var stockActual = Number(prods[0].stock || 0);
-                            var nuevoStock = Math.max(0, stockActual - item.cantidad);
-                            await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), {
-                                method: 'PATCH',
-                                headers: hdrs,
-                                body: JSON.stringify({ stock: nuevoStock })
-                            });
-                        } catch(se) { console.warn('Stock no actualizado para', item.codigo, se); }
-                    }
+                    var creado = await pedidoRes.json();
+                    var numeroPedido = (creado && creado.numero_pedido) ? creado.numero_pedido : '';
+                    console.log('pedido creado:', numeroPedido);
 
                     // Actualizar perfil del usuario logueado
                     if (window._userId) {
