@@ -113,6 +113,25 @@
   .btn-crear { background:var(--green); color:white; border:none; border-radius:10px; padding:0.75rem 1.5rem; font-weight:700; font-size:0.88rem; cursor:pointer; margin-top:0.5rem; }
   .btn-crear:hover { background:#059669; }
   .btn-crear:disabled { opacity:0.5; cursor:not-allowed; }
+  .nombre-link { display:block; font-weight:700; color:var(--violet-light); text-decoration:none; font-size:0.8rem; line-height:1.3; min-height:2.6em; white-space:normal; word-break:break-word; cursor:pointer; }
+  .nombre-link:hover { text-decoration:underline; }
+  .desc-preview { font-size:0.72rem; color:var(--text2); line-height:1.4; max-height:64px; overflow:hidden; border:1px solid var(--border); border-radius:6px; padding:4px 6px; background:var(--surface2); }
+  .desc-preview:empty::before { content:'Sin descripción'; color:var(--text3); }
+  .desc-preview b, .desc-preview strong { color:var(--text); }
+  .btn-desc-edit { margin-top:4px; background:none; border:1px solid var(--border); border-radius:6px; color:var(--violet-light); font-size:0.68rem; padding:3px 8px; cursor:pointer; }
+  .btn-desc-edit:hover { border-color:var(--violet); }
+  #modal-desc { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; padding:1rem; }
+  #modal-desc.open { display:flex; }
+  .modal-desc-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.4rem; width:100%; max-width:640px; max-height:88vh; display:flex; flex-direction:column; }
+  .modal-desc-card h3 { font-size:0.95rem; color:var(--violet-light); margin-bottom:0.9rem; }
+  .desc-toolbar { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+  .desc-toolbar button { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.85rem; min-width:32px; padding:5px 9px; cursor:pointer; line-height:1; }
+  .desc-toolbar button:hover { border-color:var(--violet); color:var(--violet-light); }
+  .desc-toolbar .sep { width:1px; background:var(--border); margin:0 3px; }
+  .desc-editor { flex:1; min-height:220px; max-height:48vh; overflow-y:auto; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9rem; line-height:1.6; padding:0.8rem 0.9rem; outline:none; }
+  .desc-editor:focus { border-color:var(--violet); }
+  .desc-editor:empty::before { content:'Escribí la descripción del producto...'; color:var(--text3); }
+  .desc-editor p, .desc-editor div { margin:0 0 0.6em; }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
@@ -237,7 +256,8 @@
           </div>
           <div class="form-field full">
             <label>Descripción</label>
-            <textarea id="np-descripcion" placeholder="Ej: Perfume de notas frescas, con notas de lavanda y cítricos..."></textarea>
+            <div id="np-desc-preview" class="desc-preview" style="min-height:70px;"></div>
+            <button type="button" class="btn-desc-edit" style="margin-top:6px;" onclick="abrirEditorDesc('__nuevo__')">✏️ Escribir descripción con formato</button>
           </div>
           <div class="form-field full">
             <label>Fotos</label>
@@ -272,6 +292,34 @@
     <div class="modal-fotos-actions">
       <button class="btn-modal-cancelar" onclick="cerrarModalFotos()">Cancelar</button>
       <button class="btn-modal-guardar" id="mf-btn-guardar" onclick="guardarFotosProducto()">Guardar fotos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITOR DE DESCRIPCIÓN -->
+<div id="modal-desc">
+  <div class="modal-desc-card">
+    <h3 id="modal-desc-titulo">Descripción del producto</h3>
+    <div class="desc-toolbar">
+      <button type="button" title="Negrita" onmousedown="fmtDesc(event,'bold')"><b>B</b></button>
+      <button type="button" title="Cursiva" onmousedown="fmtDesc(event,'italic')"><i>I</i></button>
+      <button type="button" title="Subrayado" onmousedown="fmtDesc(event,'underline')"><u>U</u></button>
+      <span class="sep"></span>
+      <button type="button" title="Lista con viñetas" onmousedown="fmtDesc(event,'insertUnorderedList')">• Lista</button>
+      <button type="button" title="Quitar formato" onmousedown="fmtDesc(event,'removeFormat')">✕ Formato</button>
+      <span class="sep"></span>
+      <button type="button" onmousedown="insertarEmoji(event,'✨')">✨</button>
+      <button type="button" onmousedown="insertarEmoji(event,'🔥')">🔥</button>
+      <button type="button" onmousedown="insertarEmoji(event,'💎')">💎</button>
+      <button type="button" onmousedown="insertarEmoji(event,'✅')">✅</button>
+      <button type="button" onmousedown="insertarEmoji(event,'🌸')">🌸</button>
+      <button type="button" onmousedown="insertarEmoji(event,'👉')">👉</button>
+    </div>
+    <div id="desc-editor" class="desc-editor" contenteditable="true"></div>
+    <div style="font-size:0.68rem;color:var(--text3);margin-top:6px;">Tip: también podés insertar emojis con el teclado (Windows: tecla Win + . / en el celular, el teclado de emojis). Enter deja espacio entre párrafos.</div>
+    <div class="modal-desc-actions">
+      <button class="btn-modal-cancelar" onclick="cerrarEditorDesc()">Cancelar</button>
+      <button class="btn-modal-guardar" onclick="guardarEditorDesc()">Guardar descripción</button>
     </div>
   </div>
 </div>
@@ -616,9 +664,12 @@ async function guardarFotosProducto() {
 }
 
 function limpiarFormNuevo() {
-  ['np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may','np-descripcion'].forEach(id => {
+  ['np-nombre','np-marca','np-categoria','np-stock','np-costo-usd','np-imp-e','np-gan-min','np-gan-may'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  nuevaDescHtml = '';
+  const _npDescPrev = document.getElementById('np-desc-preview');
+  if (_npDescPrev) _npDescPrev.innerHTML = '';
   document.getElementById('np-estado').value = 'activo';
   fotosSeleccionadas = [];
   renderFotoPreviews();
@@ -670,7 +721,7 @@ async function crearProducto() {
       ganancia_mayorista: ganMay,
       precio_publico: precioPublico,
       precio_mayorista: precioMayor,
-      descripcion: document.getElementById('np-descripcion').value.trim() || null,
+      descripcion: nuevaDescHtml || null,
       foto: fotoField || null
     };
 
@@ -791,18 +842,22 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `descripcion-${codigo}`];
+  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
   });
+  const link = document.getElementById(`nombre-link-${codigo}`);
+  const ta = document.getElementById(`nombre-${codigo}`);
+  if(link) link.style.display = 'none';
+  if(ta) { ta.style.display = ''; autoAltura(ta); }
   const btn = document.getElementById(`btn-${codigo}`);
   if(btn) {
     btn.textContent = 'Guardar';
     btn.className = 'btn-guardar-row';
     btn.onclick = () => guardarProducto(codigo);
   }
-  document.getElementById(`nombre-${codigo}`)?.focus();
+  ta?.focus();
 }
 
 async function guardarProducto(codigo) {
@@ -816,8 +871,6 @@ async function guardarProducto(codigo) {
   const nombre   = document.getElementById(`nombre-${codigo}`)?.value.trim();
   const marca    = document.getElementById(`marca-${codigo}`)?.value.trim() || null;
   const categoria = document.getElementById(`categoria-${codigo}`)?.value.trim() || null;
-  const descripcion = document.getElementById(`descripcion-${codigo}`)?.value.trim() || null;
-
   if (!nombre) { toast('El nombre no puede quedar vacío', 'err'); return; }
 
   const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
@@ -828,7 +881,6 @@ async function guardarProducto(codigo) {
     nombre: nombre,
     marca: marca,
     categoria: categoria,
-    descripcion: descripcion,
     costo_usd: costoUsd,
     imp_e: impE,
     costo_final: costoTotal,
@@ -845,13 +897,17 @@ async function guardarProducto(codigo) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.descripcion=descripcion; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`descripcion-${codigo}`].forEach(id => {
+    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
+    const _lnk = document.getElementById(`nombre-link-${codigo}`);
+    const _ta  = document.getElementById(`nombre-${codigo}`);
+    if(_lnk){ _lnk.textContent = nombre; _lnk.style.display = ''; }
+    if(_ta) _ta.style.display = 'none';
     setTimeout(() => {
       if(btn) { btn.textContent='Editar'; btn.className='btn-editar-row'; btn.onclick = () => editarProducto(codigo); }
     }, 1500);
@@ -976,13 +1032,14 @@ function renderTabla(prods) {
           return `<tr id="row-${p.codigo}">
             <td>
               <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-                <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre.replace(/'/g,"\\'")}','${(p.foto||'').replace(/'/g,"\\'")}')">
+                <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:43px;height:43px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre.replace(/'/g,"\\'")}','${(p.foto||'').replace(/'/g,"\\'")}')">
                 <button onclick="abrirModalFotos('${p.codigo}')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:0.62rem;padding:1px 5px;cursor:pointer;">🖼 Fotos</button>
               </div>
             </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
             <td style="min-width:320px;max-width:420px;">
-              <textarea class="td-input nombre-auto" id="nombre-${p.codigo}" rows="1" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;overflow:hidden;" oninput="marcarSinGuardar('${p.codigo}');autoAltura(this)" disabled>${p.nombre||''}</textarea>
+              <a id="nombre-link-${p.codigo}" href="producto.html?cod=${encodeURIComponent(p.codigo)}" target="_blank" rel="noopener" class="nombre-link" title="Abrir la ficha del producto en una pestaña nueva">${p.nombre||'(sin nombre)'}</a>
+              <textarea class="td-input nombre-auto" id="nombre-${p.codigo}" rows="2" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;overflow:hidden;min-height:2.6em;display:none;" oninput="marcarSinGuardar('${p.codigo}');autoAltura(this)" disabled>${p.nombre||''}</textarea>
             </td>
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
@@ -994,8 +1051,9 @@ function renderTabla(prods) {
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
-            <td style="min-width:160px;">
-              <textarea class="td-input" id="descripcion-${p.codigo}" rows="2" style="width:100%;resize:vertical;white-space:normal;font-size:0.72rem;text-align:left;" placeholder="Sin descripción" oninput="marcarSinGuardar('${p.codigo}')" disabled>${p.descripcion||''}</textarea>
+            <td style="min-width:160px;max-width:240px;">
+              <div id="desc-prev-${p.codigo}" class="desc-preview">${p.descripcion||''}</div>
+              <button type="button" class="btn-desc-edit" onclick="abrirEditorDesc('${p.codigo}')">✏️ Editar descripción</button>
             </td>
             <td>
               <select class="td-input" id="estado-${p.codigo}" style="width:90px;" oninput="marcarSinGuardar('${p.codigo}')" disabled>
@@ -1012,6 +1070,65 @@ function renderTabla(prods) {
     </table>`;
 
   document.querySelectorAll('.nombre-auto').forEach(autoAltura);
+}
+
+// ── EDITOR DE DESCRIPCIÓN (texto con formato) ──
+let descEditandoCodigo = null;   // '__nuevo__' para el formulario de alta
+let nuevaDescHtml = '';          // descripción del producto que se está creando
+
+function fmtDesc(e, cmd) {
+  e.preventDefault();
+  document.getElementById('desc-editor').focus();
+  document.execCommand(cmd, false, null);
+}
+function insertarEmoji(e, emoji) {
+  e.preventDefault();
+  document.getElementById('desc-editor').focus();
+  document.execCommand('insertText', false, emoji);
+}
+function abrirEditorDesc(codigo) {
+  descEditandoCodigo = codigo;
+  const editor = document.getElementById('desc-editor');
+  const titulo = document.getElementById('modal-desc-titulo');
+  if (codigo === '__nuevo__') {
+    titulo.textContent = 'Descripción — producto nuevo';
+    editor.innerHTML = nuevaDescHtml || '';
+  } else {
+    const p = todosLosProductos.find(x => x.codigo === codigo);
+    titulo.textContent = 'Descripción — ' + (p ? p.nombre : codigo);
+    editor.innerHTML = (p && p.descripcion) ? p.descripcion : '';
+  }
+  document.getElementById('modal-desc').classList.add('open');
+  setTimeout(() => editor.focus(), 50);
+}
+function cerrarEditorDesc() {
+  document.getElementById('modal-desc').classList.remove('open');
+  descEditandoCodigo = null;
+}
+async function guardarEditorDesc() {
+  const editor = document.getElementById('desc-editor');
+  let html = editor.innerHTML.trim();
+  if (!editor.textContent.trim() && !/<img/i.test(html)) html = '';
+  if (descEditandoCodigo === '__nuevo__') {
+    nuevaDescHtml = html;
+    const prev = document.getElementById('np-desc-preview');
+    if (prev) prev.innerHTML = html;
+    cerrarEditorDesc();
+    toast('Descripción lista ✓', 'ok');
+    return;
+  }
+  const codigo = descEditandoCodigo;
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
+      method:'PATCH', headers:hdrs, body:JSON.stringify({ descripcion: html || null })
+    });
+    const p = todosLosProductos.find(x => x.codigo === codigo);
+    if (p) p.descripcion = html || null;
+    const prev = document.getElementById(`desc-prev-${codigo}`);
+    if (prev) prev.innerHTML = html;
+    cerrarEditorDesc();
+    toast('Descripción guardada ✓', 'ok');
+  } catch(e) { toast('Error al guardar la descripción', 'err'); }
 }
 
 function toast(msg, tipo) {
