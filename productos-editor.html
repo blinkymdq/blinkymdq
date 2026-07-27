@@ -134,6 +134,7 @@
   .desc-editor p, .desc-editor div { margin:0 0 0.6em; }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -141,9 +142,8 @@
 <div id="login-screen">
   <div class="login-card">
     <h2>🛍 Editor de Productos</h2>
-    <input class="login-input" type="password" id="pwd-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter') doLogin()">
-    <div id="login-error" style="color:var(--red);font-size:0.75rem;margin-bottom:0.5rem;display:none;">Contraseña incorrecta</div>
-    <button class="btn-login" onclick="window.doLogin && doLogin()">Entrar</button>
+    <div id="login-error" style="color:var(--red);font-size:0.78rem;margin-bottom:0.75rem;display:none;"></div>
+    <button class="btn-login" onclick="iniciarLoginGoogle()">Entrar con Google</button>
   </div>
 </div>
 
@@ -328,7 +328,7 @@
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
-const PASS = '727272';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let todosLosProductos = [];
 let sortField = null;
@@ -394,22 +394,35 @@ async function iniciarApp() {
   cargarProductos();
 }
 
-function doLogin() {
-  if (document.getElementById('pwd-input').value === PASS) {
-    localStorage.setItem('blinky_auth', '1');
-    iniciarApp();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-    document.getElementById('pwd-input').value = '';
-  }
+async function iniciarLoginGoogle() {
+  await supa.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
 }
+function logout() { supa.auth.signOut().then(() => location.reload()); }
 
-// Si ya está logueado en blinky-panel.html (misma sessionStorage), entra directo
-if (localStorage.getItem('blinky_auth') === '1') {
-  iniciarApp();
+let _editorIniciado = false;
+function mostrarLoginEditor(msg) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  const e = document.getElementById('login-error');
+  if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; }
 }
-
-document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+async function verificarSesion() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) { mostrarLoginEditor(''); return; }
+  hdrs.Authorization = 'Bearer ' + session.access_token;
+  let esAdmin = false;
+  try { const { data } = await supa.rpc('is_admin'); esAdmin = (data === true); } catch (e) {}
+  if (!esAdmin) { mostrarLoginEditor('Esta cuenta no tiene acceso de administrador.'); return; }
+  if (!_editorIniciado) { _editorIniciado = true; iniciarApp(); }
+}
+supa.auth.onAuthStateChange((event, session) => {
+  if (session) hdrs.Authorization = 'Bearer ' + session.access_token;
+  if (event === 'SIGNED_IN') verificarSesion();
+});
+verificarSesion();
 
 function getImgUrl(foto) {
   if (!foto || foto.trim() === '') return '';
