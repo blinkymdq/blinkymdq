@@ -263,6 +263,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .np-grid2 select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.82rem;padding:0.55rem 0.6rem; }
 .np-item-row { display:grid;grid-template-columns:1.8fr 0.4fr 0.6fr 0.6fr 0.3fr;gap:0.4rem;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -270,9 +271,8 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   <div class="login-card">
     <div class="login-logo"><img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ"></div>
     <div class="login-title">Panel de gestión</div>
-    <div class="login-sub">Ingresá tu contraseña para continuar</div>
-    <input class="login-input" type="password" id="pwd-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-sub">Iniciá sesión con tu cuenta autorizada</div>
+    <button class="login-btn" onclick="iniciarLoginGoogle()">Entrar con Google</button>
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -663,26 +663,43 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 <script>
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
-const PASS = '727272';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+// apikey = clave publica; Authorization = token del admin logueado (se completa al iniciar sesion)
 const hdrs = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
 
-function doLogin() {
-  if (document.getElementById('pwd-input').value === PASS) {
-    localStorage.setItem('blinky_auth','1');
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    cargarStats(); cargarPedidos(); setFechasMes();
-  } else {
-    document.getElementById('login-error').textContent='Contraseña incorrecta';
-    document.getElementById('pwd-input').value='';
-  }
+async function iniciarLoginGoogle() {
+  await supa.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
 }
-function logout() { localStorage.removeItem('blinky_auth'); location.reload(); }
-if (localStorage.getItem('blinky_auth')==='1') {
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  cargarStats(); cargarPedidos(); setFechasMes();
+function logout() { supa.auth.signOut().then(() => location.reload()); }
+
+let _appIniciada = false;
+function mostrarLogin(msg) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  const e = document.getElementById('login-error'); if (e) e.textContent = msg || '';
 }
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  if (!_appIniciada) { _appIniciada = true; cargarStats(); cargarPedidos(); setFechasMes(); }
+}
+async function verificarSesion() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) { mostrarLogin(''); return; }
+  hdrs.Authorization = 'Bearer ' + session.access_token;
+  let esAdmin = false;
+  try { const { data } = await supa.rpc('is_admin'); esAdmin = (data === true); } catch (e) {}
+  if (!esAdmin) { mostrarLogin('Esta cuenta no tiene acceso de administrador. Cerrá sesión y entrá con una cuenta autorizada.'); return; }
+  mostrarApp();
+}
+supa.auth.onAuthStateChange((event, session) => {
+  if (session) hdrs.Authorization = 'Bearer ' + session.access_token;
+  if (event === 'SIGNED_IN') verificarSesion();
+});
+verificarSesion();
 
 function switchTab(tab, btn) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
