@@ -94,7 +94,7 @@
   .tab-btn.active { background:var(--violet); border-color:var(--violet); color:white; }
 
   /* FORM NUEVO PRODUCTO */
-  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.5rem; max-width:640px; }
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.5rem; max-width:980px; }
   .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; }
   .form-field { display:flex; flex-direction:column; gap:0.3rem; }
   .form-field.full { grid-column:1 / -1; }
@@ -227,7 +227,14 @@
             </select>
           </div>
           <div class="form-field">
-            <label>Costo USD</label>
+            <label>Moneda</label>
+            <select id="np-moneda" onchange="actualizarCalcNuevo()">
+              <option value="USD">USD (fluctúa con el dólar)</option>
+              <option value="ARS">Pesos ($ fijo)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label id="np-costo-label">Costo USD</label>
             <input type="number" id="np-costo-usd" min="0" step="0.01" placeholder="0.00" oninput="actualizarCalcNuevo()">
           </div>
           <div class="form-field">
@@ -477,7 +484,11 @@ async function mostrarProximoCodigo() {
 }
 
 function actualizarCalcNuevo() {
-  const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const moneda = document.getElementById('np-moneda')?.value || 'USD';
+  const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const dolar = moneda === 'ARS' ? 1 : dolarReal;
+  const lbl = document.getElementById('np-costo-label');
+  if (lbl) lbl.textContent = moneda === 'ARS' ? 'Costo $' : 'Costo USD';
   const costoUsd = document.getElementById('np-costo-usd').value;
   const impE = document.getElementById('np-imp-e').value;
   const ganMin = document.getElementById('np-gan-min').value;
@@ -683,6 +694,8 @@ function limpiarFormNuevo() {
   nuevaDescHtml = '';
   const _npDescPrev = document.getElementById('np-desc-preview');
   if (_npDescPrev) _npDescPrev.innerHTML = '';
+  const _mon = document.getElementById('np-moneda'); if (_mon) _mon.value = 'USD';
+  const _lbl = document.getElementById('np-costo-label'); if (_lbl) _lbl.textContent = 'Costo USD';
   document.getElementById('np-estado').value = 'activo';
   fotosSeleccionadas = [];
   renderFotoPreviews();
@@ -712,7 +725,9 @@ async function crearProducto() {
       fotoField = urls.join(',');
     }
 
-    const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+    const moneda = document.getElementById('np-moneda')?.value || 'USD';
+    const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+    const dolar = moneda === 'ARS' ? 1 : dolarReal;
     const costoUsd = parseFloat(document.getElementById('np-costo-usd').value) || null;
     const impE = parseFloat(document.getElementById('np-imp-e').value) || null;
     const ganMin = parseFloat(document.getElementById('np-gan-min').value) || null;
@@ -727,6 +742,7 @@ async function crearProducto() {
       categoria: document.getElementById('np-categoria').value.trim() || null,
       stock: parseInt(document.getElementById('np-stock').value) || 0,
       estado: document.getElementById('np-estado').value,
+      moneda,
       costo_usd: costoUsd,
       imp_e: impE,
       costo_final: costoTotal,
@@ -822,7 +838,9 @@ function recalcularTodo() {
 }
 
 function actualizarCalc(codigo) {
-  const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const moneda   = document.getElementById(`moneda-${codigo}`)?.value || 'USD';
+  const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const dolar    = moneda === 'ARS' ? 1 : dolarReal;
   const costoUsd = document.getElementById(`costoUsd-${codigo}`)?.value;
   const impE     = document.getElementById(`envioUsd-${codigo}`)?.value;
   const gan      = document.getElementById(`gan-${codigo}`)?.value;
@@ -855,7 +873,7 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`];
+  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -874,7 +892,9 @@ function editarProducto(codigo) {
 }
 
 async function guardarProducto(codigo) {
-  const dolar    = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const moneda   = document.getElementById(`moneda-${codigo}`)?.value || 'USD';
+  const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  const dolar    = moneda === 'ARS' ? 1 : dolarReal;
   const costoUsd = parseFloat(document.getElementById(`costoUsd-${codigo}`)?.value) || null;
   const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
   const gan      = parseFloat(document.getElementById(`gan-${codigo}`)?.value) || null;
@@ -894,6 +914,7 @@ async function guardarProducto(codigo) {
     nombre: nombre,
     marca: marca,
     categoria: categoria,
+    moneda,
     costo_usd: costoUsd,
     imp_e: impE,
     costo_final: costoTotal,
@@ -910,11 +931,11 @@ async function guardarProducto(codigo) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`].forEach(id => {
+    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     const _lnk = document.getElementById(`nombre-link-${codigo}`);
@@ -1023,7 +1044,8 @@ function renderTabla(prods) {
         <th>Marca</th>
         <th>Categoría</th>
         <th style="text-align:right;cursor:pointer;user-select:none;" onclick="sortBy('stock')">Stock <span style="color:var(--violet-light);font-size:0.65rem;">${arrowStock}</span></th>
-        <th style="text-align:right;color:var(--yellow);">Costo USD</th>
+        <th style="text-align:center;">Moneda</th>
+        <th style="text-align:right;color:var(--yellow);">Costo</th>
         <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
         <th style="text-align:right;color:var(--yellow);">Costo Total</th>
         <th style="text-align:right;">Gan. Min. %</th>
@@ -1037,7 +1059,9 @@ function renderTabla(prods) {
       </tr></thead>
       <tbody>
         ${prods.map(p => {
-          const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 1200;
+          const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 1200;
+          const mon = p.moneda || 'USD';
+          const dolar = mon === 'ARS' ? 1 : dolarReal;
           const costoTotal = calcCostoPesos(p.costo_usd, p.imp_e, dolar);
           const costoBase = costoTotal || parseFloat(p.costo) || 0;
           const precioPublico = calcPrecioDesde(costoBase, 0, p.ganancia);
@@ -1057,6 +1081,7 @@ function renderTabla(prods) {
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:45px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:center;"><select class="td-input" id="moneda-${p.codigo}" style="width:74px;" onchange="actualizarCalc('${p.codigo}')" disabled><option value="USD" ${(p.moneda||'USD')==='USD'?'selected':''}>USD</option><option value="ARS" ${p.moneda==='ARS'?'selected':''}>Pesos</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
             <td style="text-align:right;"><span style="font-weight:700;color:var(--yellow);" id="costo-pesos-${p.codigo}">${costoTotal ? fmt(costoTotal) : (p.costo ? fmt(p.costo) : '-')}</span></td>
