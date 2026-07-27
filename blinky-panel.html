@@ -1151,11 +1151,16 @@ function estadoLabel(e){return{pendiente:'Pendiente',confirmado:'Confirmado',en_
 function formaLabel(f){return{efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento',saldo_favor:'Saldo a favor'}[f]||f;}
 
 // ── VER PEDIDO ─────────────────────────────────
-function imprimirPedido(num) {
-  // Abre el mismo comprobante A4 que el del mail; la pagina busca el pedido en la base por su numero (una sola fuente de datos)
-  const printUrl = `https://blinkymdq.github.io/blinkymdq/pedido-imprimir.html?id=${encodeURIComponent(num)}`;
-  const win = window.open(printUrl, '_blank');
-  if (!win) toast('Permití las ventanas emergentes para abrir el comprobante','err');
+async function imprimirPedido(num) {
+  // Abre el mismo comprobante A4 que el del mail, usando el token secreto del pedido
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}&select=token&limit=1`, { headers: hdrs });
+    const rows = await r.json();
+    const token = rows[0] && rows[0].token;
+    if (!token) { toast('No se encontró el comprobante','err'); return; }
+    const win = window.open(`https://blinkymdq.github.io/blinkymdq/pedido-imprimir.html?t=${token}`, '_blank');
+    if (!win) toast('Permití las ventanas emergentes para abrir el comprobante','err');
+  } catch(e){ toast('Error al abrir el comprobante','err'); }
 }
 
 async function verPedido(num, esEliminado) {
