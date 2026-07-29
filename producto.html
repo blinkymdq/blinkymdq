@@ -666,8 +666,8 @@ function renderProducto(p) {
         <div class="precio">${precio}</div>
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : ''}
         ` : ''}
-        <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
+        <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
 
         <div class="btns">
           <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
