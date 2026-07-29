@@ -673,6 +673,14 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   </div>
 </div>
 
+<!-- MODAL VENDEDOR -->
+<div id="modal-vendedor" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:210;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:1040px;max-height:92vh;overflow-y:auto;padding:1.5rem;position:relative;">
+    <button class="btn-close" style="position:absolute;top:1rem;right:1rem;" onclick="cerrarModalVendedor()">✕</button>
+    <div id="mv-contenido"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -2345,24 +2353,29 @@ function cerrarModal(e){
 // ── VENDEDORES (mercadería sin pagar) ──────────
 let vendUsuarios = [];
 let vendEntregas = [];
+let vendMovs = [];
 let vendProductos = null;
+let vendActualId = null;
 
 async function cargarVendedores() {
   const cont = document.getElementById('lista-vendedores');
   if (cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
-    const [uR, eR] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor&order=nombre.asc`, {headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?select=*&order=producto.asc`, {headers:hdrs})
+    const [uR, eR, mR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion&order=nombre.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?select=*&order=producto.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?select=*&order=created_at.desc`, {headers:hdrs})
     ]);
     vendUsuarios = await uR.json();
     vendEntregas = await eR.json();
+    vendMovs = await mR.json();
     if (!vendProductos) {
       vendProductos = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,stock,estado&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
     }
     const dl = document.getElementById('vend-prod-list');
     if (dl) dl.innerHTML = (vendProductos||[]).map(p=>`<option value="${p.nombre}">`).join('');
     renderVendedores();
+    if (vendActualId && document.getElementById('modal-vendedor').style.display==='flex') renderModalVendedor(vendActualId);
   } catch(e){ if(cont) cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
 
@@ -2393,12 +2406,12 @@ function renderVendedores() {
     const valor = filas.reduce((s,e)=>s+Math.max(0,pendItem(e))*precioVend(e.codigo,v.rol),0);
     return `<div class="pedido-card" onclick="abrirVendedor('${v.id}')" style="cursor:pointer;">
       <div class="pedido-top">
-        <div><span class="pedido-num">${v.rol==='mayorista'?'MAY':'MIN'}</span><span class="pedido-nombre">${v.nombre}</span></div>
+        <div><span class="pedido-num">#${v.numero_usuario||'—'}</span><span class="pedido-nombre">${v.nombre}</span></div>
         <div style="text-align:right;"><div class="pedido-total">${unidades} u.</div><div class="pedido-fecha">$${valor.toLocaleString('es-AR')} en mercadería</div></div>
       </div>
       <div class="pedido-meta">
+        <span class="badge badge-${v.rol==='mayorista'?'may':'min'}">${v.rol||'minorista'}</span>
         ${v.telefono?`<span class="badge badge-neutral">📱 ${v.telefono}</span>`:''}
-        ${v.email?`<span class="badge badge-neutral">${v.email}</span>`:''}
         <button class="btn-trash-card" title="Quitar de vendedores" onclick="event.stopPropagation();quitarVendedor('${v.id}','${(v.nombre||'').replace(/'/g,'')}')">✕</button>
       </div>
     </div>`;
@@ -2420,10 +2433,12 @@ async function quitarVendedor(id, nombre) {
   toast('Quitado','ok'); cargarVendedores();
 }
 
+function cerrarModalVendedor(){ document.getElementById('modal-vendedor').style.display='none'; vendActualId=null; }
+
 function abrirVendedor(id) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('modal-title').textContent = 'Vendedor — ' + v.nombre;
+  vendActualId = id;
+  document.getElementById('modal-vendedor').style.display='flex';
   renderModalVendedor(id);
 }
 
@@ -2432,29 +2447,59 @@ function renderModalVendedor(id) {
   const filas = entregasDe(id);
   const unidades = filas.reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
   const valor = filas.reduce((s,e)=>s+Math.max(0,pendItem(e))*precioVend(e.codigo,v.rol),0);
+  const dato = (k,val)=> val ? `<div style="font-size:0.78rem;"><span style="color:var(--text3);">${k}:</span> <strong>${val}</strong></div>` : '';
   const filasHtml = filas.map(e=>{
     const pend = pendItem(e);
-    const off = pend<=0 ? 'opacity:.35;pointer-events:none;' : '';
+    const precio = precioVend(e.codigo, v.rol);
     return `<tr>
       <td>${e.producto}${e.codigo?` <span style="color:var(--text3);font-size:0.7rem;">(${e.codigo})</span>`:''}</td>
       <td style="text-align:center;">${e.entregado}</td>
       <td style="text-align:center;color:var(--green);">${e.vendido}</td>
       <td style="text-align:center;color:var(--yellow);">${e.devuelto}</td>
       <td style="text-align:center;font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">${pend}</td>
-      <td style="text-align:right;white-space:nowrap;">
-        <button class="fc-btn" style="background:var(--green);${off}" onclick="venderMercaderia(${e.id})">Vendido</button>
-        <button class="fc-btn" style="background:var(--yellow);color:#1a1a26;${off}" onclick="devolverMercaderia(${e.id})">Devuelto</button>
-      </td>
+      <td style="text-align:right;color:var(--text2);">$${precio.toLocaleString('es-AR')}</td>
+      <td style="text-align:center;">${pend>0?`<input type="number" id="vc-${e.id}" min="0" max="${pend}" value="0" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center;padding:3px;">`:'—'}</td>
+      <td style="text-align:center;">${pend>0?`<button class="fc-btn" style="background:var(--yellow);color:#1a1a26;" onclick="devolverMercaderia(${e.id})">Devolver</button>`:''}</td>
     </tr>`;
   }).join('');
-  document.getElementById('modal-body').innerHTML = `
-    <div class="fc-resumen">
-      <div class="fc-resumen-item"><div class="label">Rol</div><div class="val">${v.rol==='mayorista'?'Mayorista':'Minorista'}</div></div>
-      <div class="fc-resumen-item"><div class="label">Unidades afuera</div><div class="val">${unidades}</div></div>
-      <div class="fc-resumen-item"><div class="label">Valor</div><div class="val">$${valor.toLocaleString('es-AR')}</div></div>
+  const movs = vendMovs.filter(m=>m.usuario_id===id).slice(0,40);
+  const tipoLbl = {entrega:'Entrega', venta:'Venta', devolucion:'Devolución'};
+  const tipoCol = {entrega:'var(--cyan)', venta:'var(--green)', devolucion:'var(--yellow)'};
+  const movsHtml = movs.length ? movs.map(m=>`<div class="pago-item">
+      <span style="min-width:0;"><span style="font-weight:700;color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</span> · ${m.producto||''}${m.numero_pedido?` <span style="color:var(--violet-light);">(${m.numero_pedido})</span>`:''}</span>
+      <span class="pago-monto">${m.cantidad} u.</span>
+      <span class="pago-fecha">${new Date(m.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:0.82rem;padding:0.4rem 0;">Sin movimientos.</div>';
+
+  document.getElementById('mv-contenido').innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.9rem;margin-bottom:0.75rem;">
+      <div style="flex:1;">
+        <div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;">Vendedor · #${v.numero_usuario||'—'}</div>
+        <div style="font-weight:900;font-size:1.15rem;">${v.nombre}</div>
+      </div>
+      <span class="badge badge-${v.rol==='mayorista'?'may':'min'}" style="font-size:0.72rem;">${v.rol||'minorista'}</span>
     </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:0.7rem 0.9rem;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:1rem;">
+      ${dato('Email', v.email)}
+      ${dato('Teléfono', v.telefono ? `<a href="https://wa.me/549${v.telefono}" target="_blank" style="color:var(--green);">${v.telefono}</a>` : '')}
+      ${dato('DNI', v.dni)}
+      ${dato('Dirección', v.direccion)}
+      ${dato('Localidad', v.localidad)}
+      ${dato('Provincia', v.provincia)}
+    </div>
+
+    <div class="fc-resumen">
+      <div class="fc-resumen-item"><div class="label">Unidades afuera</div><div class="val">${unidades}</div></div>
+      <div class="fc-resumen-item"><div class="label">Valor mercadería</div><div class="val">$${valor.toLocaleString('es-AR')}</div></div>
+      <div class="fc-resumen-item"><div class="label">Precio</div><div class="val">${v.rol==='mayorista'?'Mayorista':'Público'}</div></div>
+    </div>
+
     <div class="fc-section-title">Mercadería en su poder</div>
-    ${filas.length?`<table class="items-table"><thead><tr><th>Producto</th><th style="text-align:center;">Entreg.</th><th style="text-align:center;">Vend.</th><th style="text-align:center;">Dev.</th><th style="text-align:center;">Tiene</th><th></th></tr></thead><tbody>${filasHtml}</tbody></table>`:'<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Todavía no tiene mercadería.</div>'}
+    ${filas.length?`<table class="items-table"><thead><tr><th>Producto</th><th style="text-align:center;">Entreg.</th><th style="text-align:center;">Vend.</th><th style="text-align:center;">Dev.</th><th style="text-align:center;">Tiene</th><th style="text-align:right;">P.Unit</th><th style="text-align:center;">Vender</th><th></th></tr></thead><tbody>${filasHtml}</tbody></table>
+    <div class="post-pago-btns" style="margin-top:0.75rem;">
+      <button class="btn-finalizar" onclick="registrarVentaVendedor('${id}')">✓ Registrar venta de lo marcado</button>
+    </div>`:'<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Todavía no tiene mercadería.</div>'}
+
     <div class="fc-section-title">Entregar mercadería</div>
     <div class="fc-form-row">
       <input id="vend-ent-prod" type="text" list="vend-prod-list" placeholder="Producto...">
@@ -2462,7 +2507,14 @@ function renderModalVendedor(id) {
       <div></div>
       <button class="fc-btn" onclick="entregarMercaderia('${id}')">+ Entregar</button>
     </div>
-    <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">No descuenta stock. Al marcar "Vendido" se genera el pedido (a deber) y se descuenta el stock.</div>`;
+    <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">No descuenta stock. Marcá las cantidades a vender y tocá "Registrar venta": se genera UN pedido (a deber) y se descuenta el stock.</div>
+
+    <div class="fc-section-title">Historial de movimientos</div>
+    <div class="pagos-list">${movsHtml}</div>`;
+}
+
+async function logMov(rows){
+  try { await fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify(rows)}); } catch(e){}
 }
 
 function entregarMercaderia(uid) {
@@ -2475,21 +2527,25 @@ function entregarMercaderia(uid) {
   const req = existente
     ? fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${existente.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({entregado:Number(existente.entregado||0)+cant})})
     : fetch(`${SUPA_URL}/rest/v1/entregas_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:uid,codigo:prod.codigo,producto:prod.nombre,entregado:cant})});
-  req.then(async()=>{ toast('Mercadería entregada ✓','ok'); await cargarVendedores(); renderModalVendedor(uid); })
+  req.then(async()=>{ await logMov([{usuario_id:uid,codigo:prod.codigo,producto:prod.nombre,tipo:'entrega',cantidad:cant}]); toast('Mercadería entregada ✓','ok'); await cargarVendedores(); })
      .catch(()=>toast('Error al entregar','err'));
 }
 
-async function venderMercaderia(entregaId) {
-  const e = vendEntregas.find(x=>x.id===entregaId); if(!e) return;
-  const pend = pendItem(e);
-  if(pend<=0){ toast('No tiene unidades para vender','err'); return; }
-  const inp = prompt(`¿Cuántas unidades vendió de "${e.producto}"? (tiene ${pend})`, String(pend));
-  if(inp===null) return;
-  const n = parseInt(inp)||0;
-  if(n<=0 || n>pend){ toast('Cantidad inválida','err'); return; }
-  const v = vendUsuarios.find(u=>u.id===e.usuario_id);
-  const precio = precioVend(e.codigo, v.rol);
-  const total = precio*n;
+async function registrarVentaVendedor(id) {
+  const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
+  const filas = entregasDe(id);
+  const items = [];
+  for(const e of filas){
+    const pend = pendItem(e);
+    const inp = document.getElementById(`vc-${e.id}`);
+    const n = inp ? (parseInt(inp.value)||0) : 0;
+    if(n>0){
+      if(n>pend){ toast(`"${e.producto}": máximo ${pend}`,'err'); return; }
+      items.push({ e, n, precio: precioVend(e.codigo, v.rol) });
+    }
+  }
+  if(!items.length){ toast('Marcá al menos una cantidad para vender','err'); return; }
+  const total = items.reduce((s,it)=>s+it.precio*it.n,0);
   try {
     const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos`,{method:'POST',headers:hdrs,body:JSON.stringify({
       nombre:v.nombre, telefono:v.telefono||null, email:v.email||null,
@@ -2499,15 +2555,18 @@ async function venderMercaderia(entregaId) {
     })});
     const pd = await pR.json(); const numero = pd[0] && pd[0].numero_pedido;
     if(!numero) throw new Error('sin pedido');
-    await fetch(`${SUPA_URL}/rest/v1/pedido_items`,{method:'POST',headers:hdrs,body:JSON.stringify([{numero_pedido:numero, codigo:e.codigo, producto:e.producto, cantidad:n, precio_unitario:precio}])});
-    if(e.codigo){
-      const prR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(e.codigo)}&select=stock`,{headers:hdrs});
-      const prs = await prR.json();
-      if(prs[0]){ const nuevo = Math.max(0, Number(prs[0].stock||0)-n); await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(e.codigo)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({stock:nuevo})}); }
+    await fetch(`${SUPA_URL}/rest/v1/pedido_items`,{method:'POST',headers:hdrs,body:JSON.stringify(items.map(it=>({numero_pedido:numero, codigo:it.e.codigo, producto:it.e.producto, cantidad:it.n, precio_unitario:it.precio})))});
+    for(const it of items){
+      if(it.e.codigo){
+        const prR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.e.codigo)}&select=stock`,{headers:hdrs});
+        const prs = await prR.json();
+        if(prs[0]){ const nuevo = Math.max(0, Number(prs[0].stock||0)-it.n); await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.e.codigo)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({stock:nuevo})}); }
+      }
+      await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${it.e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({vendido:Number(it.e.vendido||0)+it.n})});
     }
-    await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({vendido:Number(e.vendido||0)+n})});
+    await logMov(items.map(it=>({usuario_id:id, codigo:it.e.codigo, producto:it.e.producto, tipo:'venta', cantidad:it.n, precio_unit:it.precio, numero_pedido:numero})));
     toast(`Venta registrada — pedido ${numero} (a deber) ✓`,'ok');
-    await cargarVendedores(); renderModalVendedor(e.usuario_id);
+    await cargarVendedores();
     if(typeof cargarPedidos==='function') cargarPedidos();
   } catch(err){ console.error(err); toast('Error al registrar la venta','err'); }
 }
@@ -2521,8 +2580,9 @@ async function devolverMercaderia(entregaId) {
   const n = parseInt(inp)||0;
   if(n<=0 || n>pend){ toast('Cantidad inválida','err'); return; }
   await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({devuelto:Number(e.devuelto||0)+n})});
+  await logMov([{usuario_id:e.usuario_id, codigo:e.codigo, producto:e.producto, tipo:'devolucion', cantidad:n}]);
   toast('Devolución registrada ✓','ok');
-  await cargarVendedores(); renderModalVendedor(e.usuario_id);
+  await cargarVendedores();
 }
 
 function toast(msg,tipo){
