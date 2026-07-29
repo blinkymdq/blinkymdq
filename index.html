@@ -1635,7 +1635,19 @@
             }
 
             paginaActual = 1;
+            sincronizarURL(val, c, m);
             render(res);
+        }
+
+        function sincronizarURL(q, cat, marca) {
+            const params = new URLSearchParams();
+            if (marca) params.set('marca', marca);
+            if (cat)   params.set('cat', cat);
+            if (q)     params.set('q', q.replace(/\s+/g, '-'));
+            const qs = params.toString();
+            history.replaceState(null, '', qs ? ('?' + qs) : window.location.pathname);
+            window._tituloBase = window._tituloBase || document.title;
+            document.title = marca ? (marca + ' | Blinky MDQ') : window._tituloBase;
         }
 
         function scrollCarrusel(id, dir) {
