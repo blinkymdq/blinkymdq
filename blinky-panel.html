@@ -641,12 +641,14 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <div id="panel-vendedores" class="panel">
       <div class="filters">
         <input id="vend-buscar" class="filter-input" type="text" placeholder="Buscar vendedor..." oninput="renderVendedores()">
+        <input id="vend-prod-buscar" class="filter-input" type="text" placeholder="Buscar producto (quién lo tiene)..." oninput="buscarProductoVendedores()" style="min-width:230px;">
         <input id="vend-agregar-input" class="filter-input" list="vend-agregar-list" type="text" placeholder="Habilitar vendedor (elegí un cliente)..." style="min-width:240px;">
         <datalist id="vend-agregar-list"></datalist>
         <button class="btn-refresh" style="background:var(--violet);color:white;border-color:var(--violet);" onclick="habilitarVendedorDesdeInput()">➕ Habilitar</button>
         <button class="btn-refresh" onclick="cargarVendedores()">↻ Actualizar</button>
       </div>
       <div id="vend-resumen" class="stats-grid" style="margin-bottom:1rem;"></div>
+      <div id="vend-prod-res" style="display:none;margin-bottom:1rem;"></div>
       <div id="lista-vendedores"><div class="loading-txt">Cargando...</div></div>
       <datalist id="vend-prod-list"></datalist>
     </div>
@@ -2375,6 +2377,7 @@ async function cargarVendedores() {
     const dl = document.getElementById('vend-prod-list');
     if (dl) dl.innerHTML = (vendProductos||[]).map(p=>`<option value="${p.nombre}">`).join('');
     renderVendedores();
+    const _pb=document.getElementById('vend-prod-buscar'); if(_pb && _pb.value) buscarProductoVendedores();
     if (vendActualId && document.getElementById('modal-vendedor').style.display==='flex') renderModalVendedor(vendActualId);
   } catch(e){ if(cont) cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
@@ -2583,6 +2586,24 @@ async function devolverMercaderia(entregaId) {
   await logMov([{usuario_id:e.usuario_id, codigo:e.codigo, producto:e.producto, tipo:'devolucion', cantidad:n}]);
   toast('Devolución registrada ✓','ok');
   await cargarVendedores();
+}
+
+function buscarProductoVendedores(){
+  const q = (document.getElementById('vend-prod-buscar')?.value||'').toLowerCase().trim();
+  const box = document.getElementById('vend-prod-res');
+  const lista = document.getElementById('lista-vendedores');
+  if(!box) return;
+  if(!q){ box.innerHTML=''; box.style.display='none'; if(lista) lista.style.display=''; return; }
+  box.style.display='block'; if(lista) lista.style.display='none';
+  const rows = vendEntregas.filter(e=> pendItem(e)>0 && (((e.producto||'').toLowerCase().includes(q)) || (String(e.codigo||'').toLowerCase().includes(q))));
+  if(!rows.length){ box.innerHTML='<div class="empty"><div class="empty-icon">🔎</div><p>Nadie tiene ese producto en su poder</p></div>'; return; }
+  const porProd = {};
+  rows.forEach(e=>{ const key=e.producto||e.codigo; (porProd[key]=porProd[key]||[]).push(e); });
+  box.innerHTML = Object.entries(porProd).map(([prod, es])=>{
+    const total = es.reduce((s,e)=>s+pendItem(e),0);
+    const filas = es.map(e=>{ const v=vendUsuarios.find(u=>u.id===e.usuario_id); return `<div class="pago-item"><span onclick="abrirVendedor('${e.usuario_id}')" style="cursor:pointer;color:var(--violet-light);font-weight:700;">#${(v&&v.numero_usuario)||'—'} ${(v&&v.nombre)||'—'}</span><span class="pago-monto">${pendItem(e)} u.</span></div>`; }).join('');
+    return `<div class="chart-card" style="margin-bottom:0.75rem;padding:1rem 1.25rem;"><div class="chart-title" style="margin-bottom:0.5rem;">${prod} · total afuera: ${total} u.</div><div class="pagos-list">${filas}</div></div>`;
+  }).join('');
 }
 
 function toast(msg,tipo){
