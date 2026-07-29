@@ -453,29 +453,29 @@ function toast(msg) {
 function irABuscar() {
   const val = document.getElementById('headerBusqueda').value.trim();
   window.location.href = val
-    ? `https://blinkymdq.com?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
-    : 'https://blinkymdq.com';
+    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'index.html';
 }
 
 // ── Funciones del header completo (igual a index.html) ──
 function irABuscarHeader() {
   const val = (document.getElementById('inputBusqueda').value || '').trim();
   window.location.href = val
-    ? `https://blinkymdq.com?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
-    : 'https://blinkymdq.com';
+    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'index.html';
 }
 
 function irAFiltrarHeader(valor, tipo) {
   if (!valor) return;
-  window.location.href = `https://blinkymdq.com?${tipo}=${encodeURIComponent(valor)}`;
+  window.location.href = `index.html?${tipo}=${encodeURIComponent(valor)}`;
 }
 
 function mostrarLogin() {
-  window.location.href = 'https://blinkymdq.com';
+  window.location.href = 'index.html';
 }
 
 function abrirCarrito() {
-  window.location.href = 'https://blinkymdq.com';
+  window.location.href = 'index.html';
 }
 
 function toggleUserMenu() {
@@ -622,9 +622,9 @@ function renderProducto(p) {
   document.getElementById('og-url').content = window.location.href;
 
   document.getElementById('breadcrumb').innerHTML = `
-    <a href="https://blinkymdq.com">Home</a>
-    ${p.categoria ? `<span>›</span><a href="https://blinkymdq.com?cat=${encodeURIComponent(p.categoria)}">${p.categoria}</a>` : ''}
-    ${p.marca ? `<span>›</span><a href="https://blinkymdq.com?marca=${encodeURIComponent(p.marca)}">${p.marca}</a>` : ''}
+    <a href="index.html">Home</a>
+    ${p.categoria ? `<span>›</span><a href="index.html?cat=${encodeURIComponent(p.categoria)}">${p.categoria}</a>` : ''}
+    ${p.marca ? `<span>›</span><a href="index.html?marca=${encodeURIComponent(p.marca)}">${p.marca}</a>` : ''}
     <span>›</span><span class="actual">${p.nombre}</span>
   `;
 
@@ -693,7 +693,7 @@ function renderProducto(p) {
 }
 
 function agregarYVerCarrito(cod) {
-  window.location.href = `https://blinkymdq.com?add=${encodeURIComponent(cod)}`;
+  window.location.href = `index.html?add=${encodeURIComponent(cod)}`;
 }
 
 function consultarWsp() {
@@ -732,7 +732,7 @@ function mostrarError(msg) {
       <h2>Oops</h2>
       <p>${msg}</p>
       <br>
-      <a href="https://blinkymdq.com" class="btn-tienda" style="display:inline-block;margin-top:8px;">Ver tienda</a>
+      <a href="index.html" class="btn-tienda" style="display:inline-block;margin-top:8px;">Ver tienda</a>
     </div>
   `;
 }
