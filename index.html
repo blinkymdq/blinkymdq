@@ -1517,8 +1517,8 @@
                 const catParam   = new URLSearchParams(window.location.search).get('cat');
                 const marcaParam = new URLSearchParams(window.location.search).get('marca');
 
-                if (catParam)   document.getElementById('selectCat').value = catParam;
-                if (marcaParam) document.getElementById('selectMarca').value = marcaParam;
+                if (catParam)   document.getElementById('selectCat').value = catParam.toLowerCase();
+                if (marcaParam) document.getElementById('selectMarca').value = marcaParam.toLowerCase();
 
                 if (queryParam || catParam || marcaParam) {
                     if (queryParam) document.getElementById('inputBusqueda').value = queryParam.replace(/-/g, ' ');
