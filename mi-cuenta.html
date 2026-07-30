@@ -159,6 +159,10 @@
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         Mis pagos
       </button>
+      <button class="navitem" data-tab="cupones" onclick="irTab('cupones')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a2 2 0 0 1 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a2 2 0 0 1-2-2z"/><line x1="12" y1="7" x2="12" y2="17" stroke-dasharray="2 2"/></svg>
+        Mis cupones
+      </button>
       <button class="navitem hidden" id="nav-mercaderia" data-tab="mercaderia" onclick="irTab('mercaderia')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Mi mercadería
@@ -175,7 +179,7 @@ const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [];
+let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [], cupones = [];
 let tabActual = 'datos';
 
 function toast(msg, tipo){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+(tipo||''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
@@ -183,7 +187,7 @@ function fmt(n){ return '$' + Number(n||0).toLocaleString('es-AR'); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fechaCorta(d){ return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function fechaHora(d){ return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
-function getImgUrl(foto){ if(!foto||!foto.trim()) return ''; if(foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`; return `https://blinkymdq.com/Productos/${foto}.jpg`; }
+function getImgUrl(foto){ if(!foto||!foto.trim()) return ''; if(foto.startsWith('http')) return foto; if(foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`; return `https://blinkymdq.com/Productos/${foto}.jpg`; }
 function estadoLabel(e){ return {pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e||'—'; }
 function pend(e){ return Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0); }
 function precioDe(cod){ const p=productos[cod]; if(!p) return 0; return Number((usuario&&usuario.rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0); }
@@ -219,6 +223,9 @@ async function cargar(){
       pagos = pgs || [];
     } else { pagos = []; }
 
+    const { data:cups } = await supa.from('cupones').select('*').eq('user_id', uid).order('created_at',{ascending:false});
+    cupones = cups || [];
+
     if(usuario.es_vendedor){
       const { data:ent } = await supa.from('entregas_vendedor').select('*').eq('usuario_id', uid);
       entregas = (ent||[]).filter(e=>e.entregado>0);
@@ -238,6 +245,7 @@ function irTab(tab){
   if(tab==='datos') renderDatos();
   else if(tab==='compras') renderCompras();
   else if(tab==='pagos') renderPagos();
+  else if(tab==='cupones') renderCupones();
   else if(tab==='mercaderia') renderMercaderia();
 }
 
@@ -327,6 +335,41 @@ function renderPagos(){
     ${html}`;
 }
 
+function estadoCupon(c){
+  if(!c.activo) return {txt:'Inactivo', cls:'b-cancelado'};
+  if(c.vence && new Date(c.vence) < new Date(new Date().toDateString())) return {txt:'Vencido', cls:'b-cancelado'};
+  if(c.max_usos!=null && c.usos>=c.max_usos) return {txt:'Usado', cls:'b-cancelado'};
+  return {txt:'Disponible', cls:'b-entregado'};
+}
+function renderCupones(){
+  const cont = document.getElementById('panel');
+  if(!cupones.length){ cont.innerHTML = `<h2>Mis cupones</h2><div class="empty"><div class="ic">🎟️</div><p>Todavía no tenés cupones.</p><p class="hint">Cuando te regalemos uno, va a aparecer acá con su código.</p></div>`; return; }
+  const html = cupones.map(c=>{
+    const est = estadoCupon(c);
+    const desc = c.tipo==='porcentaje' ? `${(+c.valor)}% OFF` : `${fmt(c.valor)} OFF`;
+    const disp = est.txt==='Disponible';
+    return `<div class="item" style="${disp?'border-color:#a78bfa;':''}">
+      <div class="item-top">
+        <div>
+          <div style="font-size:1.15rem;font-weight:900;color:var(--violet);">${desc}</div>
+          ${c.descripcion?`<div class="item-fecha">${esc(c.descripcion)}</div>`:''}
+        </div>
+        <span class="badge ${est.cls}">${est.txt}</span>
+      </div>
+      <div class="item-money" style="align-items:center;">
+        <span>Código: <b style="font-family:monospace;letter-spacing:1px;background:var(--surface2);padding:3px 8px;border-radius:6px;">${esc(c.codigo)}</b></span>
+        ${disp?`<button class="btn" style="padding:0.35rem 0.8rem;font-size:0.78rem;" onclick="copiarCupon('${esc(c.codigo)}')">Copiar código</button>`:''}
+      </div>
+      <div class="item-prods" style="display:flex;gap:1.2rem;flex-wrap:wrap;">
+        ${c.min_compra?`<span>Compra mínima: <b>${fmt(c.min_compra)}</b></span>`:''}
+        ${c.vence?`<span>Vence: <b>${fechaCorta(c.vence)}</b></span>`:'<span>Sin vencimiento</span>'}
+        ${c.max_usos!=null?`<span>Usos: <b>${c.usos}/${c.max_usos}</b></span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  cont.innerHTML = `<h2>Mis cupones</h2><p class="sub">Usá el código en el checkout al finalizar tu compra.</p>${html}`;
+}
+function copiarCupon(cod){ navigator.clipboard?.writeText(cod).then(()=>toast('Código copiado ✓')).catch(()=>toast('Código: '+cod)); }
 function renderMercaderia(){
   const cont = document.getElementById('panel');
   const conStock = entregas.filter(e=>pend(e)>0);

@@ -311,6 +311,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <button class="nav-tab" onclick="switchTab('gastos',this)">Gastos</button>
     <button class="nav-tab" onclick="switchTab('usuarios',this)">Usuarios</button>
     <button class="nav-tab" onclick="switchTab('vendedores',this)">Vendedores</button>
+    <button class="nav-tab" onclick="switchTab('cupones',this)">Cupones</button>
     <button class="nav-tab" onclick="switchTab('eliminados',this)">Eliminados</button>
   </div>
 
@@ -684,6 +685,24 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div id="lista-eliminados"><div class="loading-txt">Cargando...</div></div>
     </div>
 
+    <!-- CUPONES -->
+    <div id="panel-cupones" class="panel">
+      <div class="fc-section-title">Crear y regalar cupón</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.7rem;margin-bottom:0.8rem;">
+        <input id="cup-codigo" placeholder="Código (ej: REGALO15)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <select id="cup-tipo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="porcentaje">% Porcentaje</option><option value="monto">$ Monto fijo</option></select>
+        <input id="cup-valor" type="number" min="0" placeholder="Valor (15 o 5000)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <select id="cup-usuario" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="">Asignar a cliente...</option></select>
+        <input id="cup-min" type="number" min="0" placeholder="Compra mínima (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <input id="cup-usos" type="number" min="1" value="1" placeholder="Usos máximos" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <input id="cup-vence" type="date" placeholder="Vence (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <input id="cup-desc" placeholder="Descripción (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+      </div>
+      <button class="fc-btn" style="background:var(--violet);color:#fff;" onclick="crearCupon()">➕ Crear y asignar</button>
+      <div class="fc-section-title" style="margin-top:1.5rem;">Cupones creados</div>
+      <div id="lista-cupones"><div class="loading-txt">Cargando...</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -743,6 +762,83 @@ supa.auth.onAuthStateChange((event, session) => {
 });
 verificarSesion();
 
+let cuponesCache = [];
+let _cupUsers = [];
+function _cupFmt(x){ return '$' + Number(x||0).toLocaleString('es-AR'); }
+
+async function cargarCupones(){
+  const cont = document.getElementById('lista-cupones');
+  if(cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  try {
+    const [cR, uR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/cupones?select=*&order=created_at.desc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email&order=nombre.asc`, {headers:hdrs})
+    ]);
+    cuponesCache = await cR.json();
+    _cupUsers = await uR.json();
+    const sel = document.getElementById('cup-usuario');
+    if(sel) sel.innerHTML = '<option value="">Asignar a cliente...</option>' + (_cupUsers||[]).map(u=>`<option value="${u.id}">${(u.nombre||u.email||'—')} — ${u.email||''} (#${u.numero_usuario||''})</option>`).join('');
+    renderCuponesPanel();
+  } catch(e){ if(cont) cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
+}
+
+function renderCuponesPanel(){
+  const cont = document.getElementById('lista-cupones'); if(!cont) return;
+  if(!cuponesCache.length){ cont.innerHTML = '<div class="empty"><div class="empty-icon">🎟️</div><p>Todavía no creaste cupones.</p></div>'; return; }
+  const byId = {}; (_cupUsers||[]).forEach(u=>byId[u.id]=u);
+  cont.innerHTML = cuponesCache.map(c=>{
+    const u = byId[c.user_id];
+    const val = c.tipo==='porcentaje' ? `${(+c.valor)}%` : _cupFmt(c.valor);
+    const usado = c.max_usos!=null && c.usos>=c.max_usos;
+    const vencido = c.vence && new Date(c.vence) < new Date(new Date().toDateString());
+    const estado = !c.activo ? 'Inactivo' : vencido ? 'Vencido' : usado ? 'Usado' : 'Activo';
+    return `<div class="pago-item">
+      <span style="min-width:0;flex:1;">
+        <b style="font-family:monospace;color:var(--violet-light);letter-spacing:1px;">${c.codigo}</b> · <b>${val} OFF</b>${c.descripcion?` · ${c.descripcion}`:''}
+        <br><span style="font-size:0.72rem;color:var(--text3);">${u?`${u.nombre||u.email} (#${u.numero_usuario||''})`:'sin asignar'}${c.min_compra?` · min ${_cupFmt(c.min_compra)}`:''}${c.vence?` · vence ${new Date(c.vence).toLocaleDateString('es-AR')}`:''} · usos ${c.usos}/${c.max_usos??'∞'}</span>
+      </span>
+      <span class="pago-monto" style="color:${estado==='Activo'?'var(--green)':'var(--text3)'};">${estado}</span>
+      <span style="display:flex;gap:6px;">
+        <button class="fc-btn" style="padding:2px 9px;" onclick="toggleCupon(${c.id}, ${c.activo})">${c.activo?'Desactivar':'Activar'}</button>
+        <button class="fc-btn" style="padding:2px 9px;background:var(--red);color:#fff;" onclick="eliminarCupon(${c.id})">🗑</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+async function crearCupon(){
+  const codigo = (document.getElementById('cup-codigo').value||'').trim().toUpperCase();
+  const tipo   = document.getElementById('cup-tipo').value;
+  const valor  = parseFloat(document.getElementById('cup-valor').value)||0;
+  const userId = document.getElementById('cup-usuario').value||null;
+  const min    = parseFloat(document.getElementById('cup-min').value)||null;
+  const usosRaw= document.getElementById('cup-usos').value;
+  const usos   = usosRaw==='' ? null : (parseInt(usosRaw)||null);
+  const vence  = document.getElementById('cup-vence').value||null;
+  const desc   = (document.getElementById('cup-desc').value||'').trim()||null;
+  if(!codigo){ toast('Poné un código','err'); return; }
+  if(valor<=0){ toast('Valor inválido','err'); return; }
+  if(!userId){ toast('Elegí a qué cliente asignárselo','err'); return; }
+  if(tipo==='porcentaje' && valor>100){ toast('El porcentaje no puede ser mayor a 100','err'); return; }
+  const body = { codigo, tipo, valor, user_id:userId, descripcion:desc, min_compra:min, max_usos:usos, vence, activo:true };
+  const r = await fetch(`${SUPA_URL}/rest/v1/cupones`, {method:'POST', headers:hdrs, body:JSON.stringify(body)});
+  if(!r.ok){ const t=await r.text(); toast(/duplicate|unique/i.test(t)?'Ese código ya existe':'Error al crear el cupón','err'); return; }
+  toast('Cupón creado y asignado ✓','ok');
+  ['cup-codigo','cup-valor','cup-min','cup-desc','cup-vence'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cup-usos').value='1';
+  cargarCupones();
+}
+
+async function toggleCupon(id, activo){
+  await fetch(`${SUPA_URL}/rest/v1/cupones?id=eq.${id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({activo:!activo})});
+  cargarCupones();
+}
+async function eliminarCupon(id){
+  if(!confirm('¿Eliminar este cupón?')) return;
+  await fetch(`${SUPA_URL}/rest/v1/cupones?id=eq.${id}`, {method:'DELETE', headers:hdrs});
+  cargarCupones();
+}
+
 function switchTab(tab, btn) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -756,6 +852,7 @@ function switchTab(tab, btn) {
   if(tab==='gastos') cargarGastos();
   if(tab==='usuarios') cargarUsuarios();
   if(tab==='vendedores') cargarVendedores();
+  if(tab==='cupones') cargarCupones();
   if(tab==='stock') cargarProductos();
 }
 

@@ -1019,6 +1019,15 @@
                 <div id="checkoutResumen" class="mt-2 space-y-1"></div>
             </div>
 
+            <!-- Cupón de descuento -->
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <input id="checkout-cupon" type="text" placeholder="¿Tenés un cupón?" autocomplete="off" class="checkout-input flex-1" style="text-transform:uppercase;">
+                    <button type="button" onclick="aplicarCupon()" class="px-4 rounded-xl bg-violet-600 text-white text-xs font-black hover:bg-violet-700 transition-colors whitespace-nowrap">Aplicar</button>
+                </div>
+                <div id="checkout-cupon-msg" class="text-[11px] font-bold mt-1.5 hidden"></div>
+            </div>
+
             <!-- Formulario -->
             <div class="space-y-4">
 
@@ -2443,6 +2452,9 @@
 
             // Rellenar resumen
             document.getElementById('checkoutTotal').textContent = formatPrecio(total);
+            window._cupon = null;
+            var _cupInput = document.getElementById('checkout-cupon'); if (_cupInput) _cupInput.value = '';
+            var _cupMsg = document.getElementById('checkout-cupon-msg'); if (_cupMsg) { _cupMsg.classList.add('hidden'); _cupMsg.textContent=''; }
             document.getElementById('checkoutResumen').innerHTML = carrito.map(function(i) {
                 return '<div class="flex justify-between text-[10px] font-bold text-slate-500">' +
                     '<span class="truncate mr-2">' + i.cantidad + 'x ' + i.nombre + '</span>' +
@@ -2628,6 +2640,42 @@
             }
         }
 
+        function recalcularTotalCheckout() {
+            var total = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+            var desc = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
+            document.getElementById('checkoutTotal').textContent = formatPrecio(Math.max(0, total - desc));
+        }
+
+        async function aplicarCupon() {
+            var SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+            var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+            var codigo = (document.getElementById('checkout-cupon').value || '').trim().toUpperCase();
+            var msg = document.getElementById('checkout-cupon-msg');
+            function show(txt, ok) { msg.textContent = txt; msg.className = 'text-[11px] font-bold mt-1.5 ' + (ok ? 'text-green-600' : 'text-red-500'); }
+            if (!codigo) { window._cupon = null; msg.classList.add('hidden'); recalcularTotalCheckout(); return; }
+            if (!document.body.classList.contains('is-logged-in')) { window._cupon = null; show('Ingresá a tu cuenta para usar cupones.', false); recalcularTotalCheckout(); return; }
+            var total = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+            try {
+                var token = SUPA_KEY;
+                var _s = await supabaseClient.auth.getSession();
+                if (_s && _s.data && _s.data.session) token = _s.data.session.access_token;
+                var r = await fetch(SUPA_URL + '/rest/v1/rpc/validar_cupon', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ p_codigo: codigo, p_total: total })
+                });
+                var d = await r.json();
+                if (d && d.ok) {
+                    window._cupon = { codigo: d.codigo || codigo, descuento: Number(d.descuento || 0) };
+                    show('\u2713 Cupón aplicado: -' + formatPrecio(d.descuento) + ' \u00b7 Total: ' + formatPrecio(Math.max(0, total - d.descuento)), true);
+                } else {
+                    window._cupon = null;
+                    show((d && d.motivo) ? d.motivo : 'Cupón no válido', false);
+                }
+                recalcularTotalCheckout();
+            } catch (e) { window._cupon = null; show('No se pudo validar el cupón', false); recalcularTotalCheckout(); }
+        }
+
         function confirmarYEnviar() {
             var nombre    = document.getElementById('checkout-nombre').value.trim();
             var telefono  = document.getElementById('checkout-telefono').value.trim();
@@ -2723,14 +2771,18 @@
                         entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
                         notas: nota || null,
                         total: totalNum,
+                        cupon: (window._cupon ? window._cupon.codigo : null),
                         user_id: window._userId || null
                     };
                     var itemsPayload = carrito.map(function(i) {
                         return { producto: i.nombre, codigo: i.codigo || null, cantidad: i.cantidad, precio_unitario: i.precio };
                     });
+                    var _rpcAuth = SUPA_KEY;
+                    try { var _sess = await supabaseClient.auth.getSession(); if (_sess && _sess.data && _sess.data.session) _rpcAuth = _sess.data.session.access_token; } catch(_e){}
+                    var rpcHeaders = { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + _rpcAuth };
                     var rpcRes = await fetch(SUPA_URL + '/rest/v1/rpc/crear_pedido', {
                         method: 'POST',
-                        headers: hdrs,
+                        headers: rpcHeaders,
                         body: JSON.stringify({ p_pedido: pedidoPayload, p_items: itemsPayload })
                     });
                     var rpcData = await rpcRes.json();
