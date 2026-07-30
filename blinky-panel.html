@@ -48,7 +48,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .btn-logout:hover { color:var(--text);border-color:var(--text2); }
 
 /* NAV */
-.nav { display:flex;gap:4px;padding:1rem 1.5rem 0;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto; }
+.nav { display:flex;gap:4px;padding:1rem 1.5rem 0;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;position:sticky;top:56px;z-index:99; }
 .nav-tab { padding:0.5rem 1rem;border-radius:8px 8px 0 0;border:none;background:transparent;color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap; }
 .nav-tab.active { color:var(--violet-light);border-bottom-color:var(--violet); }
 .nav-tab:hover:not(.active) { color:var(--text); }
@@ -2469,7 +2469,7 @@ function abrirVendedor(id) {
 
 function renderModalVendedor(id) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
-  const filas = entregasDe(id);
+  const filas = entregasDe(id).filter(e=>pendItem(e)>0);
   const unidades = filas.reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
   const valor = filas.reduce((s,e)=>s+Math.max(0,pendItem(e))*precioVend(e.codigo,v.rol),0);
   const dato = (k,val)=> val ? `<div style="font-size:0.78rem;"><span style="color:var(--text3);">${k}:</span> <strong>${val}</strong></div>` : '';
@@ -2478,9 +2478,9 @@ function renderModalVendedor(id) {
     const precio = precioVend(e.codigo, v.rol);
     const img = fotoVend(e.codigo);
     return `<div class="vmerc-card" data-buscar="${((e.producto||'')+' '+(e.codigo||'')).toLowerCase().replace(/"/g,'')}">
-      <div class="vmerc-img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>
+      ${e.codigo?`<a class="vmerc-img" href="producto.html?cod=${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</a>`:`<div class="vmerc-img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>`}
       <div class="vmerc-body">
-        <div class="vmerc-nombre">${e.producto}</div>
+        ${e.codigo?`<a class="vmerc-nombre" href="producto.html?cod=${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;text-decoration:none;color:inherit;">${e.producto}</a>`:`<div class="vmerc-nombre">${e.producto}</div>`}
         ${e.codigo?`<div class="vmerc-cod">Cód. ${e.codigo}</div>`:''}
         <div class="vmerc-stats"><span>📦 ${e.entregado}</span><span style="color:var(--green);">✓ ${e.vendido}</span><span style="color:var(--yellow);">↩ ${e.devuelto}</span><span style="font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">Tiene ${pend}</span></div>
         <div class="vmerc-precio">$${precio.toLocaleString('es-AR')}</div>
