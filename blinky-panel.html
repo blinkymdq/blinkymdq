@@ -692,7 +692,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <input id="cup-codigo" placeholder="Código (ej: REGALO15)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <select id="cup-tipo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="porcentaje">% Porcentaje</option><option value="monto">$ Monto fijo</option></select>
         <input id="cup-valor" type="number" min="0" placeholder="Valor (15 o 5000)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
-        <select id="cup-usuario" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="">Asignar a cliente...</option></select>
+        <select id="cup-usuario" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="">General (todos los clientes)</option></select>
         <input id="cup-min" type="number" min="0" placeholder="Compra mínima (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="cup-usos" type="number" min="1" value="1" placeholder="Usos máximos" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="cup-vence" type="date" placeholder="Vence (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
@@ -777,7 +777,7 @@ async function cargarCupones(){
     cuponesCache = await cR.json();
     _cupUsers = await uR.json();
     const sel = document.getElementById('cup-usuario');
-    if(sel) sel.innerHTML = '<option value="">Asignar a cliente...</option>' + (_cupUsers||[]).map(u=>`<option value="${u.id}">${(u.nombre||u.email||'—')} — ${u.email||''} (#${u.numero_usuario||''})</option>`).join('');
+    if(sel) sel.innerHTML = '<option value="">General (todos los clientes)</option>' + (_cupUsers||[]).map(u=>`<option value="${u.id}">${(u.nombre||u.email||'—')} — ${u.email||''} (#${u.numero_usuario||''})</option>`).join('');
     renderCuponesPanel();
   } catch(e){ if(cont) cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
@@ -795,7 +795,7 @@ function renderCuponesPanel(){
     return `<div class="pago-item">
       <span style="min-width:0;flex:1;">
         <b style="font-family:monospace;color:var(--violet-light);letter-spacing:1px;">${c.codigo}</b> · <b>${val} OFF</b>${c.descripcion?` · ${c.descripcion}`:''}
-        <br><span style="font-size:0.72rem;color:var(--text3);">${u?`${u.nombre||u.email} (#${u.numero_usuario||''})`:'sin asignar'}${c.min_compra?` · min ${_cupFmt(c.min_compra)}`:''}${c.vence?` · vence ${new Date(c.vence).toLocaleDateString('es-AR')}`:''} · usos ${c.usos}/${c.max_usos??'∞'}</span>
+        <br><span style="font-size:0.72rem;color:var(--text3);">${u?`${u.nombre||u.email} (#${u.numero_usuario||''})`:'General (todos)'}${c.min_compra?` · min ${_cupFmt(c.min_compra)}`:''}${c.vence?` · vence ${new Date(c.vence).toLocaleDateString('es-AR')}`:''} · usos ${c.usos}/${c.max_usos??'∞'}</span>
       </span>
       <span class="pago-monto" style="color:${estado==='Activo'?'var(--green)':'var(--text3)'};">${estado}</span>
       <span style="display:flex;gap:6px;">
@@ -818,12 +818,11 @@ async function crearCupon(){
   const desc   = (document.getElementById('cup-desc').value||'').trim()||null;
   if(!codigo){ toast('Poné un código','err'); return; }
   if(valor<=0){ toast('Valor inválido','err'); return; }
-  if(!userId){ toast('Elegí a qué cliente asignárselo','err'); return; }
   if(tipo==='porcentaje' && valor>100){ toast('El porcentaje no puede ser mayor a 100','err'); return; }
   const body = { codigo, tipo, valor, user_id:userId, descripcion:desc, min_compra:min, max_usos:usos, vence, activo:true };
   const r = await fetch(`${SUPA_URL}/rest/v1/cupones`, {method:'POST', headers:hdrs, body:JSON.stringify(body)});
   if(!r.ok){ const t=await r.text(); toast(/duplicate|unique/i.test(t)?'Ese código ya existe':'Error al crear el cupón','err'); return; }
-  toast('Cupón creado y asignado ✓','ok');
+  toast('Cupón creado ✓','ok');
   ['cup-codigo','cup-valor','cup-min','cup-desc','cup-vence'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cup-usos').value='1';
   cargarCupones();
