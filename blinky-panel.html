@@ -656,6 +656,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 
     <!-- VENDEDORES -->
     <div id="panel-vendedores" class="panel">
+      <div id="vend-list-wrap">
       <div class="filters">
         <input id="vend-buscar" class="filter-input" type="text" placeholder="Buscar vendedor..." oninput="renderVendedores()">
         <input id="vend-prod-buscar" class="filter-input" type="text" placeholder="Buscar producto (quién lo tiene)..." oninput="buscarProductoVendedores()" style="min-width:230px;">
@@ -667,6 +668,11 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div id="vend-resumen" class="stats-grid" style="margin-bottom:1rem;"></div>
       <div id="vend-prod-res" style="display:none;margin-bottom:1rem;"></div>
       <div id="lista-vendedores"><div class="loading-txt">Cargando...</div></div>
+      </div><!-- /vend-list-wrap -->
+      <div id="vend-detalle-wrap" style="display:none;">
+        <button class="btn-refresh" style="margin-bottom:1rem;" onclick="cerrarModalVendedor()">← Volver a vendedores</button>
+        <div id="mv-contenido"></div>
+      </div>
       <datalist id="vend-prod-list"></datalist>
     </div>
 
@@ -692,13 +698,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   </div>
 </div>
 
-<!-- MODAL VENDEDOR -->
-<div id="modal-vendedor" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:210;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:1040px;max-height:92vh;overflow-y:auto;padding:1.5rem;position:relative;">
-    <button class="btn-close" style="position:absolute;top:1rem;right:1rem;" onclick="cerrarModalVendedor()">✕</button>
-    <div id="mv-contenido"></div>
-  </div>
-</div>
+<!-- El detalle del vendedor ahora es una vista a pantalla completa dentro de la pestaña Vendedores (#vend-detalle-wrap) -->
 
 <div id="toast"></div>
 
@@ -2396,7 +2396,7 @@ async function cargarVendedores() {
     if (dl) dl.innerHTML = (vendProductos||[]).map(p=>`<option value="${p.nombre}">`).join('');
     renderVendedores();
     const _pb=document.getElementById('vend-prod-buscar'); if(_pb && _pb.value) buscarProductoVendedores();
-    if (vendActualId && document.getElementById('modal-vendedor').style.display==='flex') renderModalVendedor(vendActualId);
+    if (vendActualId && document.getElementById('vend-detalle-wrap') && document.getElementById('vend-detalle-wrap').style.display!=='none') renderModalVendedor(vendActualId);
   } catch(e){ if(cont) cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
 
@@ -2455,13 +2455,15 @@ async function quitarVendedor(id, nombre) {
   toast('Quitado','ok'); cargarVendedores();
 }
 
-function cerrarModalVendedor(){ document.getElementById('modal-vendedor').style.display='none'; vendActualId=null; }
+function cerrarModalVendedor(){ document.getElementById('vend-detalle-wrap').style.display='none'; document.getElementById('vend-list-wrap').style.display=''; vendActualId=null; }
 
 function abrirVendedor(id) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
   vendActualId = id;
   entregaCarrito = [];
-  document.getElementById('modal-vendedor').style.display='flex';
+  document.getElementById('vend-list-wrap').style.display='none';
+  document.getElementById('vend-detalle-wrap').style.display='';
+  window.scrollTo({top:0,behavior:'smooth'});
   renderModalVendedor(id);
 }
 
