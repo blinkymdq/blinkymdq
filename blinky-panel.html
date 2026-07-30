@@ -2524,12 +2524,21 @@ async function logMov(rows){
   try { await fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify(rows)}); } catch(e){}
 }
 
-function entregarMercaderia(uid) {
+async function entregarMercaderia(uid) {
   const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
   const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
   const prod = (vendProductos||[]).find(p=>p.nombre===nombre);
   if(!prod){ toast('Elegí un producto del catálogo','err'); return; }
+  // Disponibilidad = stock físico (fresco) - unidades que ya están afuera con TODOS los vendedores
+  let stockActual = Number(prod.stock||0);
+  try {
+    const sr = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(prod.codigo)}&select=stock`,{headers:hdrs});
+    const sj = await sr.json(); if(sj && sj[0]) stockActual = Number(sj[0].stock||0);
+  } catch(_){}
+  const afuera = (vendEntregas||[]).filter(e=>e.codigo===prod.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
+  const disponible = stockActual - afuera;
+  if(cant > disponible){ toast(`Sin stock disponible para entregar. Disponible: ${Math.max(0,disponible)} (stock ${stockActual}, ya afuera ${afuera})`,'err'); return; }
   const existente = vendEntregas.find(e=>e.usuario_id===uid && e.codigo===prod.codigo);
   const req = existente
     ? fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${existente.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({entregado:Number(existente.entregado||0)+cant})})
