@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi cuenta — Blinky MDQ</title>
+<link rel="icon" href="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png">
+<style>
+  :root{
+    --bg:#f4f4f8; --surface:#ffffff; --surface2:#f1f1f6; --border:#e2e8f0;
+    --text:#1e293b; --text2:#475569; --text3:#94a3b8;
+    --violet:#7c3aed; --violet-light:#a78bfa; --green:#16a34a; --yellow:#d97706; --red:#ef4444; --cyan:#0891b2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  a{color:inherit;text-decoration:none;}
+
+  /* Header estilo Blinky */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.8rem 1.2rem;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;}
+  .topbar .brand{display:flex;align-items:center;gap:0.7rem;}
+  .topbar .brand img{height:38px;}
+  .topbar .brand b{color:var(--violet);font-weight:900;letter-spacing:-0.5px;}
+  .topbar .right{display:flex;align-items:center;gap:0.8rem;font-size:0.85rem;}
+  .btn{background:var(--violet);color:#fff;border:none;border-radius:10px;padding:0.55rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;}
+  .btn:hover{filter:brightness(1.06);}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+  .tienda-link{font-size:0.82rem;color:var(--violet);font-weight:700;}
+
+  .layout{max-width:1100px;margin:1.3rem auto;padding:0 1.1rem;display:grid;grid-template-columns:230px 1fr;gap:1.3rem;align-items:start;}
+  .sidebar{background:#fff;border:1px solid var(--border);border-radius:16px;padding:0.6rem;position:sticky;top:80px;}
+  .sidebar .who{padding:0.9rem 0.9rem 0.7rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;}
+  .sidebar .who .n{font-weight:900;font-size:0.98rem;}
+  .sidebar .who .m{font-size:0.75rem;color:var(--text3);margin-top:2px;}
+  .navitem{display:flex;align-items:center;gap:0.7rem;width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:0.7rem 0.9rem;border-radius:10px;font-size:0.88rem;font-weight:700;color:var(--text2);}
+  .navitem:hover{background:var(--surface2);}
+  .navitem.active{background:#f5f3ff;color:var(--violet);}
+  .navitem svg{width:17px;height:17px;flex-shrink:0;}
+
+  .panel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.4rem 1.5rem;min-height:340px;}
+  .panel h2{font-size:1.1rem;margin-bottom:1.1rem;}
+  .sub{color:var(--text3);font-size:0.85rem;margin:-0.7rem 0 1.2rem;}
+
+  /* Form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem 1rem;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text3);}
+  .field input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.75rem;font-size:0.9rem;color:var(--text);}
+  .field input:disabled{opacity:0.7;}
+  .save-row{margin-top:1.2rem;display:flex;gap:0.7rem;align-items:center;}
+  .saldo-chip{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:10px;padding:0.5rem 0.9rem;font-size:0.85rem;font-weight:800;}
+
+  /* Compras / pagos */
+  .item{border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.7rem;}
+  .item-top{display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;}
+  .item-num{font-weight:900;color:var(--violet);}
+  .item-fecha{font-size:0.75rem;color:var(--text3);}
+  .badge{font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;padding:3px 9px;border-radius:999px;}
+  .b-pendiente{background:#fef9c3;color:#a16207;}
+  .b-confirmado{background:#dbeafe;color:#1d4ed8;}
+  .b-en_camino{background:#e0e7ff;color:#4338ca;}
+  .b-entregado{background:#dcfce7;color:#15803d;}
+  .b-cancelado{background:#fee2e2;color:#b91c1c;}
+  .b-pago{background:#dcfce7;color:#15803d;}
+  .b-debe{background:#fee2e2;color:#b91c1c;}
+  .item-prods{margin-top:0.6rem;border-top:1px dashed var(--border);padding-top:0.5rem;font-size:0.82rem;color:var(--text2);}
+  .item-prods .l{display:flex;justify-content:space-between;gap:0.6rem;padding:2px 0;}
+  .item-money{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:0.5rem;font-size:0.85rem;}
+  .item-money b{color:var(--text);}
+
+  /* Cards mercadería */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.8rem;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+  .card .img{height:130px;background:#fff;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);}
+  .card .img img{width:100%;height:100%;object-fit:contain;}
+  .card .body{padding:0.65rem 0.75rem;display:flex;flex-direction:column;gap:5px;flex:1;}
+  .card .nombre{font-size:0.82rem;font-weight:700;line-height:1.25;}
+  .card .cod{font-size:0.66rem;color:var(--text3);font-family:monospace;}
+  .card .tiene{font-size:0.8rem;font-weight:900;color:var(--violet);}
+  .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:0.7rem;color:var(--text2);}
+  .card .stats b{color:var(--text);}
+  .card .rep{margin-top:auto;background:transparent;border:1px solid var(--border);color:var(--yellow);border-radius:8px;padding:0.35rem;font-size:0.7rem;font-weight:700;cursor:pointer;}
+  .card .rep:hover{background:#fff7ed;}
+
+  .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:0.7rem;margin-bottom:1.1rem;}
+  .res-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:0.8rem 0.9rem;}
+  .res-card .lbl{font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;font-weight:700;}
+  .res-card .val{font-size:1.3rem;font-weight:900;margin-top:2px;}
+
+  .empty{text-align:center;color:var(--text3);padding:2.5rem 1rem;}
+  .empty .ic{font-size:2rem;}
+  .hint{color:var(--text3);font-size:0.82rem;line-height:1.5;}
+
+  /* Login */
+  .login{max-width:420px;margin:12vh auto;background:#fff;border:1px solid var(--border);border-radius:18px;padding:2rem 1.8rem;text-align:center;}
+  .login img{height:52px;margin-bottom:1rem;}
+  .login h1{font-size:1.2rem;margin-bottom:0.4rem;}
+  .login p{color:var(--text3);font-size:0.9rem;margin-bottom:1.4rem;line-height:1.5;}
+  .btn-google{display:inline-flex;align-items:center;gap:0.6rem;background:#fff;color:#1e293b;border:1px solid var(--border);border-radius:12px;padding:0.7rem 1.3rem;font-size:0.92rem;font-weight:700;cursor:pointer;}
+  .btn-google svg{width:18px;height:18px;}
+
+  #toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:0.7rem 1.1rem;border-radius:10px;font-size:0.85rem;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:60;}
+  #toast.show{opacity:1;}
+  #toast.err{background:#b91c1c;}
+  .hidden{display:none!important;}
+
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{position:static;display:flex;flex-wrap:wrap;gap:4px;}
+    .sidebar .who{width:100%;}
+    .navitem{width:auto;flex:1;justify-content:center;padding:0.6rem 0.5rem;font-size:0.78rem;}
+    .form-grid{grid-template-columns:1fr;}
+    .resumen{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="vista-login" class="login hidden">
+  <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ">
+  <h1>Mi cuenta</h1>
+  <p>Ingresá con tu cuenta para ver tus datos, compras, pagos y mercadería.</p>
+  <button class="btn-google" onclick="login()">
+    <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Ingresar con Google
+  </button>
+</div>
+
+<!-- APP -->
+<div id="vista-app" class="hidden">
+  <div class="topbar">
+    <a class="brand" href="index.html">
+      <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ">
+    </a>
+    <div class="right">
+      <a class="tienda-link" href="index.html">← Volver a la tienda</a>
+      <button class="btn btn-ghost" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="who">
+        <div class="n" id="who-nombre">—</div>
+        <div class="m" id="who-meta"></div>
+      </div>
+      <button class="navitem active" data-tab="datos" onclick="irTab('datos')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Mis datos
+      </button>
+      <button class="navitem" data-tab="compras" onclick="irTab('compras')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Mis compras
+      </button>
+      <button class="navitem" data-tab="pagos" onclick="irTab('pagos')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Mis pagos
+      </button>
+      <button class="navitem hidden" id="nav-mercaderia" data-tab="mercaderia" onclick="irTab('mercaderia')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Mi mercadería
+      </button>
+    </div>
+
+    <div class="panel" id="panel"><div class="empty"><div class="ic">⏳</div><p>Cargando…</p></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [];
+let tabActual = 'datos';
+
+function toast(msg, tipo){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+(tipo||''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
+function fmt(n){ return '$' + Number(n||0).toLocaleString('es-AR'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fechaCorta(d){ return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fechaHora(d){ return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function getImgUrl(foto){ if(!foto||!foto.trim()) return ''; if(foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`; return `https://blinkymdq.com/Productos/${foto}.jpg`; }
+function estadoLabel(e){ return {pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e||'—'; }
+function pend(e){ return Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0); }
+function precioDe(cod){ const p=productos[cod]; if(!p) return 0; return Number((usuario&&usuario.rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0); }
+
+async function login(){ await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } }); }
+async function logout(){ await supa.auth.signOut(); location.reload(); }
+
+async function init(){
+  const { data:{ session } } = await supa.auth.getSession();
+  if(!session){ document.getElementById('vista-login').classList.remove('hidden'); document.getElementById('vista-app').classList.add('hidden'); return; }
+  document.getElementById('vista-login').classList.add('hidden');
+  document.getElementById('vista-app').classList.remove('hidden');
+  uid = session.user.id;
+  await cargar();
+}
+
+async function cargar(){
+  try {
+    const { data:u } = await supa.from('usuarios').select('nombre,email,telefono,direccion,localidad,provincia,dni,nacimiento,rol,numero_usuario,es_vendedor,saldo_favor').eq('id', uid).single();
+    usuario = u || {};
+    document.getElementById('who-nombre').textContent = usuario.nombre || usuario.email || 'Mi cuenta';
+    document.getElementById('who-meta').textContent = (usuario.numero_usuario?`#${usuario.numero_usuario} · `:'') + (usuario.rol==='mayorista'?'Mayorista':'Minorista');
+    if(usuario.es_vendedor) document.getElementById('nav-mercaderia').classList.remove('hidden');
+
+    const { data:peds } = await supa.from('pedidos').select('*').eq('user_id', uid).order('created_at',{ascending:false});
+    pedidos = peds || [];
+    const nums = pedidos.map(p=>p.numero_pedido);
+    itemsPorPedido = {};
+    if(nums.length){
+      const { data:items } = await supa.from('pedido_items').select('*').in('numero_pedido', nums);
+      (items||[]).forEach(it=>{ (itemsPorPedido[it.numero_pedido]=itemsPorPedido[it.numero_pedido]||[]).push(it); });
+      const { data:pgs } = await supa.from('pagos').select('*').in('numero_pedido', nums).order('created_at',{ascending:false});
+      pagos = pgs || [];
+    } else { pagos = []; }
+
+    if(usuario.es_vendedor){
+      const { data:ent } = await supa.from('entregas_vendedor').select('*').eq('usuario_id', uid);
+      entregas = (ent||[]).filter(e=>e.entregado>0);
+      const cods = [...new Set(entregas.map(e=>e.codigo).filter(Boolean))];
+      productos = {};
+      if(cods.length){ const { data:prods } = await supa.from('productos').select('codigo,nombre,foto,precio_publico,precio_mayorista').in('codigo', cods); (prods||[]).forEach(p=>productos[p.codigo]=p); }
+      const { data:movs } = await supa.from('movimientos_vendedor').select('*').eq('usuario_id', uid).order('created_at',{ascending:false}).limit(60);
+      movimientos = movs || [];
+    }
+    irTab(tabActual);
+  } catch(err){ console.error(err); document.getElementById('panel').innerHTML='<div class="empty"><div class="ic">⚠️</div><p>No pudimos cargar tus datos. Probá recargar.</p></div>'; }
+}
+
+function irTab(tab){
+  tabActual = tab;
+  document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  if(tab==='datos') renderDatos();
+  else if(tab==='compras') renderCompras();
+  else if(tab==='pagos') renderPagos();
+  else if(tab==='mercaderia') renderMercaderia();
+}
+
+function renderDatos(){
+  const u = usuario || {};
+  document.getElementById('panel').innerHTML = `
+    <h2>Mis datos</h2>
+    <p class="sub">Actualizá tu información de contacto y envío.</p>
+    <div class="form-grid">
+      <div class="field"><label>Nombre</label><input id="d-nombre" type="text" value="${esc(u.nombre)}"></div>
+      <div class="field"><label>Teléfono</label><input id="d-telefono" type="text" value="${esc(u.telefono)}"></div>
+      <div class="field full"><label>Dirección</label><input id="d-direccion" type="text" value="${esc(u.direccion)}"></div>
+      <div class="field"><label>Localidad</label><input id="d-localidad" type="text" value="${esc(u.localidad)}"></div>
+      <div class="field"><label>Provincia</label><input id="d-provincia" type="text" value="${esc(u.provincia)}"></div>
+      <div class="field"><label>DNI</label><input id="d-dni" type="text" value="${esc(u.dni)}"></div>
+      <div class="field"><label>Fecha de nacimiento</label><input id="d-nacimiento" type="date" value="${esc(u.nacimiento)}"></div>
+      <div class="field"><label>Email</label><input type="text" value="${esc(u.email)}" disabled></div>
+    </div>
+    <div class="save-row">
+      <button class="btn" onclick="guardarDatos()">Guardar cambios</button>
+      ${Number(u.saldo_favor||0)>0?`<span class="saldo-chip">Saldo a favor: ${fmt(u.saldo_favor)}</span>`:''}
+    </div>`;
+}
+
+async function guardarDatos(){
+  const body = {
+    nombre: document.getElementById('d-nombre').value.trim() || null,
+    telefono: document.getElementById('d-telefono').value.trim() || null,
+    direccion: document.getElementById('d-direccion').value.trim() || null,
+    localidad: document.getElementById('d-localidad').value.trim() || null,
+    provincia: document.getElementById('d-provincia').value.trim() || null,
+    dni: document.getElementById('d-dni').value.trim() || null,
+    nacimiento: document.getElementById('d-nacimiento').value || null
+  };
+  if(!body.nombre){ toast('El nombre no puede quedar vacío','err'); return; }
+  const { error } = await supa.from('usuarios').update(body).eq('id', uid);
+  if(error){ console.error(error); toast('No se pudo guardar','err'); return; }
+  Object.assign(usuario, body);
+  document.getElementById('who-nombre').textContent = usuario.nombre;
+  toast('Datos guardados ✓');
+}
+
+function renderCompras(){
+  if(!pedidos.length){ document.getElementById('panel').innerHTML = `<h2>Mis compras</h2><div class="empty"><div class="ic">🛍️</div><p>Todavía no tenés compras registradas.</p></div>`; return; }
+  const html = pedidos.map(p=>{
+    const total = Number(p.total||0);
+    const pagado = Number(p.monto_pagado||0);
+    const debe = Math.max(0, total - pagado);
+    const estaPago = debe <= 0 && total > 0;
+    const its = itemsPorPedido[p.numero_pedido] || [];
+    const itsHtml = its.map(i=>`<div class="l"><span>${esc(i.producto)} × ${i.cantidad}</span><span>${fmt(i.subtotal)}</span></div>`).join('') || '<div class="l" style="color:var(--text3);">Sin detalle de productos</div>';
+    return `<div class="item">
+      <div class="item-top">
+        <div><span class="item-num">${esc(p.numero_pedido)}</span> <span class="item-fecha">· ${fechaCorta(p.created_at)}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge b-${p.estado||'pendiente'}">${estadoLabel(p.estado)}</span>
+          <span class="badge ${estaPago?'b-pago':'b-debe'}">${estaPago?'Pagado':'Debe '+fmt(debe)}</span>
+        </div>
+      </div>
+      <div class="item-prods">${itsHtml}</div>
+      <div class="item-money">
+        <span>Total: <b>${fmt(total)}</b></span>
+        <span>Pagado: <b>${fmt(pagado)}</b></span>
+        ${debe>0?`<span style="color:var(--red);">Resta: <b>${fmt(debe)}</b></span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('panel').innerHTML = `<h2>Mis compras</h2><p class="sub">Historial de tus pedidos y su estado.</p>${html}`;
+}
+
+function renderPagos(){
+  if(!pagos.length){ document.getElementById('panel').innerHTML = `<h2>Mis pagos</h2><div class="empty"><div class="ic">💳</div><p>Todavía no hay pagos registrados.</p></div>`; return; }
+  const formaLbl = {efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento',saldo_favor:'Saldo a favor'};
+  const html = pagos.map(p=>{
+    const neg = (p.forma_pago==='descuento');
+    return `<div class="item">
+      <div class="item-top">
+        <div><b>${formaLbl[p.forma_pago]||p.forma_pago||'Pago'}</b> <span class="item-fecha">· pedido ${esc(p.numero_pedido)} · ${fechaHora(p.created_at)}</span></div>
+        <div style="font-weight:900;color:${neg?'var(--yellow)':'var(--green)'};">${neg?'−':''}${fmt(p.monto)}</div>
+      </div>
+      ${p.descripcion?`<div class="item-prods" style="border-top:none;padding-top:4px;">${esc(p.descripcion)}</div>`:''}
+    </div>`;
+  }).join('');
+  const totalPagado = pagos.filter(p=>p.forma_pago!=='descuento').reduce((s,p)=>s+Number(p.monto||0),0);
+  document.getElementById('panel').innerHTML = `<h2>Mis pagos</h2><p class="sub">Pagos registrados en tu cuenta.</p>
+    <div class="resumen"><div class="res-card"><div class="lbl">Total pagado</div><div class="val" style="color:var(--green);">${fmt(totalPagado)}</div></div>${Number(usuario.saldo_favor||0)>0?`<div class="res-card"><div class="lbl">Saldo a favor</div><div class="val">${fmt(usuario.saldo_favor)}</div></div>`:''}</div>
+    ${html}`;
+}
+
+function renderMercaderia(){
+  const cont = document.getElementById('panel');
+  const conStock = entregas.filter(e=>pend(e)>0);
+  if(!entregas.length){ cont.innerHTML = `<h2>Mi mercadería</h2><div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p></div>`; return; }
+  const unidades = conStock.reduce((s,e)=>s+pend(e),0);
+  const valor = conStock.reduce((s,e)=>s+pend(e)*precioDe(e.codigo),0);
+  const vendidas = entregas.reduce((s,e)=>s+Number(e.vendido||0),0);
+  const cards = conStock.map(e=>{
+    const img = getImgUrl(((productos[e.codigo]||{}).foto||'').split(',')[0].trim());
+    return `<div class="card">
+      <div class="img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>
+      <div class="body">
+        <div class="nombre">${esc(e.producto)}</div>
+        ${e.codigo?`<div class="cod">Cód. ${esc(e.codigo)}</div>`:''}
+        <div class="tiene">Tenés ${pend(e)} u.</div>
+        <div class="stats"><span>Recibido: <b>${e.entregado}</b></span><span>Vendido: <b>${e.vendido}</b></span><span>Devuelto: <b>${e.devuelto}</b></span><span>P.Unit: <b>${fmt(precioDe(e.codigo))}</b></span></div>
+        <button class="rep" onclick="reportar('${esc(e.producto).replace(/'/g,"\\'")}','${esc(e.codigo)}')">⚠️ Reportar diferencia</button>
+      </div>
+    </div>`;
+  }).join('');
+  const tipoLbl={entrega:'Recibido',venta:'Vendido',devolucion:'Devuelto'}, tipoCol={entrega:'var(--cyan)',venta:'var(--green)',devolucion:'var(--yellow)'};
+  const movsHtml = movimientos.length ? movimientos.map(m=>`<div class="item-prods" style="border:none;padding:0.3rem 0;display:flex;justify-content:space-between;"><span><b style="color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</b> · ${esc(m.producto)} (${m.cantidad} u.)</span><span class="item-fecha">${fechaHora(m.created_at)}</span></div>`).join('') : '<div class="hint">Sin movimientos.</div>';
+  cont.innerHTML = `<h2>Mi mercadería</h2>
+    <div class="resumen">
+      <div class="res-card"><div class="lbl">Unidades en tu poder</div><div class="val">${unidades}</div></div>
+      <div class="res-card"><div class="lbl">Valor</div><div class="val">${fmt(valor)}</div></div>
+      <div class="res-card"><div class="lbl">Vendidas</div><div class="val" style="color:var(--green);">${vendidas}</div></div>
+    </div>
+    ${conStock.length?`<div class="grid">${cards}</div>`:'<div class="hint">Ya no tenés unidades pendientes.</div>'}
+    <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--violet);margin:1.3rem 0 0.6rem;">Historial</div>
+    ${movsHtml}`;
+}
+
+async function reportar(producto, codigo){
+  const mensaje = prompt(`Contanos qué diferencia notás con "${producto}"\n(ej: me figura 5 pero tengo 3, o ya lo devolví):`, '');
+  if(mensaje===null) return;
+  if(!mensaje.trim()){ toast('Escribí un mensaje para reportar','err'); return; }
+  try {
+    const { data:{ session } } = await supa.auth.getSession();
+    const r = await fetch(`${SUPA_URL}/functions/v1/reportar-diferencia`, { method:'POST', headers:{ 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:'Bearer '+session.access_token }, body: JSON.stringify({ producto, codigo, mensaje: mensaje.trim() }) });
+    const jr = await r.json().catch(()=>({}));
+    if(jr && jr.ok) toast('Reporte enviado ✓ Lo vamos a revisar'); else toast('No se pudo enviar el reporte','err');
+  } catch(_){ toast('No se pudo enviar el reporte','err'); }
+}
+
+supa.auth.onAuthStateChange(()=>init());
+init();
+</script>
+</body>
+</html>

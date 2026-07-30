@@ -262,6 +262,22 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 .np-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:0.6rem; }
 .np-grid2 select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.82rem;padding:0.55rem 0.6rem; }
 .np-item-row { display:grid;grid-template-columns:1.8fr 0.4fr 0.6fr 0.6fr 0.3fr;gap:0.4rem;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem; }
+
+  /* Cards de mercadería del vendedor */
+  .vmerc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.7rem;margin:0.3rem 0 0.2rem;}
+  .vmerc-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+  .vmerc-img{height:112px;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .vmerc-img img{width:100%;height:100%;object-fit:contain;}
+  .vmerc-body{padding:0.55rem 0.65rem;display:flex;flex-direction:column;gap:4px;}
+  .vmerc-nombre{font-size:0.78rem;font-weight:700;line-height:1.25;color:var(--text);}
+  .vmerc-cod{font-size:0.66rem;color:var(--text3);font-family:monospace;}
+  .vmerc-stats{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:0.68rem;color:var(--text2);}
+  .vmerc-precio{font-size:0.82rem;font-weight:800;color:var(--text);}
+  .vmerc-actions{display:flex;gap:8px;margin-top:2px;}
+  .vmerc-actions label{font-size:0.6rem;color:var(--text3);display:flex;flex-direction:column;gap:2px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
+  .vmerc-actions input{width:54px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center;padding:3px;}
+  .vmerc-actions label:last-child input{border-color:var(--yellow);}
+  .vmerc-sin{font-size:0.66rem;color:var(--text3);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2373,7 +2389,7 @@ async function cargarVendedores() {
     vendEntregas = await eR.json();
     vendMovs = await mR.json();
     if (!vendProductos) {
-      vendProductos = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,stock,estado&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
+      vendProductos = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,stock,estado,foto&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
     }
     const dl = document.getElementById('vend-prod-list');
     if (dl) dl.innerHTML = (vendProductos||[]).map(p=>`<option value="${p.nombre}">`).join('');
@@ -2384,6 +2400,7 @@ async function cargarVendedores() {
 }
 
 function prodVend(codigo){ return (vendProductos||[]).find(p=>p.codigo===codigo); }
+function fotoVend(codigo){ const p=prodVend(codigo); const f=((p&&p.foto)||'').split(',')[0].trim(); return f?getImgUrl(f):''; }
 function precioVend(codigo, rol){ const p=prodVend(codigo); if(!p) return 0; return Number((rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0); }
 function entregasDe(uid){ return vendEntregas.filter(e=>e.usuario_id===uid); }
 function pendItem(e){ return Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0); }
@@ -2456,16 +2473,17 @@ function renderModalVendedor(id) {
   const filasHtml = filas.map(e=>{
     const pend = pendItem(e);
     const precio = precioVend(e.codigo, v.rol);
-    return `<tr data-buscar="${((e.producto||'')+' '+(e.codigo||'')).toLowerCase().replace(/"/g,'')}">
-      <td>${e.producto}${e.codigo?` <span style="color:var(--text3);font-size:0.7rem;">(${e.codigo})</span>`:''}</td>
-      <td style="text-align:center;">${e.entregado}</td>
-      <td style="text-align:center;color:var(--green);">${e.vendido}</td>
-      <td style="text-align:center;color:var(--yellow);">${e.devuelto}</td>
-      <td style="text-align:center;font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">${pend}</td>
-      <td style="text-align:right;color:var(--text2);">$${precio.toLocaleString('es-AR')}</td>
-      <td style="text-align:center;">${pend>0?`<input type="number" id="vc-${e.id}" min="0" max="${pend}" value="0" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center;padding:3px;">`:'—'}</td>
-      <td style="text-align:center;">${pend>0?`<input type="number" id="dc-${e.id}" min="0" max="${pend}" value="0" style="width:56px;background:var(--surface2);border:1px solid var(--yellow);border-radius:6px;color:var(--text);text-align:center;padding:3px;">`:'—'}</td>
-    </tr>`;
+    const img = fotoVend(e.codigo);
+    return `<div class="vmerc-card" data-buscar="${((e.producto||'')+' '+(e.codigo||'')).toLowerCase().replace(/"/g,'')}">
+      <div class="vmerc-img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>
+      <div class="vmerc-body">
+        <div class="vmerc-nombre">${e.producto}</div>
+        ${e.codigo?`<div class="vmerc-cod">Cód. ${e.codigo}</div>`:''}
+        <div class="vmerc-stats"><span>📦 ${e.entregado}</span><span style="color:var(--green);">✓ ${e.vendido}</span><span style="color:var(--yellow);">↩ ${e.devuelto}</span><span style="font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">Tiene ${pend}</span></div>
+        <div class="vmerc-precio">$${precio.toLocaleString('es-AR')}</div>
+        ${pend>0?`<div class="vmerc-actions"><label>Vender<input type="number" id="vc-${e.id}" min="0" max="${pend}" value="0"></label><label>Devolver<input type="number" id="dc-${e.id}" min="0" max="${pend}" value="0"></label></div>`:'<div class="vmerc-sin">Sin unidades pendientes</div>'}
+      </div>
+    </div>`;
   }).join('');
   const movs = vendMovs.filter(m=>m.usuario_id===id).slice(0,40);
   const tipoLbl = {entrega:'Entrega', venta:'Venta', devolucion:'Devolución'};
@@ -2501,7 +2519,7 @@ function renderModalVendedor(id) {
 
     <div class="fc-section-title">Mercadería en su poder</div>
     ${filas.length?`<input id="mv-buscar-prod" type="text" oninput="filtrarMercaderiaModal()" placeholder="🔎 Filtrar producto de esta lista..." style="width:100%;margin-bottom:0.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.5rem 0.7rem;font-size:0.82rem;">
-    <table class="items-table" id="mv-merc-tabla"><thead><tr><th>Producto</th><th style="text-align:center;">Entreg.</th><th style="text-align:center;">Vend.</th><th style="text-align:center;">Dev.</th><th style="text-align:center;">Tiene</th><th style="text-align:right;">P.Unit</th><th style="text-align:center;">Vender</th><th style="text-align:center;">Devolver</th></tr></thead><tbody>${filasHtml}</tbody></table>
+    <div class="vmerc-grid" id="mv-merc-grid">${filasHtml}</div>
     <div id="mv-sin-resultados" style="display:none;color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin coincidencias.</div>
     <div class="post-pago-btns" style="margin-top:0.75rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
       <button class="btn-finalizar" onclick="registrarVentaVendedor('${id}')">✓ Registrar venta de lo marcado</button>
@@ -2677,13 +2695,13 @@ async function devolverMercaderia(entregaId) {
 // Filtro interno del modal: muestra/oculta filas de "Mercadería en su poder"
 function filtrarMercaderiaModal(){
   const q = (document.getElementById('mv-buscar-prod')?.value||'').toLowerCase().trim();
-  const tabla = document.getElementById('mv-merc-tabla');
-  if(!tabla) return;
+  const grid = document.getElementById('mv-merc-grid');
+  if(!grid) return;
   let visibles = 0;
-  tabla.querySelectorAll('tbody tr').forEach(tr=>{
-    const t = tr.getAttribute('data-buscar')||'';
+  grid.querySelectorAll('.vmerc-card').forEach(card=>{
+    const t = card.getAttribute('data-buscar')||'';
     const ok = !q || t.includes(q);
-    tr.style.display = ok ? '' : 'none';
+    card.style.display = ok ? '' : 'none';
     if(ok) visibles++;
   });
   const vacio = document.getElementById('mv-sin-resultados');
