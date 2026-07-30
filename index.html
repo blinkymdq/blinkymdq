@@ -110,7 +110,7 @@
         }
 
         /* ─── Título producto truncado ─── */
-        .product-title { height: 3rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .product-title { height: 2.5rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
         /* ─── Animación de entrada ─── */
         .placa-entrada { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -680,7 +680,7 @@
                 <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('inputBusqueda').value=this.value;ejecutarFiltros();toggleBtnLimpiar()" placeholder="Buscar producto..." autocomplete="off" readonly
                     style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
-                <button id="btnLimpiarMobile" onclick="limpiarBusqueda()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                <button id="btnLimpiarMobile" onclick="limpiarBusqueda()" class="hidden absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;right:38px;">
                     <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
                 <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
@@ -1517,8 +1517,8 @@
                 const catParam   = new URLSearchParams(window.location.search).get('cat');
                 const marcaParam = new URLSearchParams(window.location.search).get('marca');
 
-                if (catParam)   document.getElementById('selectCat').value = catParam.toLowerCase();
-                if (marcaParam) document.getElementById('selectMarca').value = marcaParam.toLowerCase();
+                if (catParam)   document.getElementById('selectCat').value = catParam;
+                if (marcaParam) document.getElementById('selectMarca').value = marcaParam;
 
                 if (queryParam || catParam || marcaParam) {
                     if (queryParam) document.getElementById('inputBusqueda').value = queryParam.replace(/-/g, ' ');
@@ -1635,19 +1635,7 @@
             }
 
             paginaActual = 1;
-            sincronizarURL(val, c, m);
             render(res);
-        }
-
-        function sincronizarURL(q, cat, marca) {
-            const params = new URLSearchParams();
-            if (marca) params.set('marca', marca);
-            if (cat)   params.set('cat', cat);
-            if (q)     params.set('q', q.replace(/\s+/g, '-'));
-            const qs = params.toString();
-            history.replaceState(null, '', qs ? ('?' + qs) : window.location.pathname);
-            window._tituloBase = window._tituloBase || document.title;
-            document.title = marca ? (marca + ' | Blinky MDQ') : window._tituloBase;
         }
 
         function scrollCarrusel(id, dir) {
@@ -1659,7 +1647,7 @@
             const img    = getImgUrl((p.foto || '').split(',')[0].trim(), '400');
             const logueado = document.body.classList.contains('is-logged-in');
             const esMayorista = logueado && window._userRol === 'mayorista';
-            const ocultarPrecio = p.sinStock && !esMayorista;
+            const ocultarPrecio = p.sinStock;
             const precio = formatPrecio(p.precioP);
             const precioDinamico = getPrecioUsuario(p);
             const idx    = productos.indexOf(p);
@@ -1673,7 +1661,7 @@
                 </div>
                 <div class="p-3 flex flex-col flex-1">
                     <p class="text-[7px] font-black text-violet-400 uppercase truncate mb-0.5">${p.marca}</p>
-                    <p class="text-slate-700 leading-tight mb-2" style="font-family:'Libre Franklin',sans-serif;font-weight:600;font-size:11.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.nombre}</p>
+                    <p class="text-[8.5px] font-bold text-slate-700 uppercase leading-tight mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.nombre}</p>
                     ${ocultarPrecio
                         ? `<p class="text-[10px] font-bold text-slate-400 uppercase mt-auto">Sin stock</p>`
                         : `<p class="text-[17px] font-black text-violet-600 mt-auto">${precio}</p>${esMayorista ? `<p class="text-[9px] font-bold text-slate-500 mt-0.5">Tu Precio: ${formatPrecio(precioDinamico)}</p>` : ''}`}
@@ -1765,8 +1753,6 @@
                 const msgAmigo    = encodeURIComponent(`¡Mirá esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
 
                 const badgeSinStock = p.sinStock ? `<div class="badge-sin-stock">Sin Stock</div>` : '';
-                const esMayoristaCard = logueado && window._userRol === 'mayorista';
-                const ocultarPrecioCard = p.sinStock && !esMayoristaCard;
 
                 return `
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between card-hover-violeta relative" style="padding-bottom:2.75rem;">
@@ -1780,9 +1766,9 @@
                                 </button>
                             </div>
                             <p class="text-[8px] font-black text-violet-400 uppercase mt-1 cursor-pointer hover:text-violet-600 transition-colors" onclick="event.stopPropagation();filtrarPorMarca('${p.marca}')">${p.marca}</p>
-                            <h2 class="text-slate-800 leading-tight product-title" style="font-family:'Libre Franklin',sans-serif;font-weight:600;font-size:12.5px;">${p.nombre}</h2>
+                            <h2 class="text-[9px] font-bold text-slate-800 leading-tight uppercase product-title">${p.nombre}</h2>
                             <div class="mt-2 text-center">
-                                ${ocultarPrecioCard
+                                ${p.sinStock
                                     ? `<div class="text-[10px] font-bold text-slate-400 uppercase">Sin stock</div>`
                                     : `<div class="text-[23px] font-black text-violet-600">${precioPublicoTxt}</div>
                                 ${logueado && window._userRol === 'mayorista' ? `<div class="text-[10px] font-bold text-slate-500">Tu Precio: ${formatPrecio(precioDinamico)}</div>` : ''}`}
@@ -1866,7 +1852,7 @@
 
             const precioPublicoTxt = formatPrecio(p.precioP);
             const precioDinamico = getPrecioUsuario(p);
-            const ocultarPrecio = p.sinStock && !(logueado && window._userRol === 'mayorista');
+            const ocultarPrecio = p.sinStock;
 
             document.getElementById('modalPreciosWrap').classList.toggle('hidden', ocultarPrecio);
             document.getElementById('modalSinStockMsg').classList.toggle('hidden', !ocultarPrecio);
@@ -2717,32 +2703,67 @@
                     var logueado = document.body.classList.contains('is-logged-in');
                     var totalNum = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
 
-                    // Crear pedido + items + descuento de stock en una sola funcion segura (server-side)
-                    var pedidoBody = {
-                        nombre: nombre,
-                        telefono: telefono || null,
-                        email: email || null,
-                        provincia: provincia || null,
-                        localidad: localidad || null,
-                        direccion: direccion || null,
-                        tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
-                        forma_pago: pago,
-                        entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
-                        notas: nota || null,
-                        total: totalNum,
-                        user_id: window._userId || null
-                    };
-                    var itemsBody = carrito.map(function(i) {
-                        return { producto: i.nombre, codigo: i.codigo || null, cantidad: i.cantidad, precio_unitario: i.precio };
-                    });
-                    var pedidoRes = await fetch(SUPA_URL + '/rest/v1/rpc/crear_pedido', {
+                    // Insertar pedido — numero_pedido lo genera Supabase con la secuencia
+                    var pedidoRes = await fetch(SUPA_URL + '/rest/v1/pedidos', {
                         method: 'POST',
                         headers: hdrs,
-                        body: JSON.stringify({ p_pedido: pedidoBody, p_items: itemsBody })
+                        body: JSON.stringify({
+                            nombre: nombre,
+                            telefono: telefono,
+                            email: email || null,
+                            provincia: provincia || null,
+                            localidad: localidad || null,
+                            direccion: direccion || null,
+                            tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
+                            forma_pago: pago,
+                            entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
+                            notas: nota || null,
+                            total: totalNum,
+                            estado: 'pendiente',
+                            user_id: window._userId || null
+                        })
                     });
-                    var creado = await pedidoRes.json();
-                    var numeroPedido = (creado && creado.numero_pedido) ? creado.numero_pedido : '';
-                    console.log('pedido creado:', numeroPedido);
+                    var pedidoData = await pedidoRes.json();
+                    var numeroPedido = pedidoData[0] ? pedidoData[0].numero_pedido : '';
+
+                    // Insertar items
+                    var items = carrito.map(function(i) {
+                        return {
+                            numero_pedido: numeroPedido,
+                            producto: i.nombre,
+                            codigo: i.codigo || null,
+                            cantidad: i.cantidad,
+                            precio_unitario: i.precio
+                        };
+                    });
+                    console.log('numeroPedido:', numeroPedido);
+                    console.log('items a insertar:', JSON.stringify(items));
+                    var itemsRes = await fetch(SUPA_URL + '/rest/v1/pedido_items', {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify(items)
+                    });
+                    console.log('pedido_items status:', itemsRes.status);
+                    var itemsData = await itemsRes.text();
+                    console.log('pedido_items response:', itemsData);
+
+                    // Restar stock por cada ítem con codigo
+                    for (var i = 0; i < carrito.length; i++) {
+                        var item = carrito[i];
+                        if (!item.codigo) continue;
+                        try {
+                            var prodR = await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), { headers: hdrs });
+                            var prods = await prodR.json();
+                            if (!prods.length) continue;
+                            var stockActual = Number(prods[0].stock || 0);
+                            var nuevoStock = Math.max(0, stockActual - item.cantidad);
+                            await fetch(SUPA_URL + '/rest/v1/productos?codigo=eq.' + encodeURIComponent(item.codigo), {
+                                method: 'PATCH',
+                                headers: hdrs,
+                                body: JSON.stringify({ stock: nuevoStock })
+                            });
+                        } catch(se) { console.warn('Stock no actualizado para', item.codigo, se); }
+                    }
 
                     // Actualizar perfil del usuario logueado
                     if (window._userId) {

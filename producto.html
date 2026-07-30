@@ -286,15 +286,17 @@
                 <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:72px;width:auto;object-fit:contain;">
             </a>
             <div class="search-wrapper flex-1">
-                <input type="text" id="inputBusquedaMobile" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
+                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
                     style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
-                <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusquedaMobile').value='';document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;right:44px;">
                     <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
-                <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+                <button onclick="document.getElementById('inputBusqueda').value=document.getElementById('inputBusquedaMobile').value; irABuscarHeader();" aria-label="Buscar" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+                    <svg style="width:15px;height:15px;" fill="none" stroke="white" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
             </div>
         </div>
         <!-- Fila 3: desplegables -->
