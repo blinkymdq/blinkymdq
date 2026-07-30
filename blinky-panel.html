@@ -2442,6 +2442,7 @@ function cerrarModalVendedor(){ document.getElementById('modal-vendedor').style.
 function abrirVendedor(id) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
   vendActualId = id;
+  entregaCarrito = [];
   document.getElementById('modal-vendedor').style.display='flex';
   renderModalVendedor(id);
 }
@@ -2512,9 +2513,10 @@ function renderModalVendedor(id) {
       <input id="vend-ent-prod" type="text" list="vend-prod-list" placeholder="Producto...">
       <input id="vend-ent-cant" type="number" min="1" value="1" placeholder="Cant.">
       <div></div>
-      <button class="fc-btn" onclick="entregarMercaderia('${id}')">+ Entregar</button>
+      <button class="fc-btn" onclick="agregarAEntrega('${id}')">+ Agregar</button>
     </div>
-    <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">No descuenta stock. Marcá las cantidades a vender y tocá "Registrar venta": se genera UN pedido (a deber) y se descuenta el stock.</div>
+    <div id="entrega-carrito"></div>
+    <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Agregá uno o varios productos y tocá "Entregar": se registra todo junto y se le manda el detalle por mail al vendedor. No descuenta stock, pero valida disponibilidad.</div>
 
     <div class="fc-section-title">Historial de movimientos</div>
     <div class="pagos-list">${movsHtml}</div>`;
@@ -2545,6 +2547,77 @@ async function entregarMercaderia(uid) {
     : fetch(`${SUPA_URL}/rest/v1/entregas_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:uid,codigo:prod.codigo,producto:prod.nombre,entregado:cant})});
   req.then(async()=>{ await logMov([{usuario_id:uid,codigo:prod.codigo,producto:prod.nombre,tipo:'entrega',cantidad:cant}]); toast('Mercadería entregada ✓','ok'); await cargarVendedores(); })
      .catch(()=>toast('Error al entregar','err'));
+}
+
+let entregaCarrito = [];
+
+function agregarAEntrega(uid){
+  const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
+  const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
+  if(cant<=0){ toast('Cantidad inválida','err'); return; }
+  const prod = (vendProductos||[]).find(p=>p.nombre===nombre);
+  if(!prod){ toast('Elegí un producto del catálogo','err'); return; }
+  const afuera = (vendEntregas||[]).filter(e=>e.codigo===prod.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
+  const enCarrito = entregaCarrito.filter(c=>c.codigo===prod.codigo).reduce((s,c)=>s+c.cant,0);
+  const disponible = Number(prod.stock||0) - afuera - enCarrito;
+  if(cant > disponible){ toast(`Sin stock disponible. Disponible: ${Math.max(0,disponible)} (stock ${prod.stock||0}, afuera ${afuera}${enCarrito?`, en lista ${enCarrito}`:''})`,'err'); return; }
+  const ex = entregaCarrito.find(c=>c.codigo===prod.codigo);
+  if(ex) ex.cant += cant; else entregaCarrito.push({codigo:prod.codigo, nombre:prod.nombre, cant});
+  document.getElementById('vend-ent-prod').value='';
+  document.getElementById('vend-ent-cant').value='1';
+  document.getElementById('vend-ent-prod').focus();
+  renderEntregaCarrito(uid);
+}
+
+function quitarDeEntrega(codigo, uid){
+  entregaCarrito = entregaCarrito.filter(c=>c.codigo!==codigo);
+  renderEntregaCarrito(uid);
+}
+
+function renderEntregaCarrito(uid){
+  const box = document.getElementById('entrega-carrito'); if(!box) return;
+  if(!entregaCarrito.length){ box.innerHTML=''; return; }
+  const filas = entregaCarrito.map(c=>`<div class="pago-item"><span style="min-width:0;">${c.nombre}${c.codigo?` <span style="color:var(--text3);font-size:0.7rem;">(${c.codigo})</span>`:''}</span><span class="pago-monto">${c.cant} u.</span><span><button class="fc-btn" style="background:var(--red);color:#fff;padding:1px 8px;" onclick="quitarDeEntrega('${c.codigo}','${uid}')">✕</button></span></div>`).join('');
+  const totalU = entregaCarrito.reduce((s,c)=>s+c.cant,0);
+  box.innerHTML = `<div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin:0.5rem 0 0.2rem;">A entregar (${totalU} u.)</div>
+    <div class="pagos-list">${filas}</div>
+    <div class="post-pago-btns" style="margin-top:0.5rem;">
+      <button class="btn-finalizar" onclick="confirmarEntrega('${uid}')">✓ Entregar ${totalU} u. y avisar al vendedor</button>
+    </div>`;
+}
+
+async function confirmarEntrega(uid){
+  const v = vendUsuarios.find(u=>u.id===uid); if(!v) return;
+  if(!entregaCarrito.length){ toast('Agregá al menos un producto','err'); return; }
+  try {
+    // Re-chequeo de disponibilidad con stock fresco
+    for(const c of entregaCarrito){
+      let stockActual = 0;
+      try { const sr=await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(c.codigo)}&select=stock`,{headers:hdrs}); const sj=await sr.json(); if(sj&&sj[0]) stockActual=Number(sj[0].stock||0); } catch(_){}
+      const afuera=(vendEntregas||[]).filter(e=>e.codigo===c.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
+      if(c.cant > (stockActual-afuera)){ toast(`"${c.nombre}": sin stock (disp ${Math.max(0,stockActual-afuera)})`,'err'); return; }
+    }
+    for(const c of entregaCarrito){
+      const existente = vendEntregas.find(e=>e.usuario_id===uid && e.codigo===c.codigo);
+      if(existente) await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${existente.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({entregado:Number(existente.entregado||0)+c.cant})});
+      else await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:uid,codigo:c.codigo,producto:c.nombre,entregado:c.cant})});
+    }
+    await logMov(entregaCarrito.map(c=>({usuario_id:uid, codigo:c.codigo, producto:c.nombre, tipo:'entrega', cantidad:c.cant})));
+    let avisoMail='';
+    if(v.email){
+      try {
+        const r = await fetch(`${SUPA_URL}/functions/v1/notificar-entrega`,{
+          method:'POST', headers:hdrs,
+          body:JSON.stringify({ vendedor:{nombre:v.nombre,email:v.email,numero_usuario:v.numero_usuario}, items: entregaCarrito.map(c=>({producto:c.nombre,codigo:c.codigo,cantidad:c.cant})) })
+        });
+        const jr = await r.json().catch(()=>({}));
+        avisoMail = (jr && jr.ok) ? ' — mail enviado al vendedor' : ' — (no se pudo enviar el mail)';
+      } catch(_) { avisoMail = ' — (no se pudo enviar el mail)'; }
+    } else { avisoMail = ' — sin email cargado, no se envió aviso'; }
+    entregaCarrito = [];
+    toast('Mercadería entregada ✓'+avisoMail,'ok');
+    await cargarVendedores();
+  } catch(err){ console.error(err); toast('Error al entregar','err'); }
 }
 
 async function registrarVentaVendedor(id) {
