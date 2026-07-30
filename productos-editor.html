@@ -215,6 +215,15 @@
             <datalist id="np-cat-list"></datalist>
           </div>
           <div class="form-field">
+            <label>Género</label>
+            <select id="np-genero">
+              <option value="">—</option>
+              <option value="unisex">Unisex</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+            </select>
+          </div>
+          <div class="form-field">
             <label>Stock</label>
             <input type="number" id="np-stock" min="0" placeholder="0">
           </div>
@@ -740,6 +749,7 @@ async function crearProducto() {
       nombre,
       marca: document.getElementById('np-marca').value.trim() || null,
       categoria: document.getElementById('np-categoria').value.trim() || null,
+      genero: document.getElementById('np-genero').value || null,
       stock: parseInt(document.getElementById('np-stock').value) || 0,
       estado: document.getElementById('np-estado').value,
       moneda,
@@ -873,7 +883,7 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`];
+  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `genero-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -904,6 +914,7 @@ async function guardarProducto(codigo) {
   const nombre   = document.getElementById(`nombre-${codigo}`)?.value.trim();
   const marca    = document.getElementById(`marca-${codigo}`)?.value.trim() || null;
   const categoria = document.getElementById(`categoria-${codigo}`)?.value.trim() || null;
+  const genero   = document.getElementById(`genero-${codigo}`)?.value || null;
   if (!nombre) { toast('El nombre no puede quedar vacío', 'err'); return; }
 
   const costoTotal    = calcCostoPesos(costoUsd, impE, dolar) || null;
@@ -914,6 +925,7 @@ async function guardarProducto(codigo) {
     nombre: nombre,
     marca: marca,
     categoria: categoria,
+    genero: genero,
     moneda,
     costo_usd: costoUsd,
     imp_e: impE,
@@ -931,11 +943,11 @@ async function guardarProducto(codigo) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`].forEach(id => {
+    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`genero-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     const _lnk = document.getElementById(`nombre-link-${codigo}`);
@@ -1043,6 +1055,7 @@ function renderTabla(prods) {
         <th style="cursor:pointer;user-select:none;" onclick="sortBy('nombre')">Nombre <span style="color:var(--violet-light);font-size:0.65rem;">${arrowNom}</span></th>
         <th>Marca</th>
         <th>Categoría</th>
+        <th style="text-align:center;">Género</th>
         <th style="text-align:right;cursor:pointer;user-select:none;" onclick="sortBy('stock')">Stock <span style="color:var(--violet-light);font-size:0.65rem;">${arrowStock}</span></th>
         <th style="text-align:center;">Moneda</th>
         <th style="text-align:right;color:var(--yellow);">Costo</th>
@@ -1080,6 +1093,7 @@ function renderTabla(prods) {
             </td>
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:center;"><select class="td-input" id="genero-${p.codigo}" style="width:96px;" oninput="marcarSinGuardar('${p.codigo}')" disabled><option value="" ${!p.genero?'selected':''}>—</option><option value="unisex" ${p.genero==='unisex'?'selected':''}>Unisex</option><option value="masculino" ${p.genero==='masculino'?'selected':''}>Masculino</option><option value="femenino" ${p.genero==='femenino'?'selected':''}>Femenino</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:45px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;"><select class="td-input" id="moneda-${p.codigo}" style="width:74px;" onchange="actualizarCalc('${p.codigo}')" disabled><option value="USD" ${(p.moneda||'USD')==='USD'?'selected':''}>USD</option><option value="ARS" ${p.moneda==='ARS'?'selected':''}>Pesos</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);" disabled></td>
@@ -1089,8 +1103,7 @@ function renderTabla(prods) {
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
-            <td style="min-width:160px;max-width:240px;">
-              <div id="desc-prev-${p.codigo}" class="desc-preview">${p.descripcion||''}</div>
+            <td style="text-align:center;white-space:nowrap;">
               <button type="button" class="btn-desc-edit" onclick="abrirEditorDesc('${p.codigo}')">✏️ Editar descripción</button>
             </td>
             <td>
