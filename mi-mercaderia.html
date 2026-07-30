@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi mercadería — Blinky MDQ</title>
+<link rel="icon" href="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png">
+<style>
+  :root{
+    --bg:#0f0f17; --surface:#1a1a26; --surface2:#22222f; --border:#2e2e3e;
+    --text:#f1f1f6; --text2:#c7c7d1; --text3:#8a8a99;
+    --violet:#7c3aed; --violet-light:#a78bfa; --green:#22c55e; --yellow:#f59e0b; --red:#ef4444; --cyan:#38bdf8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  a{color:inherit;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+  .topbar img{height:34px;}
+  .topbar .user{display:flex;align-items:center;gap:0.7rem;font-size:0.85rem;}
+  .btn{background:var(--violet);color:#fff;border:none;border-radius:10px;padding:0.55rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+  .wrap{max-width:1100px;margin:0 auto;padding:1.1rem;}
+
+  /* Login */
+  .login{max-width:420px;margin:12vh auto;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:2rem 1.8rem;text-align:center;}
+  .login img{height:52px;margin-bottom:1rem;}
+  .login h1{font-size:1.2rem;margin-bottom:0.4rem;}
+  .login p{color:var(--text3);font-size:0.9rem;margin-bottom:1.4rem;line-height:1.5;}
+  .btn-google{display:inline-flex;align-items:center;gap:0.6rem;background:#fff;color:#1e293b;border:none;border-radius:12px;padding:0.7rem 1.3rem;font-size:0.92rem;font-weight:700;cursor:pointer;}
+  .btn-google svg{width:18px;height:18px;}
+
+  /* Resumen */
+  .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:0.7rem;margin-bottom:1.2rem;}
+  .res-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0.9rem 1rem;}
+  .res-card .lbl{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;}
+  .res-card .val{font-size:1.4rem;font-weight:900;margin-top:2px;}
+
+  .section-title{font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:var(--violet-light);margin:1.3rem 0 0.7rem;}
+
+  /* Cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.9rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+  .card .img{height:150px;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .card .img img{width:100%;height:100%;object-fit:contain;}
+  .card .body{padding:0.7rem 0.8rem;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .card .nombre{font-size:0.85rem;font-weight:700;line-height:1.3;}
+  .card .cod{font-size:0.68rem;color:var(--text3);font-family:monospace;}
+  .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;font-size:0.72rem;color:var(--text2);margin-top:2px;}
+  .card .stats b{color:var(--text);}
+  .card .tiene{font-size:0.8rem;font-weight:900;color:var(--violet-light);}
+  .card .precio{font-size:0.82rem;font-weight:800;}
+  .card .rep{margin-top:auto;background:transparent;border:1px solid var(--border);color:var(--yellow);border-radius:8px;padding:0.35rem;font-size:0.72rem;font-weight:700;cursor:pointer;}
+  .card .rep:hover{background:rgba(245,158,11,0.1);}
+
+  .empty{text-align:center;color:var(--text3);padding:3rem 1rem;}
+  .empty .ic{font-size:2.2rem;}
+  .hint{color:var(--text3);font-size:0.8rem;line-height:1.5;margin-top:0.4rem;}
+
+  /* Historial */
+  .mov{display:flex;justify-content:space-between;gap:0.6rem;padding:0.5rem 0.2rem;border-bottom:1px solid var(--border);font-size:0.8rem;}
+  .mov:last-child{border-bottom:none;}
+  .mov .f{color:var(--text3);font-size:0.72rem;}
+
+  #toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.7rem 1.1rem;border-radius:10px;font-size:0.85rem;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:50;}
+  #toast.show{opacity:1;}
+  #toast.err{border-color:var(--red);color:#fecaca;}
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="vista-login" class="login hidden">
+  <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ">
+  <h1>Mi mercadería</h1>
+  <p>Ingresá con tu cuenta para ver la mercadería que tenés en tu poder.</p>
+  <button class="btn-google" onclick="login()">
+    <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Ingresar con Google
+  </button>
+</div>
+
+<!-- APP -->
+<div id="vista-app" class="hidden">
+  <div class="topbar">
+    <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ">
+    <div class="user">
+      <span id="user-nombre"></span>
+      <button class="btn btn-ghost" onclick="logout()">Salir</button>
+    </div>
+  </div>
+  <div class="wrap" id="contenido">
+    <div class="empty"><div class="ic">⏳</div><p>Cargando…</p></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let usuario = null, entregas = [], productos = {}, movimientos = [];
+
+function toast(msg, tipo){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + (tipo || '');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.className='', 3200);
+}
+function getImgUrl(foto){
+  if(!foto || !foto.trim()) return '';
+  if(foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`;
+  return `https://blinkymdq.com/Productos/${foto}.jpg`;
+}
+function fmt(n){ return '$' + Number(n||0).toLocaleString('es-AR'); }
+function pend(e){ return Number(e.entregado||0) - Number(e.vendido||0) - Number(e.devuelto||0); }
+function precioDe(cod){
+  const p = productos[cod]; if(!p) return 0;
+  return Number((usuario && usuario.rol === 'mayorista' ? p.precio_mayorista : p.precio_publico) || 0);
+}
+
+async function login(){
+  await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
+}
+async function logout(){
+  await supa.auth.signOut();
+  location.reload();
+}
+
+async function init(){
+  const { data:{ session } } = await supa.auth.getSession();
+  if(!session){
+    document.getElementById('vista-login').classList.remove('hidden');
+    document.getElementById('vista-app').classList.add('hidden');
+    return;
+  }
+  document.getElementById('vista-login').classList.add('hidden');
+  document.getElementById('vista-app').classList.remove('hidden');
+  await cargar(session.user.id);
+}
+
+async function cargar(uid){
+  try {
+    const { data: u } = await supa.from('usuarios').select('nombre,numero_usuario,rol,es_vendedor').eq('id', uid).single();
+    usuario = u || {};
+    document.getElementById('user-nombre').textContent = (usuario.nombre ? usuario.nombre.split(' ')[0] : '') + (usuario.numero_usuario ? ` · #${usuario.numero_usuario}` : '');
+
+    const { data: ent } = await supa.from('entregas_vendedor').select('*').eq('usuario_id', uid);
+    entregas = (ent || []).filter(e => pend(e) > 0 || e.entregado > 0);
+
+    const codigos = [...new Set(entregas.map(e => e.codigo).filter(Boolean))];
+    productos = {};
+    if(codigos.length){
+      const { data: prods } = await supa.from('productos').select('codigo,nombre,foto,precio_publico,precio_mayorista').in('codigo', codigos);
+      (prods || []).forEach(p => productos[p.codigo] = p);
+    }
+    const { data: movs } = await supa.from('movimientos_vendedor').select('*').eq('usuario_id', uid).order('created_at', { ascending:false }).limit(60);
+    movimientos = movs || [];
+
+    render();
+  } catch(err){
+    console.error(err);
+    document.getElementById('contenido').innerHTML = '<div class="empty"><div class="ic">⚠️</div><p>No pudimos cargar tus datos. Probá recargar.</p></div>';
+  }
+}
+
+function render(){
+  const cont = document.getElementById('contenido');
+  const conStock = entregas.filter(e => pend(e) > 0);
+
+  if(!entregas.length){
+    cont.innerHTML = `<div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p><p class="hint">Si creés que esto es un error, escribinos.</p></div>`;
+    return;
+  }
+
+  const unidades = conStock.reduce((s,e)=>s+pend(e),0);
+  const valor = conStock.reduce((s,e)=>s+pend(e)*precioDe(e.codigo),0);
+  const vendidas = entregas.reduce((s,e)=>s+Number(e.vendido||0),0);
+
+  const cards = conStock.map(e=>{
+    const img = getImgUrl(((productos[e.codigo]||{}).foto||'').split(',')[0].trim());
+    const precio = precioDe(e.codigo);
+    return `<div class="card">
+      <div class="img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>
+      <div class="body">
+        <div class="nombre">${e.producto||''}</div>
+        ${e.codigo?`<div class="cod">Cód. ${e.codigo}</div>`:''}
+        <div class="tiene">Tenés ${pend(e)} u.</div>
+        <div class="stats">
+          <span>Recibido: <b>${e.entregado}</b></span>
+          <span>Vendido: <b>${e.vendido}</b></span>
+          <span>Devuelto: <b>${e.devuelto}</b></span>
+          <span>P.Unit: <b>${fmt(precio)}</b></span>
+        </div>
+        <button class="rep" onclick="reportar('${(e.producto||'').replace(/'/g,"\\'")}','${e.codigo||''}')">⚠️ Reportar diferencia</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tipoLbl = { entrega:'Recibido', venta:'Vendido', devolucion:'Devuelto' };
+  const tipoCol = { entrega:'var(--cyan)', venta:'var(--green)', devolucion:'var(--yellow)' };
+  const movsHtml = movimientos.length ? movimientos.map(m=>`<div class="mov">
+      <span><span style="font-weight:700;color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</span> · ${m.producto||''} <b>(${m.cantidad} u.)</b></span>
+      <span class="f">${new Date(m.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+    </div>`).join('') : '<div class="hint">Sin movimientos.</div>';
+
+  cont.innerHTML = `
+    <div class="resumen">
+      <div class="res-card"><div class="lbl">Unidades en tu poder</div><div class="val">${unidades}</div></div>
+      <div class="res-card"><div class="lbl">Valor de tu mercadería</div><div class="val">${fmt(valor)}</div></div>
+      <div class="res-card"><div class="lbl">Vendidas (histórico)</div><div class="val" style="color:var(--green);">${vendidas}</div></div>
+    </div>
+
+    <div class="section-title">Productos que tenés (${conStock.length})</div>
+    ${conStock.length ? `<div class="grid">${cards}</div>` : '<div class="hint">Ya no tenés unidades pendientes. ¡Todo vendido o devuelto!</div>'}
+
+    <div class="section-title">Historial de movimientos</div>
+    <div>${movsHtml}</div>
+
+    <p class="hint" style="margin-top:1.2rem;">¿Algún número no coincide con lo que tenés? Tocá <b>Reportar diferencia</b> en el producto y lo revisamos.</p>
+  `;
+}
+
+async function reportar(producto, codigo){
+  const mensaje = prompt(`Contanos qué diferencia notás con "${producto}"\n(ej: me figura 5 pero tengo 3, o ya lo devolví):`, '');
+  if(mensaje === null) return;
+  if(!mensaje.trim()){ toast('Escribí un mensaje para reportar', 'err'); return; }
+  try {
+    const { data:{ session } } = await supa.auth.getSession();
+    const r = await fetch(`${SUPA_URL}/functions/v1/reportar-diferencia`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:'Bearer '+session.access_token },
+      body: JSON.stringify({ producto, codigo, mensaje: mensaje.trim() })
+    });
+    const jr = await r.json().catch(()=>({}));
+    if(jr && jr.ok) toast('Reporte enviado ✓ Lo vamos a revisar');
+    else toast('No se pudo enviar el reporte', 'err');
+  } catch(_){ toast('No se pudo enviar el reporte', 'err'); }
+}
+
+supa.auth.onAuthStateChange(()=>init());
+init();
+</script>
+</body>
+</html>
