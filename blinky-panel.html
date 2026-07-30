@@ -2455,7 +2455,7 @@ function renderModalVendedor(id) {
   const filasHtml = filas.map(e=>{
     const pend = pendItem(e);
     const precio = precioVend(e.codigo, v.rol);
-    return `<tr>
+    return `<tr data-buscar="${((e.producto||'')+' '+(e.codigo||'')).toLowerCase().replace(/"/g,'')}">
       <td>${e.producto}${e.codigo?` <span style="color:var(--text3);font-size:0.7rem;">(${e.codigo})</span>`:''}</td>
       <td style="text-align:center;">${e.entregado}</td>
       <td style="text-align:center;color:var(--green);">${e.vendido}</td>
@@ -2463,7 +2463,7 @@ function renderModalVendedor(id) {
       <td style="text-align:center;font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">${pend}</td>
       <td style="text-align:right;color:var(--text2);">$${precio.toLocaleString('es-AR')}</td>
       <td style="text-align:center;">${pend>0?`<input type="number" id="vc-${e.id}" min="0" max="${pend}" value="0" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center;padding:3px;">`:'—'}</td>
-      <td style="text-align:center;">${pend>0?`<button class="fc-btn" style="background:var(--yellow);color:#1a1a26;" onclick="devolverMercaderia(${e.id})">Devolver</button>`:''}</td>
+      <td style="text-align:center;">${pend>0?`<input type="number" id="dc-${e.id}" min="0" max="${pend}" value="0" style="width:56px;background:var(--surface2);border:1px solid var(--yellow);border-radius:6px;color:var(--text);text-align:center;padding:3px;">`:'—'}</td>
     </tr>`;
   }).join('');
   const movs = vendMovs.filter(m=>m.usuario_id===id).slice(0,40);
@@ -2499,9 +2499,12 @@ function renderModalVendedor(id) {
     </div>
 
     <div class="fc-section-title">Mercadería en su poder</div>
-    ${filas.length?`<table class="items-table"><thead><tr><th>Producto</th><th style="text-align:center;">Entreg.</th><th style="text-align:center;">Vend.</th><th style="text-align:center;">Dev.</th><th style="text-align:center;">Tiene</th><th style="text-align:right;">P.Unit</th><th style="text-align:center;">Vender</th><th></th></tr></thead><tbody>${filasHtml}</tbody></table>
-    <div class="post-pago-btns" style="margin-top:0.75rem;">
+    ${filas.length?`<input id="mv-buscar-prod" type="text" oninput="filtrarMercaderiaModal()" placeholder="🔎 Filtrar producto de esta lista..." style="width:100%;margin-bottom:0.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.5rem 0.7rem;font-size:0.82rem;">
+    <table class="items-table" id="mv-merc-tabla"><thead><tr><th>Producto</th><th style="text-align:center;">Entreg.</th><th style="text-align:center;">Vend.</th><th style="text-align:center;">Dev.</th><th style="text-align:center;">Tiene</th><th style="text-align:right;">P.Unit</th><th style="text-align:center;">Vender</th><th style="text-align:center;">Devolver</th></tr></thead><tbody>${filasHtml}</tbody></table>
+    <div id="mv-sin-resultados" style="display:none;color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin coincidencias.</div>
+    <div class="post-pago-btns" style="margin-top:0.75rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
       <button class="btn-finalizar" onclick="registrarVentaVendedor('${id}')">✓ Registrar venta de lo marcado</button>
+      <button class="fc-btn" style="background:var(--yellow);color:#1a1a26;font-weight:800;" onclick="registrarDevolucionVendedor('${id}')">↩ Registrar devolución de lo marcado</button>
     </div>`:'<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Todavía no tiene mercadería.</div>'}
 
     <div class="fc-section-title">Entregar mercadería</div>
@@ -2587,6 +2590,66 @@ async function devolverMercaderia(entregaId) {
   await logMov([{usuario_id:e.usuario_id, codigo:e.codigo, producto:e.producto, tipo:'devolucion', cantidad:n}]);
   toast('Devolución registrada ✓','ok');
   await cargarVendedores();
+}
+
+// Filtro interno del modal: muestra/oculta filas de "Mercadería en su poder"
+function filtrarMercaderiaModal(){
+  const q = (document.getElementById('mv-buscar-prod')?.value||'').toLowerCase().trim();
+  const tabla = document.getElementById('mv-merc-tabla');
+  if(!tabla) return;
+  let visibles = 0;
+  tabla.querySelectorAll('tbody tr').forEach(tr=>{
+    const t = tr.getAttribute('data-buscar')||'';
+    const ok = !q || t.includes(q);
+    tr.style.display = ok ? '' : 'none';
+    if(ok) visibles++;
+  });
+  const vacio = document.getElementById('mv-sin-resultados');
+  if(vacio) vacio.style.display = (q && visibles===0) ? '' : 'none';
+}
+
+// Devoluciones en tanda (multi-selección, igual que las ventas) + mail al vendedor
+async function registrarDevolucionVendedor(id){
+  const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
+  const filas = entregasDe(id);
+  const items = [];
+  for(const e of filas){
+    const pend = pendItem(e);
+    const inp = document.getElementById(`dc-${e.id}`);
+    const n = inp ? (parseInt(inp.value)||0) : 0;
+    if(n>0){
+      if(n>pend){ toast(`"${e.producto}": máximo ${pend}`,'err'); return; }
+      items.push({ e, n });
+    }
+  }
+  if(!items.length){ toast('Marcá al menos una cantidad para devolver','err'); return; }
+  try {
+    for(const it of items){
+      await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${it.e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({devuelto:Number(it.e.devuelto||0)+it.n})});
+    }
+    await logMov(items.map(it=>({usuario_id:id, codigo:it.e.codigo, producto:it.e.producto, tipo:'devolucion', cantidad:it.n})));
+
+    // Mail al vendedor con el listado devuelto (no bloquea si falla)
+    let avisoMail = '';
+    if(v.email){
+      try {
+        const r = await fetch(`${SUPA_URL}/functions/v1/notificar-devolucion`,{
+          method:'POST', headers:hdrs,
+          body:JSON.stringify({
+            vendedor:{ nombre:v.nombre, email:v.email, numero_usuario:v.numero_usuario },
+            items: items.map(it=>({ producto:it.e.producto, codigo:it.e.codigo, cantidad:it.n }))
+          })
+        });
+        const jr = await r.json().catch(()=>({}));
+        avisoMail = (jr && jr.ok) ? ' — mail enviado al vendedor' : ' — (no se pudo enviar el mail)';
+      } catch(_) { avisoMail = ' — (no se pudo enviar el mail)'; }
+    } else {
+      avisoMail = ' — sin email cargado, no se envió aviso';
+    }
+
+    toast('Devolución registrada ✓'+avisoMail,'ok');
+    await cargarVendedores();
+  } catch(err){ console.error(err); toast('Error al registrar la devolución','err'); }
 }
 
 function buscarProductoVendedores(){
