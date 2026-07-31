@@ -1002,7 +1002,7 @@
       <div style="background:white;border-radius:20px;padding:2rem 1.5rem;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
         <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
         <h2 style="font-size:1.3rem;font-weight:800;color:#1a1a2e;margin-bottom:0.75rem;">¡Pedido enviado con éxito!</h2>
-        <p style="color:#555;font-size:0.95rem;line-height:1.5;margin-bottom:1.5rem;">En breve nos pondremos en contacto para coordinar la entrega.<br><br>¡Gracias por tu compra! 🛍️</p>
+        <p id="exito-msg" style="color:#555;font-size:0.95rem;line-height:1.5;margin-bottom:1.5rem;">En breve nos pondremos en contacto para coordinar la entrega.<br><br>¡Gracias por tu compra! 🛍️</p>
         <button onclick="cerrarModalExito()" style="background:#7c3aed;color:white;border:none;border-radius:12px;padding:0.85rem 2rem;font-size:1rem;font-weight:700;cursor:pointer;width:100%;">Volver a la tienda</button>
       </div>
     </div>
@@ -1010,149 +1010,128 @@
     <div id="modalCheckout">
         <div id="modalCheckoutInner" onclick="event.stopPropagation()">
 
-            <!-- Handle drag -->
-            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"></div>
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
 
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 class="text-base font-black uppercase tracking-widest text-slate-800">Datos del pedido</h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">Completá tus datos para enviar el pedido</p>
+                    <h3 id="checkout-titulo" class="text-base font-black uppercase tracking-widest text-slate-800">Datos del pedido</h3>
+                    <p id="checkout-subtitulo" class="text-[10px] text-slate-400 font-medium mt-0.5">Revisá los productos de tu pedido</p>
                 </div>
                 <button onclick="cerrarCheckout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold hover:bg-slate-200 transition-colors">✕</button>
             </div>
 
-            <!-- Resumen del pedido -->
-            <div class="bg-slate-50 rounded-xl p-3.5 mb-5">
-                <div class="flex justify-between items-center">
-                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Total del pedido</span>
-                    <span id="checkoutTotal" class="text-xl font-black text-violet-600"></span>
-                </div>
-                <div id="checkoutResumen" class="mt-2 space-y-1"></div>
+            <div class="flex items-center gap-1.5 mb-5">
+                <div id="stepdot-1" class="h-1 flex-1 rounded-full bg-violet-600 transition-colors"></div>
+                <div id="stepdot-2" class="h-1 flex-1 rounded-full bg-slate-200 transition-colors"></div>
+                <div id="stepdot-3" class="h-1 flex-1 rounded-full bg-slate-200 transition-colors"></div>
             </div>
 
-            <!-- Cupón de descuento -->
-            <div class="mb-4">
-                <div class="flex gap-2">
-                    <input id="checkout-cupon" type="text" placeholder="¿Tenés un cupón?" autocomplete="off" class="checkout-input flex-1" style="text-transform:uppercase;">
-                    <button type="button" onclick="aplicarCupon()" class="px-4 rounded-xl bg-violet-600 text-white text-xs font-black hover:bg-violet-700 transition-colors whitespace-nowrap">Aplicar</button>
+            <!-- PASO 1: Datos del pedido -->
+            <div id="checkout-step1">
+                <div id="checkout-items-lista" class="space-y-2 mb-4"></div>
+                <div class="bg-slate-50 rounded-xl p-3.5 mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Total del pedido</span>
+                        <span id="checkoutTotal" class="text-xl font-black text-violet-600"></span>
+                    </div>
                 </div>
-                <div id="checkout-cupon-msg" class="text-[11px] font-bold mt-1.5 hidden"></div>
+                <div class="mb-4">
+                    <div class="flex gap-2">
+                        <input id="checkout-cupon" type="text" placeholder="¿Tenés un cupón?" autocomplete="off" class="checkout-input flex-1" style="text-transform:uppercase;">
+                        <button type="button" onclick="aplicarCupon()" class="px-4 rounded-xl bg-violet-600 text-white text-xs font-black hover:bg-violet-700 transition-colors whitespace-nowrap">Aplicar</button>
+                    </div>
+                    <div id="checkout-cupon-msg" class="text-[11px] font-bold mt-1.5 hidden"></div>
+                </div>
+                <button onclick="checkoutIrPaso2()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.98]" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 15px rgba(124,58,237,0.35);font-size:13px;">
+                    Confirmar pedido →
+                </button>
             </div>
 
-            <!-- Formulario -->
-            <div class="space-y-4">
-
-                <!-- Nombre completo -->
-                <div>
-                    <label class="checkout-label" for="checkout-nombre">Nombre Completo *</label>
-                    <input id="checkout-nombre" type="text" class="checkout-input" placeholder="Tu nombre y apellido" autocomplete="name">
-                </div>
-
-                <!-- Teléfono -->
-                <div>
-                    <label class="checkout-label" for="checkout-telefono">Teléfono / WhatsApp</label>
-                    <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label class="checkout-label" for="checkout-email">Email</label>
-                    <input id="checkout-email" type="email" class="checkout-input" placeholder="tu@email.com" autocomplete="email">
-                </div>
-
-                <!-- Provincia y Localidad -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <!-- PASO 2: Verificar datos -->
+            <div id="checkout-step2" style="display:none;">
+                <div class="space-y-4">
                     <div>
-                        <label class="checkout-label" for="checkout-provincia">Provincia</label>
-                        <input id="checkout-provincia" type="text" class="checkout-input" placeholder="Ej: Buenos Aires" autocomplete="address-level1">
+                        <label class="checkout-label" for="checkout-nombre">Nombre Completo</label>
+                        <input id="checkout-nombre" type="text" class="checkout-input" autocomplete="name">
                     </div>
                     <div>
-                        <label class="checkout-label" for="checkout-localidad">Localidad</label>
-                        <input id="checkout-localidad" type="text" class="checkout-input" placeholder="Ej: Mar del Plata" autocomplete="address-level2">
+                        <label class="checkout-label" for="checkout-email">Email</label>
+                        <input id="checkout-email" type="email" class="checkout-input" autocomplete="email">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                        <div>
+                            <label class="checkout-label" for="checkout-provincia">Provincia</label>
+                            <input id="checkout-provincia" type="text" class="checkout-input" autocomplete="address-level1">
+                        </div>
+                        <div>
+                            <label class="checkout-label" for="checkout-localidad">Localidad</label>
+                            <input id="checkout-localidad" type="text" class="checkout-input" autocomplete="address-level2">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="checkout-label" for="checkout-telefono">Teléfono / WhatsApp *</label>
+                        <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
+                    </div>
+                    <div>
+                        <label class="checkout-label">Método de Entrega *</label>
+                        <div class="checkout-opciones">
+                            <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Envío a domicilio', this); mostrarDireccion(true)">🚚 Envío a<br>domicilio</div>
+                            <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Coordinar por WhatsApp', this); mostrarDireccion(false)">💬 Coordinar<br>por WP</div>
+                        </div>
+                        <input type="hidden" id="checkout-entrega" value="">
+                    </div>
+                    <div id="checkout-direccion-wrap">
+                        <label class="checkout-label" for="checkout-direccion">Dirección de Envío *</label>
+                        <input id="checkout-direccion" type="text" class="checkout-input" placeholder="Calle, número, piso/depto, barrio" autocomplete="street-address">
+                    </div>
+                    <div>
+                        <label onclick="toggleRegalo(this)" class="flex items-center gap-3 cursor-pointer select-none p-3 rounded-2xl border-2 border-slate-200 hover:border-violet-300 transition-all" id="labelRegalo">
+                            <div id="checkboxRegalo" class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center transition-all flex-shrink-0" style="background:white;">
+                                <svg id="checkRegaloIcon" class="w-3.5 h-3.5 hidden" fill="none" stroke="white" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 12 4 10"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-black uppercase text-slate-700 tracking-wide">🎁 Preparar para regalo</p>
+                                <p class="text-[9px] text-slate-400 font-medium mt-0.5">Empaquetamos el pedido para regalo</p>
+                            </div>
+                        </label>
+                        <input type="hidden" id="checkout-regalo" value="">
+                    </div>
+                    <div>
+                        <label class="checkout-label" for="checkout-nota">Aclaración Extra</label>
+                        <textarea id="checkout-nota" class="checkout-input" rows="2" placeholder="Horario de entrega, instrucciones, etc." style="resize:none;"></textarea>
                     </div>
                 </div>
+                <div id="checkoutError2" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
+                <div class="flex gap-2 mt-5">
+                    <button onclick="checkoutIrPaso(1)" class="h-12 px-5 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all" style="font-size:12px;">← Volver</button>
+                    <button onclick="checkoutIrPaso3()" class="flex-1 h-12 rounded-2xl text-white font-black uppercase tracking-wider transition-all hover:opacity-90 active:scale-[0.98]" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 15px rgba(124,58,237,0.35);font-size:13px;">Continuar →</button>
+                </div>
+            </div>
 
-                <!-- Forma de pago -->
+            <!-- PASO 3: Pago -->
+            <div id="checkout-step3" style="display:none;">
                 <div>
                     <label class="checkout-label">Forma de Pago *</label>
                     <div class="checkout-opciones">
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">
-                            💳 Transferencia
-                        </div>
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">
-                            💳 Tarjeta crédito/débito
-                        </div>
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Coordinar por WhatsApp', this); actualizarBotonesPago()">
-                            💬 Coordinar<br>por WP
-                        </div>
+                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
+                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
+                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
                 </div>
-
-                <!-- Método de entrega -->
-                <div>
-                    <label class="checkout-label">Método de Entrega *</label>
-                    <div class="checkout-opciones">
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Envío a domicilio', this); mostrarDireccion(true)">
-                            🚚 Envío a<br>domicilio
-                        </div>
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('entrega', 'Coordinar por WhatsApp', this); mostrarDireccion(false)">
-                            💬 Coordinar<br>por WP
-                        </div>
-                    </div>
-                    <input type="hidden" id="checkout-entrega" value="">
+                <div id="checkoutError" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
+                <div id="wrap-btn-tarjeta" style="display:none;">
+                    <button id="btn-openpay" onclick="pagarConTarjeta()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #003087, #0070ba); box-shadow: 0 4px 15px rgba(0,48,135,0.35); font-size: 13px;">
+                        <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                        Pagar con Tarjeta
+                    </button>
                 </div>
-
-                <!-- Dirección (solo si elige envío) -->
-                <div id="checkout-direccion-wrap">
-                    <label class="checkout-label" for="checkout-direccion">Dirección de Envío *</label>
-                    <input id="checkout-direccion" type="text" class="checkout-input" placeholder="Calle, número, piso/depto, barrio" autocomplete="street-address">
+                <div id="wrap-btn-enviar" style="display:none;">
+                    <button onclick="confirmarYEnviar()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
+                        Enviar Pedido
+                    </button>
                 </div>
-
-                <!-- Preparar para regalo -->
-                <div>
-                    <label onclick="toggleRegalo(this)" class="flex items-center gap-3 cursor-pointer select-none p-3 rounded-2xl border-2 border-slate-200 hover:border-violet-300 transition-all" id="labelRegalo">
-                        <div id="checkboxRegalo" class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center transition-all flex-shrink-0" style="background:white;">
-                            <svg id="checkRegaloIcon" class="w-3.5 h-3.5 hidden" fill="none" stroke="white" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 12 4 10"/></svg>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-black uppercase text-slate-700 tracking-wide">🎁 Preparar para regalo</p>
-                            <p class="text-[9px] text-slate-400 font-medium mt-0.5">Empaquetamos el pedido para regalo</p>
-                        </div>
-                    </label>
-                    <input type="hidden" id="checkout-regalo" value="">
-                </div>
-
-                <!-- Aclaración extra -->
-                <div>
-                    <label class="checkout-label" for="checkout-nota">Aclaración Extra</label>
-                    <textarea id="checkout-nota" class="checkout-input" rows="2" placeholder="Horario de entrega, instrucciones, etc." style="resize:none;"></textarea>
-                </div>
-
-            </div>
-
-            <!-- Error -->
-            <div id="checkoutError" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
-
-            <!-- Botón pagar con tarjeta OpenPay (solo si seleccionó tarjeta) -->
-            <div id="wrap-btn-tarjeta" style="display:none;">
-                <button id="btn-openpay" onclick="pagarConTarjeta()"
-                    class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]"
-                    style="background: linear-gradient(135deg, #003087, #0070ba); box-shadow: 0 4px 15px rgba(0,48,135,0.35); font-size: 13px;">
-                    <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-                    Pagar con Tarjeta
-                </button>
-            </div>
-
-            <!-- Botón enviar (transferencia / efectivo / WP) -->
-            <div id="wrap-btn-enviar" style="display:none;">
-                <div style="text-align:center;font-size:12px;color:#d946ef;font-weight:800;margin-top:16px;margin-bottom:6px;letter-spacing:0.3px;">Si pagás con transferencia o efectivo</div>
-                <button onclick="confirmarYEnviar()"
-                    class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
-                    style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
-                    Enviar Pedido
-                </button>
+                <button onclick="checkoutIrPaso(2)" class="w-full h-11 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all mt-3" style="font-size:12px;">← Volver</button>
             </div>
 
         </div>
@@ -2477,12 +2456,7 @@
             window._cupon = null;
             var _cupInput = document.getElementById('checkout-cupon'); if (_cupInput) _cupInput.value = '';
             var _cupMsg = document.getElementById('checkout-cupon-msg'); if (_cupMsg) { _cupMsg.classList.add('hidden'); _cupMsg.textContent=''; }
-            document.getElementById('checkoutResumen').innerHTML = carrito.map(function(i) {
-                return '<div class="flex justify-between text-[10px] font-bold text-slate-500">' +
-                    '<span class="truncate mr-2">' + i.cantidad + 'x ' + i.nombre + '</span>' +
-                    '<span class="flex-shrink-0">' + formatPrecio(i.precio * i.cantidad) + '</span>' +
-                    '</div>';
-            }).join('');
+            renderCheckoutItems();
 
             // Reset form
             document.getElementById('checkout-nombre').value = '';
@@ -2514,6 +2488,12 @@
                 document.getElementById('checkout-provincia').value = window._userData.provincia || '';
                 document.getElementById('checkout-localidad').value = window._userData.localidad || '';
             }
+            // Datos del cliente verificado: no editables en el checkout (se cambian en Mi cuenta)
+            ['checkout-nombre','checkout-email','checkout-provincia','checkout-localidad'].forEach(function(id){
+                var el = document.getElementById(id);
+                if(el){ el.readOnly = true; el.style.background = '#f1f5f9'; el.style.color = '#475569'; el.style.cursor = 'not-allowed'; el.classList.remove('error'); }
+            });
+            var _tel = document.getElementById('checkout-telefono'); if(_tel){ _tel.readOnly = false; _tel.style.background=''; _tel.style.color=''; _tel.style.cursor=''; }
 
             // Tip de precios
             if (logueado) {
@@ -2522,9 +2502,68 @@
                 document.getElementById('checkoutTotal').style.color = '#7c3aed';
             }
 
+            document.getElementById('checkout-pago').value = '';
+            document.querySelectorAll('#checkout-step3 .checkout-opcion').forEach(function(el){ el.classList.remove('seleccionado'); });
+            document.getElementById('wrap-btn-tarjeta').style.display = 'none';
+            document.getElementById('wrap-btn-enviar').style.display = 'none';
+            var _e2 = document.getElementById('checkoutError2'); if(_e2) _e2.classList.add('hidden');
+            checkoutIrPaso(1);
+
             document.getElementById('modalCheckout').classList.add('visible');
             document.body.style.overflow = 'hidden';
-            setTimeout(function(){ document.getElementById('checkout-nombre').focus(); }, 350);
+        }
+
+        var checkoutPasoActual = 1;
+        function checkoutIrPaso(n){
+            checkoutPasoActual = n;
+            document.getElementById('checkout-step1').style.display = (n===1)?'block':'none';
+            document.getElementById('checkout-step2').style.display = (n===2)?'block':'none';
+            document.getElementById('checkout-step3').style.display = (n===3)?'block':'none';
+            document.getElementById('stepdot-1').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=1?'bg-violet-600':'bg-slate-200');
+            document.getElementById('stepdot-2').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=2?'bg-violet-600':'bg-slate-200');
+            document.getElementById('stepdot-3').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=3?'bg-violet-600':'bg-slate-200');
+            var t = {1:['Datos del pedido','Revisá los productos de tu pedido'],2:['Verificar datos','Confirmá tus datos de contacto y entrega'],3:['Forma de pago','Elegí cómo querés pagar']};
+            document.getElementById('checkout-titulo').textContent = t[n][0];
+            document.getElementById('checkout-subtitulo').textContent = t[n][1];
+            var inner = document.getElementById('modalCheckoutInner'); if(inner) inner.scrollTop = 0;
+        }
+        function renderCheckoutItems(){
+            var cont = document.getElementById('checkout-items-lista'); if(!cont) return;
+            cont.innerHTML = carrito.map(function(i){
+                return `<div class="flex items-center gap-3 bg-slate-50 rounded-xl p-2.5">
+                    <img src="${i.img}" onerror="this.onerror=null;this.src='sin-foto.png'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#fff;">
+                    <div class="flex-1 min-w-0"><p class="text-[10px] font-black text-slate-700 uppercase leading-tight line-clamp-2">${i.nombre}</p>
+                    <p class="text-[11px] font-black text-violet-600 mt-0.5">${i.cantidad} × ${formatPrecio(i.precio)}</p></div>
+                    <button onclick="quitarItemCheckout(${i.id})" class="text-slate-300 hover:text-red-500 text-base font-bold flex-shrink-0 leading-none" title="Quitar">✕</button>
+                </div>`;
+            }).join('');
+            var sub = carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0);
+            var desc = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
+            var tel = document.getElementById('checkoutTotal');
+            if(tel) tel.textContent = formatPrecio(Math.max(0, sub - desc));
+        }
+        function quitarItemCheckout(id){
+            carrito = carrito.filter(function(i){ return i.id !== id; });
+            actualizarCarritoUI();
+            window._cupon = null;
+            var cm = document.getElementById('checkout-cupon-msg'); if(cm){ cm.classList.add('hidden'); cm.textContent=''; }
+            var ci = document.getElementById('checkout-cupon'); if(ci) ci.value='';
+            if(carrito.length === 0){ cerrarCheckout(); toast('Tu carrito quedó vacío'); return; }
+            renderCheckoutItems();
+        }
+        function checkoutIrPaso2(){
+            if(carrito.length === 0){ return; }
+            checkoutIrPaso(2);
+        }
+        function checkoutIrPaso3(){
+            var err = document.getElementById('checkoutError2');
+            var entrega = document.getElementById('checkout-entrega').value;
+            var telefono = document.getElementById('checkout-telefono').value.trim();
+            if(!telefono){ err.textContent='Ingresá un teléfono de contacto.'; err.classList.remove('hidden'); document.getElementById('checkout-telefono').focus(); return; }
+            if(!entrega){ err.textContent='Elegí un método de entrega.'; err.classList.remove('hidden'); return; }
+            if(entrega==='Envío a domicilio' && !document.getElementById('checkout-direccion').value.trim()){ err.textContent='Ingresá la dirección de envío.'; err.classList.remove('hidden'); document.getElementById('checkout-direccion').focus(); return; }
+            err.classList.add('hidden');
+            checkoutIrPaso(3);
         }
 
         function cerrarCheckout(e) {
@@ -2623,6 +2662,8 @@
                 var nota2 = document.getElementById('checkout-nota').value.trim();
                 var logueado2 = document.body.classList.contains('is-logged-in');
                 var totalNum2 = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+                var _descTarjeta = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
+                totalNum2 = Math.max(0, totalNum2 - _descTarjeta);
 
                 var items = carrito.map(function(i) {
                     return { nombre: i.nombre, precio: i.precio, cantidad: i.cantidad };
@@ -2834,6 +2875,8 @@
 
                 // Mostrar modal de éxito y vaciar carrito
                 vaciarCarrito();
+                var _em = document.getElementById('exito-msg');
+                if (_em) _em.innerHTML = 'Tu pedido ' + (numeroPedido ? '<b>' + numeroPedido + '</b> ' : '') + 'fue confirmado y enviado.<br><br>En breve nos ponemos en contacto para coordinar la entrega. ¡Gracias por tu compra! 🛍️';
                 document.getElementById('modalExito').style.display = 'flex';
                 document.body.style.overflow = 'hidden';
             })();
