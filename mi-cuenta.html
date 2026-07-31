@@ -215,13 +215,14 @@ async function cargar(){
     const { data:peds } = await supa.from('pedidos').select('*').eq('user_id', uid).order('created_at',{ascending:false});
     pedidos = peds || [];
     const nums = pedidos.map(p=>p.numero_pedido);
-    itemsPorPedido = {};
+    let _itemsMap = {};
     if(nums.length){
       const { data:items } = await supa.from('pedido_items').select('*').in('numero_pedido', nums);
-      (items||[]).forEach(it=>{ (itemsPorPedido[it.numero_pedido]=itemsPorPedido[it.numero_pedido]||[]).push(it); });
+      (items||[]).forEach(it=>{ (_itemsMap[it.numero_pedido]=_itemsMap[it.numero_pedido]||[]).push(it); });
       const { data:pgs } = await supa.from('pagos').select('*').in('numero_pedido', nums).order('created_at',{ascending:false});
       pagos = pgs || [];
     } else { pagos = []; }
+    itemsPorPedido = _itemsMap;
 
     const { data:cups } = await supa.from('cupones').select('*').eq('user_id', uid).order('created_at',{ascending:false});
     cupones = cups || [];
