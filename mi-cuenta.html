@@ -46,7 +46,7 @@
   .field.full{grid-column:1/-1;}
   .field label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text3);}
   .field input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.75rem;font-size:0.9rem;color:var(--text);}
-  .field input:disabled{opacity:0.7;}
+  .field input:disabled{opacity:1;background:transparent;border-color:transparent;padding-left:2px;color:var(--text);font-weight:600;}
   .save-row{margin-top:1.2rem;display:flex;gap:0.7rem;align-items:center;}
   .saldo-chip{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:10px;padding:0.5rem 0.9rem;font-size:0.85rem;font-weight:800;}
 
@@ -163,7 +163,7 @@
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a2 2 0 0 1 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a2 2 0 0 1-2-2z"/><line x1="12" y1="7" x2="12" y2="17" stroke-dasharray="2 2"/></svg>
         Mis cupones
       </button>
-      <button class="navitem hidden" id="nav-mercaderia" data-tab="mercaderia" onclick="irTab('mercaderia')">
+      <button class="navitem hidden" id="nav-mercaderia" data-tab="mercaderia" onclick="irTab('mercaderia')" style="background:linear-gradient(90deg,#f5f3ff,#faf5ff);color:var(--violet);font-weight:800;box-shadow:inset 3px 0 0 var(--violet);">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Mi mercadería
       </button>
@@ -179,7 +179,7 @@ const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [], cupones = [];
+let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [], cupones = [], editandoDatos = false;
 let tabActual = 'datos';
 
 function toast(msg, tipo){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+(tipo||''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
@@ -241,6 +241,7 @@ async function cargar(){
 
 function irTab(tab){
   tabActual = tab;
+  if(tab!=='datos') editandoDatos = false;
   document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   if(tab==='datos') renderDatos();
   else if(tab==='compras') renderCompras();
@@ -251,24 +252,30 @@ function irTab(tab){
 
 function renderDatos(){
   const u = usuario || {};
+  const ed = editandoDatos;
+  const dis = ed ? '' : 'disabled';
   document.getElementById('panel').innerHTML = `
     <h2>Mis datos</h2>
-    <p class="sub">Actualizá tu información de contacto y envío.</p>
+    <p class="sub">${ed ? 'Editá tu información y guardá los cambios.' : 'Tu información de contacto y envío.'}</p>
     <div class="form-grid">
-      <div class="field"><label>Nombre</label><input id="d-nombre" type="text" value="${esc(u.nombre)}"></div>
-      <div class="field"><label>Teléfono</label><input id="d-telefono" type="text" value="${esc(u.telefono)}"></div>
-      <div class="field full"><label>Dirección</label><input id="d-direccion" type="text" value="${esc(u.direccion)}"></div>
-      <div class="field"><label>Localidad</label><input id="d-localidad" type="text" value="${esc(u.localidad)}"></div>
-      <div class="field"><label>Provincia</label><input id="d-provincia" type="text" value="${esc(u.provincia)}"></div>
-      <div class="field"><label>DNI</label><input id="d-dni" type="text" value="${esc(u.dni)}"></div>
-      <div class="field"><label>Fecha de nacimiento</label><input id="d-nacimiento" type="date" value="${esc(u.nacimiento)}"></div>
+      <div class="field"><label>Nombre</label><input id="d-nombre" type="text" value="${esc(u.nombre)}" ${dis}></div>
+      <div class="field"><label>Teléfono</label><input id="d-telefono" type="text" value="${esc(u.telefono)}" ${dis}></div>
+      <div class="field full"><label>Dirección</label><input id="d-direccion" type="text" value="${esc(u.direccion)}" ${dis}></div>
+      <div class="field"><label>Localidad</label><input id="d-localidad" type="text" value="${esc(u.localidad)}" ${dis}></div>
+      <div class="field"><label>Provincia</label><input id="d-provincia" type="text" value="${esc(u.provincia)}" ${dis}></div>
+      <div class="field"><label>DNI</label><input id="d-dni" type="text" value="${esc(u.dni)}" ${dis}></div>
+      <div class="field"><label>Fecha de nacimiento</label><input id="d-nacimiento" type="date" value="${esc(u.nacimiento)}" ${dis}></div>
       <div class="field"><label>Email</label><input type="text" value="${esc(u.email)}" disabled></div>
     </div>
     <div class="save-row">
-      <button class="btn" onclick="guardarDatos()">Guardar cambios</button>
+      ${ed
+        ? `<button class="btn" onclick="guardarDatos()">Guardar cambios</button><button class="btn btn-ghost" onclick="cancelarEdicion()">Cancelar</button>`
+        : `<button class="btn" onclick="editarDatos()">\u270f\ufe0f Editar datos</button>`}
       ${Number(u.saldo_favor||0)>0?`<span class="saldo-chip">Saldo a favor: ${fmt(u.saldo_favor)}</span>`:''}
     </div>`;
 }
+function editarDatos(){ editandoDatos = true; renderDatos(); }
+function cancelarEdicion(){ editandoDatos = false; renderDatos(); }
 
 async function guardarDatos(){
   const body = {
@@ -285,6 +292,8 @@ async function guardarDatos(){
   if(error){ console.error(error); toast('No se pudo guardar','err'); return; }
   Object.assign(usuario, body);
   document.getElementById('who-nombre').textContent = usuario.nombre;
+  editandoDatos = false;
+  renderDatos();
   toast('Datos guardados ✓');
 }
 
