@@ -312,6 +312,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <button class="nav-tab" onclick="switchTab('usuarios',this)">Usuarios</button>
     <button class="nav-tab" onclick="switchTab('vendedores',this)">Vendedores</button>
     <button class="nav-tab" onclick="switchTab('cupones',this)">Cupones</button>
+    <button class="nav-tab" id="tab-reportes" onclick="switchTab('reportes',this)">Reportes</button>
     <button class="nav-tab" onclick="switchTab('eliminados',this)">Eliminados</button>
   </div>
 
@@ -677,6 +678,14 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <datalist id="vend-prod-list"></datalist>
     </div>
 
+    <!-- REPORTES -->
+    <div id="panel-reportes" class="panel">
+      <div class="filters">
+        <button class="btn-refresh" onclick="cargarReportes()">↻ Actualizar</button>
+      </div>
+      <div id="lista-reportes"><div class="loading-txt">Cargando...</div></div>
+    </div>
+
     <!-- ELIMINADOS -->
     <div id="panel-eliminados" class="panel">
       <div class="filters">
@@ -838,6 +847,55 @@ async function eliminarCupon(id){
   cargarCupones();
 }
 
+let reportesCache = [];
+async function cargarReportes(){
+  const cont = document.getElementById('lista-reportes');
+  if(cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  try {
+    reportesCache = await (await fetch(`${SUPA_URL}/rest/v1/reportes_vendedor?select=*&order=created_at.desc`, {headers:hdrs})).json();
+    renderReportes();
+  } catch(e){ if(cont) cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
+}
+function renderReportes(){
+  const cont = document.getElementById('lista-reportes'); if(!cont) return;
+  const pend = (reportesCache||[]).filter(r=>r.estado==='pendiente').length;
+  const tab = document.getElementById('tab-reportes');
+  if(tab) tab.textContent = pend ? `Reportes (${pend})` : 'Reportes';
+  if(!reportesCache.length){ cont.innerHTML='<div class="empty"><div class="empty-icon">📭</div><p>No hay reportes.</p></div>'; return; }
+  cont.innerHTML = reportesCache.map(r=>{
+    const resuelto = r.estado==='resuelto';
+    const fecha = new Date(r.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const esc = t => (t||'').toString().replace(/</g,'&lt;');
+    return `<div class="chart-card" style="margin-bottom:0.7rem;padding:0.9rem 1.1rem;${resuelto?'opacity:0.6;':''}">
+      <div style="display:flex;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;align-items:center;">
+        <div style="min-width:0;">
+          <b style="color:var(--violet-light);cursor:pointer;" onclick="switchTab('vendedores',document.querySelector('.nav-tab:nth-child(8)'));setTimeout(()=>abrirVendedor('${r.usuario_id}'),300);">#${r.vendedor_numero||'—'} ${esc(r.vendedor_nombre)}</b>
+          ${r.producto?` · <b>${esc(r.producto)}</b>${r.codigo?` <span style="color:var(--text3);">(${esc(r.codigo)})</span>`:''}`:''}
+          <span style="color:var(--text3);font-size:0.72rem;"> · ${fecha}</span>
+        </div>
+        <span class="pago-monto" style="color:${resuelto?'var(--green)':'var(--yellow)'};">${resuelto?'Resuelto':'Pendiente'}</span>
+      </div>
+      <div style="margin-top:0.5rem;background:var(--surface2);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.85rem;white-space:pre-wrap;">${esc(r.mensaje)}</div>
+      <div style="display:flex;gap:6px;margin-top:0.6rem;flex-wrap:wrap;">
+        ${r.vendedor_email?`<span style="font-size:0.72rem;color:var(--text3);align-self:center;margin-right:auto;">${esc(r.vendedor_email)}</span>`:''}
+        ${resuelto
+          ? `<button class="fc-btn" onclick="toggleReporte(${r.id},'pendiente')">↩ Reabrir</button>`
+          : `<button class="fc-btn" style="background:var(--green);color:#fff;" onclick="toggleReporte(${r.id},'resuelto')">✓ Marcar resuelto</button>`}
+        <button class="fc-btn" style="background:var(--red);color:#fff;" onclick="eliminarReporte(${r.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function toggleReporte(id, estado){
+  await fetch(`${SUPA_URL}/rest/v1/reportes_vendedor?id=eq.${id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({estado, resuelto_at: estado==='resuelto'? new Date().toISOString(): null})});
+  cargarReportes();
+}
+async function eliminarReporte(id){
+  if(!confirm('¿Eliminar este reporte?')) return;
+  await fetch(`${SUPA_URL}/rest/v1/reportes_vendedor?id=eq.${id}`, {method:'DELETE', headers:hdrs});
+  cargarReportes();
+}
+
 function switchTab(tab, btn) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -852,6 +910,7 @@ function switchTab(tab, btn) {
   if(tab==='usuarios') cargarUsuarios();
   if(tab==='vendedores') cargarVendedores();
   if(tab==='cupones') cargarCupones();
+  if(tab==='reportes') cargarReportes();
   if(tab==='stock') cargarProductos();
 }
 
