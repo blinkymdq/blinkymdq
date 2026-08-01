@@ -1116,6 +1116,7 @@
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
+                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
                 </div>
@@ -1124,6 +1125,11 @@
                     <button id="btn-openpay" onclick="pagarConTarjeta()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #003087, #0070ba); box-shadow: 0 4px 15px rgba(0,48,135,0.35); font-size: 13px;">
                         <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
                         Pagar con Tarjeta
+                    </button>
+                </div>
+                <div id="wrap-btn-mp" style="display:none;">
+                    <button id="btn-mp" onclick="pagarConMercadoPago()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #00b1ea, #009ee3); box-shadow: 0 4px 15px rgba(0,158,227,0.35); font-size: 13px;">
+                        🛒 Pagar con Mercado Pago
                     </button>
                 </div>
                 <div id="wrap-btn-enviar" style="display:none;">
@@ -2506,6 +2512,7 @@
             document.querySelectorAll('#checkout-step3 .checkout-opcion').forEach(function(el){ el.classList.remove('seleccionado'); });
             document.getElementById('wrap-btn-tarjeta').style.display = 'none';
             document.getElementById('wrap-btn-enviar').style.display = 'none';
+            var _mpw = document.getElementById('wrap-btn-mp'); if(_mpw) _mpw.style.display = 'none';
             var _e2 = document.getElementById('checkoutError2'); if(_e2) _e2.classList.add('hidden');
             checkoutIrPaso(1);
 
@@ -2582,13 +2589,18 @@
         function actualizarBotonesPago() {
             var pago = document.getElementById('checkout-pago').value;
             var esTarjeta = pago === 'Tarjeta de crédito/débito';
+            var esMP = pago === 'Mercado Pago';
             document.getElementById('wrap-btn-tarjeta').style.display = esTarjeta ? 'block' : 'none';
-            document.getElementById('wrap-btn-enviar').style.display = esTarjeta ? 'none' : (pago ? 'block' : 'none');
+            var mpw = document.getElementById('wrap-btn-mp'); if (mpw) mpw.style.display = esMP ? 'block' : 'none';
+            document.getElementById('wrap-btn-enviar').style.display = (!esTarjeta && !esMP && pago) ? 'block' : 'none';
 
+            var totalTxt = document.getElementById('checkoutTotal').textContent;
             if (esTarjeta) {
-                var totalTxt = document.getElementById('checkoutTotal').textContent;
                 document.getElementById('btn-openpay').innerHTML =
                     '<svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Pagar con Tarjeta ' + totalTxt;
+            }
+            if (esMP) {
+                var bmp = document.getElementById('btn-mp'); if (bmp) bmp.textContent = '🛒 Pagar con Mercado Pago ' + totalTxt;
             }
         }
 
@@ -2621,6 +2633,50 @@
                 box.style.borderColor = '#7c3aed';
                 icon.classList.remove('hidden');
                 label.style.borderColor = '#7c3aed';
+            }
+        }
+
+        async function pagarConMercadoPago() {
+            var entrega = document.getElementById('checkout-entrega').value;
+            var errEl = document.getElementById('checkoutError');
+            if (!entrega) { errEl.textContent = 'Seleccioná cómo querés recibir tu pedido.'; errEl.classList.remove('hidden'); return; }
+            var btn = document.getElementById('btn-mp');
+            var _orig = btn.textContent;
+            btn.disabled = true; btn.textContent = 'Generando pago...';
+            try {
+                var SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+                var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+                var sub = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+                var _desc = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
+                var total = Math.max(0, sub - _desc);
+                var items = carrito.map(function(i) { return { nombre: i.nombre, codigo: i.codigo || null, precio: i.precio, cantidad: i.cantidad }; });
+                var direccion = document.getElementById('checkout-direccion') ? document.getElementById('checkout-direccion').value.trim() : '';
+                var res = await fetch(SUPA_URL + '/functions/v1/mercadopago-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
+                    body: JSON.stringify({
+                        items: items,
+                        pedidoData: {
+                            nombre: document.getElementById('checkout-nombre').value.trim(),
+                            telefono: document.getElementById('checkout-telefono').value.trim(),
+                            email: document.getElementById('checkout-email').value.trim() || null,
+                            provincia: document.getElementById('checkout-provincia').value.trim() || null,
+                            localidad: document.getElementById('checkout-localidad').value.trim() || null,
+                            direccion: direccion || null,
+                            tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
+                            entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
+                            notas: document.getElementById('checkout-nota').value.trim(),
+                            total: total,
+                            user_id: window._userId || null
+                        }
+                    })
+                });
+                var data = await res.json();
+                if (data.ok && data.checkoutLink) { window.location.href = data.checkoutLink; return; }
+                throw new Error(data.error || 'No se pudo generar el pago');
+            } catch (e) {
+                errEl.textContent = 'No se pudo generar el pago con Mercado Pago. Probá de nuevo.'; errEl.classList.remove('hidden');
+                btn.disabled = false; btn.textContent = _orig;
             }
         }
 
