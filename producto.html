@@ -68,6 +68,7 @@
   .precio { font-size:2.1rem; font-weight:900; color:#7c3aed; margin-bottom:4px; letter-spacing:-1px; }
   .precio-mayorista { display:none; font-size:1rem; font-weight:800; color:#16a34a; margin-bottom:12px; }
   body.is-logged-in.es-mayorista .precio-mayorista { display:block; }
+  .desc-transf { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.75rem; font-weight:800; padding:5px 12px; border-radius:20px; margin-bottom:12px; }
   body.is-logged-in #btn-login { display:none; }
   body.is-logged-in #user-badge { display:flex; }
   body.is-logged-in #btn-login-mobile { display:none; }
@@ -666,7 +667,7 @@ function renderProducto(p) {
         <br>
         ${mostrarPrecio ? `
         <div class="precio">${precio}</div>
-        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : ''}
+        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
         ` : ''}
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
         <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
