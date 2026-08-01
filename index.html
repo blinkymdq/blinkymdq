@@ -1115,10 +1115,11 @@
                     <div class="checkout-opciones">
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
-                        <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
+                        <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
+                        <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
+                    <div id="checkout-desc-transf" class="hidden mt-2 text-[11px] font-black text-green-600 bg-green-50 rounded-xl py-2 px-3 text-center">✓ 5% de descuento por transferencia/efectivo</div>
                 </div>
                 <div id="checkoutError" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
                 <div id="wrap-btn-tarjeta" style="display:none;">
@@ -1133,7 +1134,7 @@
                     </button>
                 </div>
                 <div id="wrap-btn-enviar" style="display:none;">
-                    <button onclick="confirmarYEnviar()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
+                    <button id="btn-enviar" onclick="confirmarYEnviar()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
                         Enviar Pedido
                     </button>
                 </div>
@@ -2513,6 +2514,10 @@
             document.getElementById('wrap-btn-tarjeta').style.display = 'none';
             document.getElementById('wrap-btn-enviar').style.display = 'none';
             var _mpw = document.getElementById('wrap-btn-mp'); if(_mpw) _mpw.style.display = 'none';
+            var _esMay = window._userRol === 'mayorista';
+            var _ot = document.getElementById('opt-pago-tarjeta'); if(_ot) _ot.style.display = _esMay ? 'none' : '';
+            var _om = document.getElementById('opt-pago-mp'); if(_om) _om.style.display = _esMay ? 'none' : '';
+            var _nd = document.getElementById('checkout-desc-transf'); if(_nd) _nd.classList.add('hidden');
             var _e2 = document.getElementById('checkoutError2'); if(_e2) _e2.classList.add('hidden');
             checkoutIrPaso(1);
 
@@ -2590,6 +2595,7 @@
             var pago = document.getElementById('checkout-pago').value;
             var esTarjeta = pago === 'Tarjeta de crédito/débito';
             var esMP = pago === 'Mercado Pago';
+            var esMayorista = window._userRol === 'mayorista';
             document.getElementById('wrap-btn-tarjeta').style.display = esTarjeta ? 'block' : 'none';
             var mpw = document.getElementById('wrap-btn-mp'); if (mpw) mpw.style.display = esMP ? 'block' : 'none';
             document.getElementById('wrap-btn-enviar').style.display = (!esTarjeta && !esMP && pago) ? 'block' : 'none';
@@ -2601,6 +2607,23 @@
             }
             if (esMP) {
                 var bmp = document.getElementById('btn-mp'); if (bmp) bmp.textContent = '🛒 Pagar con Mercado Pago ' + totalTxt;
+            }
+
+            // Descuento 5% por transferencia/efectivo (solo minoristas)
+            var aplicaDescTransf = !esMayorista && (pago === 'Efectivo' || pago === 'Transferencia');
+            var noteEl = document.getElementById('checkout-desc-transf');
+            if (noteEl) noteEl.classList.toggle('hidden', !aplicaDescTransf);
+            var btnEnv = document.getElementById('btn-enviar');
+            if (btnEnv) {
+                if (pago === 'Efectivo' || pago === 'Transferencia') {
+                    var _sub = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+                    var _cupD = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
+                    var _base = Math.max(0, _sub - _cupD);
+                    var _fin = aplicaDescTransf ? Math.round(_base * 0.95) : _base;
+                    btnEnv.textContent = 'Enviar Pedido · ' + formatPrecio(_fin);
+                } else {
+                    btnEnv.textContent = 'Enviar Pedido';
+                }
             }
         }
 
@@ -2891,6 +2914,7 @@
                         notas: nota || null,
                         total: totalNum,
                         cupon: (window._cupon ? window._cupon.codigo : null),
+                        desc_pago_pct: ((window._userRol !== 'mayorista') && (pago === 'Efectivo' || pago === 'Transferencia')) ? 5 : 0,
                         user_id: window._userId || null
                     };
                     var itemsPayload = carrito.map(function(i) {
