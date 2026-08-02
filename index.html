@@ -412,9 +412,9 @@
         #modalCheckoutInner::-webkit-scrollbar { display: none; }
         .co-topbar { display:flex; align-items:center; justify-content:space-between; padding: 0.8rem 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; background:#f1f2f6; z-index:5; }
         .co-topbar img { height: 30px; }
-        .co-grid { display:grid; grid-template-columns: 1fr 340px; gap: 1.4rem; align-items:start; }
+        .co-grid { display:grid; grid-template-columns: 1fr 408px; gap: 1.4rem; align-items:start; }
         .co-main { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 1.5rem 1.6rem; }
-        .co-side { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 1.2rem 1.3rem; position: sticky; top: 74px; }
+        .co-side { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 1.5rem 1.6rem; position: sticky; top: 74px; }
         .co-side h4 { font-size:0.8rem; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; color:#1e293b; margin-bottom:0.9rem; }
         .co-total { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; margin-top:0.9rem; padding-top:0.9rem; }
         .co-total .lbl { font-size:0.9rem; font-weight:800; color:#334155; }
@@ -1134,7 +1134,7 @@
 
               <aside class="co-side">
                 <h4>Resumen de compra</h4>
-                <div id="checkout-items-lista" class="space-y-2"></div>
+                <div id="checkout-items-lista" class="space-y-2.5"></div>
                 <div class="mt-3">
                     <div class="flex gap-2">
                         <input id="checkout-cupon" type="text" placeholder="¿Tenés un cupón?" autocomplete="off" class="checkout-input flex-1" style="text-transform:uppercase;">
@@ -2584,10 +2584,10 @@
         function renderCheckoutItems(){
             var cont = document.getElementById('checkout-items-lista'); if(!cont) return;
             cont.innerHTML = carrito.map(function(i){
-                return `<div class="flex items-center gap-3 bg-slate-50 rounded-xl p-2.5">
+                return `<div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                     <img src="${i.img}" onerror="this.onerror=null;this.src='sin-foto.png'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#fff;">
-                    <div class="flex-1 min-w-0"><p class="text-[10px] font-black text-slate-700 uppercase leading-tight line-clamp-2">${i.nombre}</p>
-                    <p class="text-[11px] font-black text-violet-600 mt-0.5">${i.cantidad} × ${formatPrecio(i.precio)}</p></div>
+                    <div class="flex-1 min-w-0"><p class="text-[12px] font-normal text-slate-900 leading-snug line-clamp-2">${i.nombre}</p>
+                    <p class="text-[12px] font-semibold text-violet-600 mt-0.5">${i.cantidad} × ${formatPrecio(i.precio)}</p></div>
                     <button onclick="quitarItemCheckout(${i.id})" class="text-slate-300 hover:text-red-500 text-base font-bold flex-shrink-0 leading-none" title="Quitar">✕</button>
                 </div>`;
             }).join('');
