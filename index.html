@@ -412,6 +412,9 @@
         #modalCheckoutInner::-webkit-scrollbar { display: none; }
         .co-topbar { display:flex; align-items:center; justify-content:space-between; padding: 0.8rem 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; background:#f1f2f6; z-index:5; }
         .co-topbar img { height: 30px; }
+        .gen-tab { background:#f1f5f9; color:#475569; }
+        .gen-tab:hover { background:#e2e8f0; }
+        .gen-tab.active { background:#7c3aed; color:#fff; }
         .co-grid { display:grid; grid-template-columns: 1fr 408px; gap: 1.4rem; align-items:start; }
         .co-main { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 1.5rem 1.6rem; }
         .co-side { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 1.5rem 1.6rem; position: sticky; top: 74px; }
@@ -826,6 +829,23 @@
                     </div>
                 </div>
                 <div id="contenedorMasVistos" class="flex gap-5 overflow-x-auto px-5 pb-5 pt-3" style="-ms-overflow-style:none;scrollbar-width:none;scroll-behavior:smooth;"></div>
+            </div>
+        </div>
+
+        <!-- Barra filtro por género (perfumes/desodorante) -->
+        <div id="barraGenero" class="px-4 mt-2" style="display:none;">
+            <div class="flex items-center gap-2 md:gap-3 flex-wrap bg-white border border-slate-100 rounded-2xl px-3 py-2.5" style="box-shadow:0 1px 2px rgba(0,0,0,.03);">
+                <span id="barraGeneroTitulo" class="text-[13px] md:text-[15px] font-black uppercase tracking-wide text-slate-900 pr-1 md:pr-2">Perfumes</span>
+                <span class="hidden md:block w-px h-5 bg-slate-200"></span>
+                <div class="flex items-center gap-1.5 flex-wrap flex-1">
+                    <button data-gen="" onclick="setGenero('')" class="gen-tab px-3 py-1.5 rounded-full text-[11px] md:text-[12px] font-bold uppercase tracking-wide transition-colors">Todos</button>
+                    <button data-gen="unisex" onclick="setGenero('unisex')" class="gen-tab px-3 py-1.5 rounded-full text-[11px] md:text-[12px] font-bold uppercase tracking-wide transition-colors">Unisex</button>
+                    <button data-gen="femenino" onclick="setGenero('femenino')" class="gen-tab px-3 py-1.5 rounded-full text-[11px] md:text-[12px] font-bold uppercase tracking-wide transition-colors">Mujer</button>
+                    <button data-gen="masculino" onclick="setGenero('masculino')" class="gen-tab px-3 py-1.5 rounded-full text-[11px] md:text-[12px] font-bold uppercase tracking-wide transition-colors">Masculinos</button>
+                </div>
+                <button id="btnOrdenValor" onclick="toggleOrdenValor()" class="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] md:text-[12px] font-bold uppercase tracking-wide text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
+                    <span>Valor</span><span id="ordenValorFlecha" class="text-[13px] leading-none">↕</span>
+                </button>
             </div>
         </div>
 
@@ -1484,7 +1504,7 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,precio_publico,precio_mayorista,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
@@ -1497,6 +1517,7 @@
                     foto:         p.foto   || "",
                     cat:          (p.categoria || "").toLowerCase(),
                     marca:        (p.marca     || "").toLowerCase(),
+                    gen:          (p.genero    || "").toLowerCase(),
                     precioP:      String(p.precio_publico  || 0),
                     precioM:      String(p.precio_mayorista || 0),
                     esOferta:     p.estado === 'oferta',
@@ -1623,23 +1644,66 @@
         }
 
         let _gaSearchTimer = null;
+        const CATS_CON_GENERO = ['perfumes','desodorante'];
+        window._genero = '';
+        window._ordenValor = ''; // '' | 'asc' | 'desc'
+
+        function setGenero(g) {
+            window._genero = g;
+            document.querySelectorAll('#barraGenero .gen-tab').forEach(function(b){
+                b.classList.toggle('active', (b.getAttribute('data-gen')||'') === g);
+            });
+            ejecutarFiltros();
+        }
+        function toggleOrdenValor() {
+            window._ordenValor = window._ordenValor === 'asc' ? 'desc' : (window._ordenValor === 'desc' ? '' : 'asc');
+            var f = document.getElementById('ordenValorFlecha');
+            var btn = document.getElementById('btnOrdenValor');
+            if (f) f.textContent = window._ordenValor === 'asc' ? '↑' : (window._ordenValor === 'desc' ? '↓' : '↕');
+            if (btn) { btn.classList.toggle('text-slate-500', !window._ordenValor); btn.classList.toggle('text-violet-600', !!window._ordenValor); btn.classList.toggle('border-violet-200', !!window._ordenValor); }
+            ejecutarFiltros();
+        }
+
         function ejecutarFiltros() {
             const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
             const c   = document.getElementById('selectCat').value;
             const m   = document.getElementById('selectMarca').value;
 
-            const hayFiltro = val || c || m;
+            // Barra de género/valor: solo para ciertas categorías
+            const catConGenero = CATS_CON_GENERO.includes(c);
+            const barra = document.getElementById('barraGenero');
+            if (barra) barra.style.display = catConGenero ? '' : 'none';
+            if (!catConGenero) {
+                if (window._genero) { window._genero = ''; document.querySelectorAll('#barraGenero .gen-tab').forEach(b=>b.classList.toggle('active',(b.getAttribute('data-gen')||'')==='')); }
+                if (window._ordenValor) { window._ordenValor=''; var _f=document.getElementById('ordenValorFlecha'); if(_f)_f.textContent='↕'; var _b=document.getElementById('btnOrdenValor'); if(_b){_b.classList.add('text-slate-500');_b.classList.remove('text-violet-600','border-violet-200');} }
+            } else {
+                var tit = document.getElementById('barraGeneroTitulo');
+                if (tit) tit.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+                // marca activa la pestaña "Todos" si no hay ninguna
+                if (!document.querySelector('#barraGenero .gen-tab.active')) {
+                    var t0 = document.querySelector('#barraGenero .gen-tab[data-gen=""]'); if (t0) t0.classList.add('active');
+                }
+            }
+            const g = catConGenero ? (window._genero || '') : '';
+
+            const hayFiltro = val || c || m || g;
             document.getElementById('seccionBanner').style.display    = hayFiltro ? 'none' : 'block';
             document.getElementById('seccionMasVistos').style.display = hayFiltro ? 'none' : '';
 
-            const res = productos.filter(p => {
+            let res = productos.filter(p => {
                 const nombreLimpio = p.nombre.toLowerCase();
                 const codigoLimpio = p.codigo.toLowerCase();
                 const matchTexto   = !val || val.split(/\s+/).every(w => nombreLimpio.includes(w) || codigoLimpio.includes(w));
                 const matchCat     = !c || p.cat   === c;
                 const matchMarca   = !m || p.marca  === m;
-                return matchTexto && matchCat && matchMarca;
+                const matchGenero  = !g || p.gen   === g;
+                return matchTexto && matchCat && matchMarca && matchGenero;
             });
+
+            if (catConGenero && window._ordenValor) {
+                const dir = window._ordenValor === 'asc' ? 1 : -1;
+                res = res.slice().sort((a,b) => (parseFloat(a.precioP||0) - parseFloat(b.precioP||0)) * dir);
+            }
 
             // Enviar evento a GA4 (con debounce de 1s para no spamear)
             if (val.length >= 2) {
