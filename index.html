@@ -2842,6 +2842,7 @@
             if (!codigo) { window._cupon = null; msg.classList.add('hidden'); recalcularTotalCheckout(); return; }
             if (!document.body.classList.contains('is-logged-in')) { window._cupon = null; show('Ingresá a tu cuenta para usar cupones.', false); recalcularTotalCheckout(); return; }
             var total = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
+            var itemsCupon = carrito.map(function(i){ return { codigo: (i.codigo || ''), precio: i.precio, cantidad: i.cantidad }; });
             try {
                 var token = SUPA_KEY;
                 var _s = await supabaseClient.auth.getSession();
@@ -2849,7 +2850,7 @@
                 var r = await fetch(SUPA_URL + '/rest/v1/rpc/validar_cupon', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ p_codigo: codigo, p_total: total })
+                    body: JSON.stringify({ p_codigo: codigo, p_items: itemsCupon })
                 });
                 var d = await r.json();
                 if (d && d.ok) {

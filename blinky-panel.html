@@ -702,10 +702,27 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <select id="cup-tipo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="porcentaje">% Porcentaje</option><option value="monto">$ Monto fijo</option></select>
         <input id="cup-valor" type="number" min="0" placeholder="Valor (15 o 5000)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <select id="cup-usuario" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="">General (todos los clientes)</option></select>
+        <select id="cup-alcance" onchange="onAlcanceChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;"><option value="todo">Aplica a: todo el pedido</option><option value="marca">Aplica a: una marca</option><option value="productos">Aplica a: productos elegidos</option></select>
         <input id="cup-min" type="number" min="0" placeholder="Compra mínima (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="cup-usos" type="number" min="1" value="1" placeholder="Usos máximos" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="cup-vence" type="date" placeholder="Vence (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="cup-desc" placeholder="Descripción (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+      </div>
+      <!-- Alcance: marca -->
+      <div id="cup-scope-marca" style="display:none;margin-bottom:0.8rem;">
+        <input id="cup-marca" list="cup-marcas-list" placeholder="Marca (ej: Victoria's Secret)" style="width:100%;max-width:360px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <datalist id="cup-marcas-list"></datalist>
+        <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">El descuento se aplica solo a los productos de esa marca.</div>
+      </div>
+      <!-- Alcance: productos -->
+      <div id="cup-scope-prod" style="display:none;margin-bottom:0.8rem;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <input id="cup-prod-search" list="cup-prods-list" placeholder="Buscar producto por nombre o código…" style="flex:1;min-width:220px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+          <datalist id="cup-prods-list"></datalist>
+          <button type="button" class="fc-btn" onclick="agregarProdCupon()">＋ Agregar</button>
+        </div>
+        <div id="cup-prod-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+        <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">El descuento se aplica solo a los productos que agregues acá.</div>
       </div>
       <button class="fc-btn" style="background:var(--violet);color:#fff;" onclick="crearCupon()">➕ Crear y asignar</button>
       <div class="fc-section-title" style="margin-top:1.5rem;">Cupones creados</div>
@@ -773,22 +790,63 @@ verificarSesion();
 
 let cuponesCache = [];
 let _cupUsers = [];
+let _cupProds = [];        // {codigo, nombre, marca}
+let cupProdSel = [];       // códigos elegidos para alcance=productos
 function _cupFmt(x){ return '$' + Number(x||0).toLocaleString('es-AR'); }
 
 async function cargarCupones(){
   const cont = document.getElementById('lista-cupones');
   if(cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
-    const [cR, uR] = await Promise.all([
+    const [cR, uR, pR] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/cupones?select=*&order=created_at.desc`, {headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email&order=nombre.asc`, {headers:hdrs})
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email&order=nombre.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,marca&order=nombre.asc`, {headers:hdrs})
     ]);
     cuponesCache = await cR.json();
     _cupUsers = await uR.json();
+    _cupProds = await pR.json();
     const sel = document.getElementById('cup-usuario');
     if(sel) sel.innerHTML = '<option value="">General (todos los clientes)</option>' + (_cupUsers||[]).map(u=>`<option value="${u.id}">${(u.nombre||u.email||'—')} — ${u.email||''} (#${u.numero_usuario||''})</option>`).join('');
+    // datalist de marcas (únicas)
+    const marcas = [...new Set((_cupProds||[]).map(p=>(p.marca||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const dlM = document.getElementById('cup-marcas-list');
+    if(dlM) dlM.innerHTML = marcas.map(m=>`<option value="${m.replace(/"/g,'&quot;')}">`).join('');
+    // datalist de productos (código — nombre)
+    const dlP = document.getElementById('cup-prods-list');
+    if(dlP) dlP.innerHTML = (_cupProds||[]).map(p=>`<option value="${p.codigo}">${(p.nombre||'').replace(/"/g,'&quot;')} — ${p.codigo}</option>`).join('');
     renderCuponesPanel();
   } catch(e){ if(cont) cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
+}
+
+function onAlcanceChange(){
+  const v = document.getElementById('cup-alcance').value;
+  document.getElementById('cup-scope-marca').style.display = v==='marca' ? 'block' : 'none';
+  document.getElementById('cup-scope-prod').style.display  = v==='productos' ? 'block' : 'none';
+}
+
+function agregarProdCupon(){
+  const inp = document.getElementById('cup-prod-search');
+  let val = (inp.value||'').trim();
+  if(!val){ return; }
+  // permite pegar "codigo — nombre" o buscar por nombre
+  let prod = _cupProds.find(p=>String(p.codigo)===val);
+  if(!prod){ const low=val.toLowerCase(); prod = _cupProds.find(p=>(p.nombre||'').toLowerCase()===low) || _cupProds.find(p=>(p.nombre||'').toLowerCase().includes(low)); }
+  if(!prod){ toast('No encontré ese producto','err'); return; }
+  if(!cupProdSel.includes(String(prod.codigo))) cupProdSel.push(String(prod.codigo));
+  inp.value='';
+  renderProdChips();
+}
+
+function quitarProdCupon(cod){ cupProdSel = cupProdSel.filter(c=>c!==String(cod)); renderProdChips(); }
+
+function renderProdChips(){
+  const cont = document.getElementById('cup-prod-chips'); if(!cont) return;
+  cont.innerHTML = cupProdSel.map(cod=>{
+    const p = _cupProds.find(x=>String(x.codigo)===String(cod));
+    const nom = p ? (p.nombre||cod) : cod;
+    return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:0.75rem;">${nom} <b style="opacity:.6;">(${cod})</b> <button type="button" onclick="quitarProdCupon('${String(cod).replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.9rem;line-height:1;">✕</button></span>`;
+  }).join('');
 }
 
 function renderCuponesPanel(){
@@ -801,9 +859,13 @@ function renderCuponesPanel(){
     const usado = c.max_usos!=null && c.usos>=c.max_usos;
     const vencido = c.vence && new Date(c.vence) < new Date(new Date().toDateString());
     const estado = !c.activo ? 'Inactivo' : vencido ? 'Vencido' : usado ? 'Usado' : 'Activo';
+    let alcTxt = '';
+    if(c.alcance==='marca') alcTxt = `🏷️ marca: ${c.marca||'—'}`;
+    else if(c.alcance==='productos'){ const n=Array.isArray(c.codigos)?c.codigos.length:0; alcTxt = `📦 ${n} producto${n===1?'':'s'}`; }
+    else alcTxt = 'todo el pedido';
     return `<div class="pago-item">
       <span style="min-width:0;flex:1;">
-        <b style="font-family:monospace;color:var(--violet-light);letter-spacing:1px;">${c.codigo}</b> · <b>${val} OFF</b>${c.descripcion?` · ${c.descripcion}`:''}
+        <b style="font-family:monospace;color:var(--violet-light);letter-spacing:1px;">${c.codigo}</b> · <b>${val} OFF</b> · <span style="color:var(--text2);">${alcTxt}</span>${c.descripcion?` · ${c.descripcion}`:''}
         <br><span style="font-size:0.72rem;color:var(--text3);">${u?`${u.nombre||u.email} (#${u.numero_usuario||''})`:'General (todos)'}${c.min_compra?` · min ${_cupFmt(c.min_compra)}`:''}${c.vence?` · vence ${new Date(c.vence).toLocaleDateString('es-AR')}`:''} · usos ${c.usos}/${c.max_usos??'∞'}</span>
       </span>
       <span class="pago-monto" style="color:${estado==='Activo'?'var(--green)':'var(--text3)'};">${estado}</span>
@@ -825,15 +887,23 @@ async function crearCupon(){
   const usos   = usosRaw==='' ? null : (parseInt(usosRaw)||null);
   const vence  = document.getElementById('cup-vence').value||null;
   const desc   = (document.getElementById('cup-desc').value||'').trim()||null;
+  const alcance = document.getElementById('cup-alcance').value || 'todo';
+  const marca   = (document.getElementById('cup-marca').value||'').trim();
   if(!codigo){ toast('Poné un código','err'); return; }
   if(valor<=0){ toast('Valor inválido','err'); return; }
   if(tipo==='porcentaje' && valor>100){ toast('El porcentaje no puede ser mayor a 100','err'); return; }
-  const body = { codigo, tipo, valor, user_id:userId, descripcion:desc, min_compra:min, max_usos:usos, vence, activo:true };
+  if(alcance==='marca' && !marca){ toast('Elegí una marca','err'); return; }
+  if(alcance==='productos' && !cupProdSel.length){ toast('Agregá al menos un producto','err'); return; }
+  const body = { codigo, tipo, valor, user_id:userId, descripcion:desc, min_compra:min, max_usos:usos, vence, activo:true, alcance,
+                 marca: alcance==='marca' ? marca : null,
+                 codigos: alcance==='productos' ? cupProdSel.slice() : null };
   const r = await fetch(`${SUPA_URL}/rest/v1/cupones`, {method:'POST', headers:hdrs, body:JSON.stringify(body)});
   if(!r.ok){ const t=await r.text(); toast(/duplicate|unique/i.test(t)?'Ese código ya existe':'Error al crear el cupón','err'); return; }
   toast('Cupón creado ✓','ok');
-  ['cup-codigo','cup-valor','cup-min','cup-desc','cup-vence'].forEach(id=>document.getElementById(id).value='');
+  ['cup-codigo','cup-valor','cup-min','cup-desc','cup-vence','cup-marca'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cup-usos').value='1';
+  document.getElementById('cup-alcance').value='todo'; onAlcanceChange();
+  cupProdSel = []; renderProdChips();
   cargarCupones();
 }
 
