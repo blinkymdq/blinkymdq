@@ -2584,10 +2584,21 @@
         function renderCheckoutItems(){
             var cont = document.getElementById('checkout-items-lista'); if(!cont) return;
             cont.innerHTML = carrito.map(function(i){
-                return `<div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                var stock = Number(i.stock || 0);
+                var lleno = stock > 0 && i.cantidad >= stock;
+                return `<div class="flex items-start gap-3 bg-slate-50 rounded-xl p-3">
                     <img src="${i.img}" onerror="this.onerror=null;this.src='sin-foto.png'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#fff;">
-                    <div class="flex-1 min-w-0"><p class="text-[12px] font-normal text-slate-900 leading-snug line-clamp-2">${i.nombre}</p>
-                    <p class="text-[12px] font-semibold text-violet-600 mt-0.5">${i.cantidad} × ${formatPrecio(i.precio)}</p></div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[12px] font-normal text-slate-900 leading-snug line-clamp-2">${i.nombre}</p>
+                      <div class="flex items-center gap-2 mt-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <button onclick="cambiarCantidadCheckout(${i.id},-1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100" title="Restar">−</button>
+                          <span class="text-[12px] font-semibold text-slate-900 min-w-[16px] text-center">${i.cantidad}</span>
+                          <button onclick="cambiarCantidadCheckout(${i.id},1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100 ${lleno ? 'opacity-40 cursor-not-allowed' : ''}" title="${lleno ? 'Sin más stock' : 'Sumar'}">+</button>
+                        </div>
+                        <span class="text-[12px] font-semibold text-violet-600">${formatPrecio(i.precio * i.cantidad)}</span>
+                      </div>
+                    </div>
                     <button onclick="quitarItemCheckout(${i.id})" class="text-slate-300 hover:text-red-500 text-base font-bold flex-shrink-0 leading-none" title="Quitar">✕</button>
                 </div>`;
             }).join('');
@@ -2610,6 +2621,19 @@
             if (vt) vt.textContent = '-' + formatPrecio(transfD);
             var ct = document.getElementById('checkoutTotal'); if (ct) ct.textContent = formatPrecio(total);
             return total;
+        }
+        function cambiarCantidadCheckout(id, delta){
+            var it = carrito.find(function(i){ return i.id === id; });
+            if(!it) return;
+            var nueva = (it.cantidad || 1) + delta;
+            if(nueva < 1){ quitarItemCheckout(id); return; }
+            var stock = Number(it.stock || 0);
+            if(delta > 0 && stock > 0 && nueva > stock){ toast('No hay más stock de este producto'); return; }
+            it.cantidad = nueva;
+            actualizarCarritoUI();
+            renderCheckoutItems();
+            var ci = document.getElementById('checkout-cupon');
+            if(window._cupon && ci && ci.value.trim()){ aplicarCupon(); }
         }
         function quitarItemCheckout(id){
             carrito = carrito.filter(function(i){ return i.id !== id; });
