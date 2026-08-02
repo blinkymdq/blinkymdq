@@ -723,7 +723,7 @@
 
 
     <!-- Barra promo sticky: 5% descuento transferencia/efectivo -->
-    <style>@keyframes promoScrollTransf{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}#barra-promo-transf:hover .promo-track-transf{animation-play-state:paused}#barra-promo-transf{position:relative;}#barra-promo-transf::before{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,0.55) 50%,transparent 100%);transform:skewX(-18deg);pointer-events:none;animation:promoShine 6s ease-in-out infinite;z-index:2;}@keyframes promoShine{0%{left:-60%;}16%{left:130%;}100%{left:130%;}}</style>
+    <style>@keyframes promoScrollTransf{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}#barra-promo-transf:hover .promo-track-transf{animation-play-state:paused}#barra-promo-transf{position:relative;}#barra-promo-transf::before{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,0.55) 50%,transparent 100%);transform:skewX(-18deg);pointer-events:none;animation:promoShine 6s ease-in-out infinite;z-index:2;}@keyframes promoShine{0%{left:-60%;}16%{left:130%;}100%{left:130%;}}#checkout-steps-bar::after{content:"";position:absolute;top:0;bottom:0;left:-45%;width:35%;background:linear-gradient(115deg,transparent,rgba(255,255,255,0.8),transparent);transform:skewX(-18deg);pointer-events:none;animation:promoShine 3.8s ease-in-out infinite;}</style>
     <div style="max-width:80rem;margin:0 auto;padding:5px 1rem 7px;">
     <div id="barra-promo-transf" style="background:linear-gradient(90deg,#7c3aed,#6366f1,#06b6d4,#14b8a6);overflow:hidden;white-space:nowrap;border-radius:12px;">
       <div class="promo-track-transf" style="display:inline-block;white-space:nowrap;animation:promoScrollTransf 26s linear infinite;padding:6px 0;"><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span><span style="font-size:12px;font-weight:900;color:#fff;letter-spacing:0.04em;text-transform:uppercase;padding:0 1.5rem;">💸 Pagando en efectivo o transferencia — 5% de descuento</span></div>
@@ -1018,10 +1018,10 @@
                     <p id="checkout-subtitulo" class="text-[10px] text-slate-400 font-medium mt-0.5">Revisá tu pedido y confirmá</p>
                 </div>
 
-                <div class="flex items-center gap-1.5 mb-5">
-                    <div id="stepdot-1" class="h-1 flex-1 rounded-full bg-teal-500 transition-colors"></div>
-                    <div id="stepdot-2" class="h-1 flex-1 rounded-full bg-slate-200 transition-colors"></div>
-                    <div id="stepdot-3" class="h-1 flex-1 rounded-full bg-slate-200 transition-colors"></div>
+                <div id="checkout-steps-bar" class="flex items-center gap-1.5 mb-6" style="position:relative;overflow:hidden;">
+                    <div id="stepdot-1" class="h-2 flex-1 rounded-full bg-teal-500 transition-colors"></div>
+                    <div id="stepdot-2" class="h-2 flex-1 rounded-full bg-slate-200 transition-colors"></div>
+                    <div id="stepdot-3" class="h-2 flex-1 rounded-full bg-slate-200 transition-colors"></div>
                 </div>
 
                 <!-- PASO 1: Revisar pedido -->
@@ -1097,14 +1097,19 @@
             <div id="checkout-step3" style="display:none;">
                 <div>
                     <label class="checkout-label">Forma de Pago *</label>
+                    <div id="co-pay-desc-head" class="text-[12px] font-black text-green-700 bg-green-100 border border-green-300 rounded-lg py-2 px-3 text-center mb-2">💸 5% de descuento pagando así</div>
                     <div class="checkout-opciones">
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
                         <div class="checkout-opcion" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
-                        <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
-                        <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
+                    </div>
+                    <div id="co-pay-tarjetas">
+                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center my-2.5">Otras formas de pago</div>
+                        <div class="checkout-opciones">
+                            <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
+                            <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
+                        </div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
-                    <div id="checkout-desc-transf" class="hidden mt-3 text-[13px] font-black text-green-700 bg-green-100 border border-green-300 rounded-xl py-3 px-3 text-center">💸 ¡5% de descuento por transferencia/efectivo!</div>
                 </div>
                 <div id="checkoutError" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
                 <div id="wrap-btn-tarjeta" style="display:none;">
@@ -2553,9 +2558,8 @@
             document.getElementById('wrap-btn-enviar').style.display = 'none';
             var _mpw = document.getElementById('wrap-btn-mp'); if(_mpw) _mpw.style.display = 'none';
             var _esMay = window._userRol === 'mayorista';
-            var _ot = document.getElementById('opt-pago-tarjeta'); if(_ot) _ot.style.display = _esMay ? 'none' : '';
-            var _om = document.getElementById('opt-pago-mp'); if(_om) _om.style.display = _esMay ? 'none' : '';
-            var _nd = document.getElementById('checkout-desc-transf'); if(_nd) _nd.classList.add('hidden');
+            var _grpT = document.getElementById('co-pay-tarjetas'); if(_grpT) _grpT.style.display = _esMay ? 'none' : '';
+            var _dh = document.getElementById('co-pay-desc-head'); if(_dh) _dh.style.display = _esMay ? 'none' : '';
             var _e2 = document.getElementById('checkoutError2'); if(_e2) _e2.classList.add('hidden');
             checkoutIrPaso(1);
 
@@ -2569,9 +2573,9 @@
             document.getElementById('checkout-step1').style.display = (n===1)?'block':'none';
             document.getElementById('checkout-step2').style.display = (n===2)?'block':'none';
             document.getElementById('checkout-step3').style.display = (n===3)?'block':'none';
-            document.getElementById('stepdot-1').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=1?'bg-teal-500':'bg-slate-200');
-            document.getElementById('stepdot-2').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=2?'bg-teal-500':'bg-slate-200');
-            document.getElementById('stepdot-3').className = 'h-1 flex-1 rounded-full transition-colors ' + (n>=3?'bg-teal-500':'bg-slate-200');
+            document.getElementById('stepdot-1').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=1?'bg-teal-500':'bg-slate-200');
+            document.getElementById('stepdot-2').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=2?'bg-teal-500':'bg-slate-200');
+            document.getElementById('stepdot-3').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=3?'bg-teal-500':'bg-slate-200');
             var t = {1:['Ultimando detalles del pedido','Revisá los productos de tu pedido'],2:['Verificar datos','Confirmá tus datos de contacto y entrega'],3:['Forma de pago','Elegí cómo querés pagar']};
             document.getElementById('checkout-titulo').textContent = t[n][0];
             document.getElementById('checkout-subtitulo').textContent = t[n][1];
