@@ -1103,7 +1103,7 @@
                         <div class="checkout-opcion pay-disc" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
                     </div>
                     <div id="co-pay-tarjetas">
-                        <div class="checkout-label" style="text-align:center;margin-top:1.6rem;">Otras formas de pago</div>
+                        <div class="checkout-label" style="text-align:center;margin-top:1.6rem;font-size:11px;">Otras formas de pago</div>
                         <div class="checkout-opciones">
                             <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
                             <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
@@ -1570,8 +1570,8 @@
         // FORMATO DE PRECIO (redondeo a centena)
         // ════════════════════════════════════════
         function formatPrecio(valor) {
-            const redondeado = Math.round(parseFloat(valor) / 100) * 100 - 1;
-            return `$${(redondeado || 0).toLocaleString('es-AR')}`;
+            const exacto = Math.round(parseFloat(valor)) || 0;
+            return `$${exacto.toLocaleString('es-AR')}`;
         }
         // ════════════════════════════════════════
         // HASH SIMPLE
@@ -2284,7 +2284,7 @@
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
             const val = logueado ? getPrecioUsuario(p) : p.precioP;
-            return Math.round(parseFloat(val) / 100) * 100 - 1;
+            return Math.round(parseFloat(val)) || 0;
         }
 
         // Actualiza precios (y stock) del carrito guardado, según el catálogo actual y el rol

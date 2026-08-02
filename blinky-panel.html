@@ -2727,7 +2727,7 @@ async function entregarMercaderia(uid) {
 
 let entregaCarrito = [];
 
-function agregarAEntrega(uid){
+async function agregarAEntrega(uid){
   const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
   const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
@@ -2735,8 +2735,23 @@ function agregarAEntrega(uid){
   if(!prod){ toast('Elegí un producto del catálogo','err'); return; }
   const afuera = (vendEntregas||[]).filter(e=>e.codigo===prod.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
   const enCarrito = entregaCarrito.filter(c=>c.codigo===prod.codigo).reduce((s,c)=>s+c.cant,0);
-  const disponible = Number(prod.stock||0) - afuera - enCarrito;
-  if(cant > disponible){ toast(`Sin stock disponible. Disponible: ${Math.max(0,disponible)} (stock ${prod.stock||0}, afuera ${afuera}${enCarrito?`, en lista ${enCarrito}`:''})`,'err'); return; }
+  let disponible = Number(prod.stock||0) - afuera - enCarrito;
+  if(cant > disponible){
+    const faltan = cant - disponible;
+    const sug = prompt(`"${prod.nombre}" no tiene stock suficiente.\nDisponible: ${Math.max(0,disponible)} (stock ${prod.stock||0}, afuera ${afuera}${enCarrito?`, en lista ${enCarrito}`:''}).\n\n¿Cuántas unidades querés SUMARLE al stock del producto? (las que tenés físicamente)`, String(faltan));
+    if(sug === null) return;
+    const suma = parseInt(sug)||0;
+    if(suma <= 0){ toast('Cantidad inválida','err'); return; }
+    const nuevoStock = Number(prod.stock||0) + suma;
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(prod.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({stock:nuevoStock})});
+      if(!r.ok) throw new Error('patch');
+      prod.stock = nuevoStock;
+      toast(`Stock de "${prod.nombre}" → ${nuevoStock} ✓`,'ok');
+      disponible = nuevoStock - afuera - enCarrito;
+    } catch(e){ toast('No se pudo actualizar el stock','err'); return; }
+    if(cant > disponible){ toast(`Aún no alcanza (disponible ${Math.max(0,disponible)})`,'err'); return; }
+  }
   const ex = entregaCarrito.find(c=>c.codigo===prod.codigo);
   if(ex) ex.cant += cant; else entregaCarrito.push({codigo:prod.codigo, nombre:prod.nombre, cant});
   document.getElementById('vend-ent-prod').value='';
