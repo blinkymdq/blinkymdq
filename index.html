@@ -1523,6 +1523,7 @@
                 llenarSelect('selectMarcaMobile', 'marca');
 
                 renderMasVistos();
+                refrescarCarrito();
 
                 const queryParam = new URLSearchParams(window.location.search).get('q');
                 const addParam   = new URLSearchParams(window.location.search).get('add');
@@ -2053,7 +2054,7 @@
         async function aplicarSesion(user) {
             let { data, error } = await supabaseClient
                 .from('usuarios')
-                .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento')
+                .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento, carrito')
                 .eq('id', user.id)
                 .single();
 
@@ -2070,7 +2071,7 @@
                         nombre: nombreNuevo,
                         rol: 'minorista'
                     })
-                    .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento')
+                    .select('rol, nombre, telefono, dni, provincia, localidad, direccion, nacimiento, carrito')
                     .single();
                 data = nuevoPerfil;
             }
@@ -2092,6 +2093,13 @@
             document.body.classList.add('is-logged-in');
             if (esMayorista) document.body.classList.add('es-mayorista');
             else document.body.classList.remove('es-mayorista');
+            // La cuenta es la fuente de verdad: el carrito guardado manda (así se propagan las bajas).
+            // Si la cuenta nunca guardó un carrito (null), se mantiene el local del invitado.
+            try {
+                if (data && Array.isArray(data.carrito)) { carrito = data.carrito; }
+            } catch(e){}
+            refrescarCarrito();
+            actualizarCarritoUI();
 
             const nombreCorto = nombre.split(' ')[0].toUpperCase();
             document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
@@ -2264,12 +2272,30 @@
         // ════════════════════════════════════════
         // CARRITO
         // ════════════════════════════════════════
-        let carrito = []; // [{id, nombre, precio, precioLabel, img, cantidad}]
+        let carrito = (function(){ try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e){ return []; } })(); // persistido en localStorage
 
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
             const val = logueado ? getPrecioUsuario(p) : p.precioP;
             return Math.round(parseFloat(val) / 100) * 100 - 1;
+        }
+
+        // Actualiza precios (y stock) del carrito guardado, según el catálogo actual y el rol
+        function refrescarCarrito() {
+            if (!carrito.length || !productos || !productos.length) return;
+            var cambio = false;
+            var nuevos = [];
+            carrito.forEach(function(it) {
+                var p = productos.find(function(x){ return x.id === it.id || (it.codigo && x.codigo === it.codigo); });
+                if (!p) { cambio = true; return; }
+                var np = Number(getPrecioCarrito(p));
+                if (np && np !== it.precio) { it.precio = np; cambio = true; }
+                it.stock = Number(p.stock || 0);
+                if (p.nombre) it.nombre = p.nombre;
+                nuevos.push(it);
+            });
+            carrito = nuevos;
+            if (cambio) actualizarCarritoUI();
         }
 
         function agregarAlCarrito(idx) {
@@ -2340,7 +2366,17 @@
             mostrarBtnFlotante();
         }
 
+        var _saveCartTimer = null;
+        function guardarCarritoCuenta() {
+            if (!window._userId) return;
+            clearTimeout(_saveCartTimer);
+            _saveCartTimer = setTimeout(function(){
+                try { supabaseClient.from('usuarios').update({ carrito: carrito }).eq('id', window._userId); } catch(e){}
+            }, 700);
+        }
         function actualizarCarritoUI() {
+            try { localStorage.setItem('blinky_carrito', JSON.stringify(carrito)); } catch(e){}
+            guardarCarritoCuenta();
             const total      = carrito.reduce((s, i) => s + i.precio * i.cantidad, 0);
             const totalItems = carrito.reduce((s, i) => s + i.cantidad, 0);
 
@@ -2967,6 +3003,8 @@
         // ════════════════════════════════════════
         mostrarShimmer();
         cargarDatos();
+        actualizarCarritoUI();
+        mostrarBtnFlotante();
     </script>
 
 
