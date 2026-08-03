@@ -106,32 +106,38 @@
 </head>
 <body>
 
-<div style="background:#f3f0ff;border-bottom:1px solid #e5e0fa;width:100%;overflow:hidden;">
-    <div style="height:26px;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 12px;">
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
-            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/></svg>Productos originales
-        </span>
-        <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
-            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compra 100% segura
-        </span>
-        <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#5b21b6;flex-shrink:0;white-space:nowrap;">
-            <svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos a todo el país
-        </span>
-    </div>
-</div>
 
-<header id="main-header" class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm w-full transition-transform duration-300">
+<style>
+    .nav-link { position:relative; overflow:hidden; border-radius:9px; }
+    .nav-link select { background:transparent !important; color:#fff !important; }
+    .nav-link select option { color:#1e293b !important; background:#ffffff !important; }
+    #selectCatMobile option, #selectMarcaMobile option { color:#1e293b; background:#ffffff; }
+    .nav-link::after { content:''; position:absolute; top:0; left:-130%; width:55%; height:100%; background:linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent); transform:skewX(-20deg); pointer-events:none; opacity:0; }
+    .nav-link:hover::after { animation: navShine 0.7s ease; }
+    @keyframes navShine { 0%{ left:-130%; opacity:1; } 100%{ left:140%; opacity:1; } }
+    @keyframes logoDrop {
+        0%   { opacity:0; transform: translateY(-180px); animation-timing-function: ease-in; }
+        50%  { opacity:1; transform: translateY(0);      animation-timing-function: ease-out; }
+        66%  { transform: translateY(-34px);             animation-timing-function: ease-in; }
+        80%  { transform: translateY(0);                 animation-timing-function: ease-out; }
+        90%  { transform: translateY(-13px);             animation-timing-function: ease-in; }
+        96%  { transform: translateY(0);                 animation-timing-function: ease-out; }
+        98%  { transform: translateY(-4px); }
+        100% { transform: translateY(0); }
+    }
+    .logo-anim { animation: logoDrop 1.3s both; transform-origin:center; }
+    @media (prefers-reduced-motion: reduce) { .logo-anim { animation:none; } }
+</style>
+<header id="main-header" class="bg-white sticky top-0 z-40 shadow-sm w-full transition-transform duration-300">
 
     <!-- ── DESKTOP ── -->
-    <div class="hidden md:block">
+    <div class="hidden md:block" style="background:#0a0a0a url('back.webp') center/cover no-repeat;">
         <!-- Fila 1: logo + buscador + usuario + carrito -->
-        <div class="max-w-7xl mx-auto px-6 flex items-center gap-4" style="height:72px;">
+        <div class="max-w-7xl mx-auto px-6 flex items-center gap-4" style="height:110px;">
 
             <!-- Logo con glow -->
             <a href="/" title="Volver al inicio" class="flex-shrink-0" style="filter:drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25));transition:filter 0.2s;" onmouseover="this.style.filter='drop-shadow(0 0 14px rgba(124,58,237,0.75)) drop-shadow(0 0 28px rgba(124,58,237,0.4))'" onmouseout="this.style.filter='drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25))'">
-                <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:65px;width:auto;object-fit:contain;">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:66px;width:auto;object-fit:contain;">
             </a>
 
             <!-- Buscador grande -->
@@ -153,22 +159,21 @@
             <!-- Usuario con dropdown -->
             <div class="flex-shrink-0 relative">
                 <!-- Sin login -->
-                <button onclick="mostrarLogin()" id="btn-login" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                <button onclick="mostrarLogin()" id="btn-login" class="flex items-center gap-2 px-3 py-2 rounded-xl transition-colors" style="background:none;border:none;cursor:pointer;">
                     <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <div style="text-align:left;">
-                        <div style="font-size:9px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
-                        <div style="font-size:11px;font-weight:900;color:#1e293b;text-transform:uppercase;line-height:1.2;">Acceso</div>
-                    </div>
+                    <span style="font-size:13px;font-weight:900;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em;">Ingresá</span>
                 </button>
                 <!-- Logueado -->
                 <div id="user-badge" class="hidden relative">
                     <button onclick="toggleUserMenu()" class="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
                         <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <div style="text-align:left;">
-                            <div style="font-size:9px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
-                            <div id="user-badge-name" style="font-size:11px;font-weight:900;color:#1e293b;line-height:1.2;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                            <div style="font-size:9px;color:#cbd5e1;font-weight:600;line-height:1;">Hola,</div>
+                            <div id="user-badge-name" style="font-size:11px;font-weight:900;color:#ffffff;text-transform:uppercase;line-height:1.2;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                         </div>
-                        <svg style="width:13px;height:13px;color:#94a3b8;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#7c3aed;border-radius:6px;flex-shrink:0;">
+                            <svg style="width:12px;height:12px;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
                     </button>
                     <!-- Dropdown -->
                     <div id="userDropdown" class="hidden absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 py-1" style="min-width:160px;z-index:50;">
@@ -182,7 +187,7 @@
 
             <!-- Carrito header -->
             <button onclick="abrirCarrito()" id="btnCarritoHeader" class="flex-shrink-0 relative" style="background:none;border:none;cursor:pointer;padding:8px;">
-                <svg style="width:26px;height:26px;" fill="none" stroke="#1e293b" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <svg style="width:26px;height:26px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                 </svg>
@@ -192,89 +197,71 @@
         </div>
 
         <!-- Fila 2: filtros + badges -->
-        <div class="border-t border-slate-100">
+        <div style="border-top:1px solid rgba(255,255,255,0.08);">
             <!-- Desktop: categorías + marcas + badges -->
-            <div class="hidden md:flex max-w-7xl mx-auto px-6 items-center gap-3" style="height:44px;">
-                <div class="relative flex-shrink-0">
-                    <select id="selectCat" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;height:36px;background:#7c3aed;color:white;border:none;border-radius:999px;padding:0 2.5rem 0 2.75rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;min-width:140px;">
-                        <option value="">Categorías</option>
+            <div class="hidden md:flex max-w-7xl mx-auto px-6 items-center gap-1" style="height:46px;">
+                <div class="relative flex-shrink-0 nav-link">
+                    <select id="selectCat" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2.25rem 0 2.5rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                        <option value="" style="color:#1e293b;">Categorías</option>
                     </select>
                     <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
-                <div class="relative flex-shrink-0">
-                    <select id="selectMarca" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;height:36px;background:white;color:#1e293b;border:none;border-radius:999px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;min-width:110px;">
-                        <option value="">Marcas</option>
+                <span style="color:rgba(255,255,255,0.25);font-weight:300;font-size:18px;line-height:1;user-select:none;">|</span>
+                <div class="relative flex-shrink-0 nav-link">
+                    <select id="selectMarca" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                        <option value="" style="color:#1e293b;">Marcas</option>
                     </select>
-                    <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#7c3aed"/></svg>
-                    <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div style="width:1px;height:20px;background:#e2e8f0;flex-shrink:0;margin:0 4px;"></div>
-                <div class="flex items-center gap-5 flex-1 justify-end" style="margin-left:auto;">
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">PROMOS</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Exclusivas</div></div>
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">3 CUOTAS SIN INTERÉS</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Con BBVA</div></div>
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">ENVÍOS EN MDP</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">En el día</div></div>
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
-                        <div><div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">ATENCIÓN</div><div style="font-size:9px;font-weight:900;color:#1e293b;line-height:1.2;text-transform:uppercase;">Personalizada</div></div>
-                    </div>
+                    <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
+                    <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
             </div>
             <!-- Mobile: ticker badges -->
-            <div class="md:hidden" style="height:36px;overflow:hidden;background:#fafafa;border-top:1px solid #f1f5f9;">
+            <div class="md:hidden" style="height:36px;overflow:hidden;background:transparent;border-top:1px solid rgba(255,255,255,0.08);">
                 <div style="display:inline-flex;align-items:center;gap:20px;height:36px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
                     <span style="color:#c4b5fd;flex-shrink:0;">•</span>
-                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ── MOBILE ── -->
-    <div class="md:hidden px-3 pt-1 pb-3 flex flex-col gap-3">
+    <div class="md:hidden px-3 pt-1 pb-3 flex flex-col gap-3" style="background:#0a0a0a url('back.webp') center/cover no-repeat;">
         <!-- Fila 1: usuario + carrito (derecha) -->
         <div class="flex items-center gap-2 justify-end">
             <!-- Sin login -->
             <button onclick="mostrarLogin()" id="btn-login-mobile" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
                 <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <div style="text-align:left;">
-                    <div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
-                    <div style="font-size:10px;font-weight:900;color:#1e293b;line-height:1.2;">Acceso</div>
-                </div>
+                <span style="font-size:11px;font-weight:900;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em;">Ingresá</span>
             </button>
             <!-- Logueado -->
             <div id="user-badge-mobile" class="hidden relative">
                 <button onclick="cerrarSesion()" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
                     <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <div style="text-align:left;">
-                        <div style="font-size:8px;color:#94a3b8;font-weight:600;line-height:1;">Hola,</div>
-                        <span id="user-badge-name-mobile" style="font-size:10px;font-weight:900;color:#1e293b;line-height:1.2;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;"></span>
+                        <div style="font-size:8px;color:#cbd5e1;font-weight:600;line-height:1;">Hola,</div>
+                        <span id="user-badge-name-mobile" style="font-size:10px;font-weight:900;color:#ffffff;text-transform:uppercase;line-height:1.2;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;"></span>
                     </div>
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#7c3aed;border-radius:5px;flex-shrink:0;">
+                        <svg style="width:11px;height:11px;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
                 </button>
             </div>
             <!-- Carrito -->
             <button onclick="abrirCarrito()" class="relative" style="background:none;border:none;cursor:pointer;padding:6px;">
-                <svg style="width:24px;height:24px;" fill="none" stroke="#1e293b" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <svg style="width:24px;height:24px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                 </svg>
@@ -284,7 +271,7 @@
         <!-- Fila 2: logo + buscador -->
         <div class="flex items-center gap-4 pr-3 pl-1">
             <a href="/" title="Volver al inicio" style="filter:drop-shadow(0 0 5px rgba(124,58,237,0.35));flex-shrink:0;">
-                <img src="blinkysinfondo.png" alt="Blinky MDQ" style="height:72px;width:auto;object-fit:contain;">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:72px;width:auto;object-fit:contain;">
             </a>
             <div class="search-wrapper flex-1">
                 <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
@@ -303,38 +290,38 @@
         <!-- Fila 3: desplegables -->
         <div class="flex gap-2 pr-3 pl-1">
             <div class="relative flex-1">
-                <select id="selectCatMobile" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:#7c3aed;color:white;border:none;border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
-                    <option value="">Categorías</option>
+                <select id="selectCatMobile" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="" style="color:#1e293b;">Categorías</option>
                 </select>
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="relative flex-1">
-                <select id="selectMarcaMobile" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:white;color:#1e293b;border:1.5px solid #e2e8f0;border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:700;text-transform:uppercase;outline:none;cursor:pointer;">
-                    <option value="">Marcas</option>
+                <select id="selectMarcaMobile" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="" style="color:#1e293b;">Marcas</option>
                 </select>
-                <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#7c3aed"/></svg>
-                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
+                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
         </div>
         <!-- Fila 4: ticker badges mobile -->
-        <div style="margin:0 -12px;overflow:hidden;background:#fafafa;border-top:1px solid #f1f5f9;height:34px;">
+        <div style="margin:0 -12px;overflow:hidden;background:transparent;border-top:1px solid rgba(255,255,255,0.08);height:34px;">
             <div style="display:inline-flex;align-items:center;gap:20px;height:34px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
                 <span style="color:#c4b5fd;">•</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#1e293b;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
             </div>
         </div>
         <!-- Fila 5: revender -->
