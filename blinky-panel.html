@@ -1635,6 +1635,14 @@ async function agregarPago(num, totalPedido) {
       toast('Pago registrado ✓','ok');
     }
 
+    // Mail al cliente avisando el pago registrado (siempre que tenga email)
+    if (pedido.email) {
+      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {
+        method:'POST', headers:hdrs,
+        body: JSON.stringify({ email: pedido.email, nombre: pedido.nombre||'', numero_pedido: num, monto: monto, forma_pago: forma })
+      }).catch(()=>{});
+    }
+
     verPedido(num,false);
     cargarPedidos();
     cargarCajas();
