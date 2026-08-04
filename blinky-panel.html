@@ -2546,6 +2546,16 @@ async function eliminarItem(itemId, numPedido) {
 
     toast('Producto quitado ✓','ok');
     await ajustarStock(items, +1); // devolver stock del ítem quitado
+
+    // Avisar al cliente del cambio y reenviar el comprobante actualizado
+    if (ps[0] && ps[0].email && confirm('¿Avisar al cliente que se editó el pedido y reenviarle el comprobante actualizado?')) {
+      fetch(`${SUPA_URL}/functions/v1/notificar-pedido-editado`, {
+        method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido: numPedido })
+      }).then(r=>r.json()).then(d=>{
+        toast((d && d.ok) ? 'Aviso enviado al cliente ✓' : ((d&&d.motivo)||'No se pudo enviar el aviso'), (d&&d.ok)?'ok':'err');
+      }).catch(()=>toast('No se pudo enviar el aviso','err'));
+    }
+
     verPedido(numPedido, false);
     cargarPedidos();
   } catch(e){toast('Error al quitar producto','err');}
