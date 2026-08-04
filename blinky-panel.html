@@ -355,6 +355,28 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       <div class="cajas-grid" id="cajas-cards"><div class="loading-txt">Cargando...</div></div>
 
       <div class="chart-card" style="margin-bottom:1rem;">
+        <div class="chart-title">🔄 Transferir entre cajas</div>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+          <select id="tc-origen" class="filter-select">
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="transferencia">📲 Transferencia</option>
+            <option value="transferencia_rm">🏦 Transferencia RM</option>
+            <option value="tarjeta">💳 Tarjeta</option>
+          </select>
+          <span style="font-weight:900;color:var(--text2);">→</span>
+          <select id="tc-destino" class="filter-select">
+            <option value="transferencia">📲 Transferencia</option>
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="transferencia_rm">🏦 Transferencia RM</option>
+            <option value="tarjeta">💳 Tarjeta</option>
+          </select>
+          <input id="tc-monto" type="number" min="0" class="filter-input" placeholder="Monto" style="max-width:140px;">
+          <input id="tc-nota" type="text" class="filter-input" placeholder="Nota (opcional)" style="max-width:220px;">
+          <button class="btn-refresh" style="background:var(--violet);color:#fff;" onclick="transferirCaja()">Transferir</button>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:1rem;">
         <div class="chart-title">Detalle de pagos (ingresos)</div>
         <div id="cajas-detalle"><div class="loading-txt">Cargando...</div></div>
       </div>
@@ -1439,6 +1461,24 @@ function setFechasMes() {
   cargarCajas();
 }
 
+async function transferirCaja(){
+  const origen = document.getElementById('tc-origen').value;
+  const destino = document.getElementById('tc-destino').value;
+  const monto = parseFloat(document.getElementById('tc-monto').value);
+  const nota = (document.getElementById('tc-nota').value||'').trim()||null;
+  const lbl = {efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'};
+  if(origen===destino){ toast('Elegí cajas distintas','err'); return; }
+  if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
+  if(!confirm(`Transferir $${monto.toLocaleString('es-AR')} de ${lbl[origen]} a ${lbl[destino]}?`)) return;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/transferencias_caja`, {method:'POST', headers:hdrs, body:JSON.stringify({ origen, destino, monto, nota, fecha:hoyStr() })});
+    if(!r.ok){ toast('Error al transferir','err'); return; }
+    toast('Transferencia realizada ✓','ok');
+    document.getElementById('tc-monto').value=''; document.getElementById('tc-nota').value='';
+    cargarCajas();
+  } catch(e){ toast('Error al transferir','err'); }
+}
+
 async function cargarCajas() {
   const desde=document.getElementById('caja-desde').value;
   const hasta=document.getElementById('caja-hasta').value;
@@ -1449,13 +1489,23 @@ async function cargarCajas() {
     const desdeISO=desde+'T00:00:00-03:00';
     const hastaISO=hasta+'T23:59:59-03:00';
 
-    const [pagosR, gastosR] = await Promise.all([
+    const [pagosR, gastosR, saldosR] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/pagos?created_at=gte.${encodeURIComponent(desdeISO)}&created_at=lte.${encodeURIComponent(hastaISO)}&order=created_at.desc`,{headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/gastos?fecha=gte.${desde}&fecha=lte.${hasta}&order=fecha.desc`,{headers:hdrs})
+      fetch(`${SUPA_URL}/rest/v1/gastos?fecha=gte.${desde}&fecha=lte.${hasta}&order=fecha.desc`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/rpc/saldos_cajas`,{method:'POST',headers:hdrs,body:'{}'})
     ]);
     const pagos = await pagosR.json();
     const gastos = await gastosR.json();
     if(!Array.isArray(pagos)){document.getElementById('cajas-cards').innerHTML='<div class="loading-txt">Error</div>';return;}
+
+    // Saldo REAL acumulado (al día) por caja
+    let saldosRaw = {}; try { saldosRaw = await saldosR.json() || {}; } catch(e){ saldosRaw = {}; }
+    const saldo = {
+      efectivo: Number(saldosRaw.efectivo||0),
+      transferencia: Number(saldosRaw.transferencia||0),
+      transferencia_rm: Number(saldosRaw.transferencia_rm||0),
+      tarjeta: Number(saldosRaw.tarjeta||0)
+    };
 
     const ing = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
     const gas = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
@@ -1467,43 +1517,42 @@ async function cargarCajas() {
 
     const totalIng = ing.efectivo+ing.transferencia+ing.transferencia_rm+ing.tarjeta;
     const totalGas = gas.efectivo+gas.transferencia+gas.transferencia_rm+gas.tarjeta;
-    const totalNeto = totalIng-totalGas;
+    const totalNeto = saldo.efectivo+saldo.transferencia+saldo.transferencia_rm+saldo.tarjeta;
 
     document.getElementById('cajas-cards').innerHTML=`
       <div class="caja-card caja-efectivo">
         <div class="caja-icon">💵</div>
         <div class="caja-label">Efectivo</div>
-        <div class="caja-val ${netoClass(ing.efectivo-gas.efectivo)}">${fmt(ing.efectivo-gas.efectivo)}</div>
-        <div class="caja-sub">Ingresos: $${ing.efectivo.toLocaleString('es-AR')}</div>
-        <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.efectivo.toLocaleString('es-AR')}</div>
+        <div class="caja-val ${netoClass(saldo.efectivo)}">${fmt(saldo.efectivo)}</div>
+        <div class="caja-sub" style="opacity:0.9;">Saldo al día</div>
+        <div class="caja-sub">Período: +$${ing.efectivo.toLocaleString('es-AR')} / <span style="color:var(--red);">-$${gas.efectivo.toLocaleString('es-AR')}</span></div>
       </div>
       <div class="caja-card caja-transferencia">
         <div class="caja-icon">📲</div>
         <div class="caja-label">Transferencia</div>
-        <div class="caja-val ${netoClass(ing.transferencia-gas.transferencia)}">${fmt(ing.transferencia-gas.transferencia)}</div>
-        <div class="caja-sub">Ingresos: $${ing.transferencia.toLocaleString('es-AR')}</div>
-        <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.transferencia.toLocaleString('es-AR')}</div>
+        <div class="caja-val ${netoClass(saldo.transferencia)}">${fmt(saldo.transferencia)}</div>
+        <div class="caja-sub" style="opacity:0.9;">Saldo al día</div>
+        <div class="caja-sub">Período: +$${ing.transferencia.toLocaleString('es-AR')} / <span style="color:var(--red);">-$${gas.transferencia.toLocaleString('es-AR')}</span></div>
       </div>
       <div class="caja-card caja-transferencia_rm">
         <div class="caja-icon">🏦</div>
         <div class="caja-label">Transferencia RM</div>
-        <div class="caja-val ${netoClass(ing.transferencia_rm-gas.transferencia_rm)}">${fmt(ing.transferencia_rm-gas.transferencia_rm)}</div>
-        <div class="caja-sub">Ingresos: $${ing.transferencia_rm.toLocaleString('es-AR')}</div>
-        <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.transferencia_rm.toLocaleString('es-AR')}</div>
+        <div class="caja-val ${netoClass(saldo.transferencia_rm)}">${fmt(saldo.transferencia_rm)}</div>
+        <div class="caja-sub" style="opacity:0.9;">Saldo al día</div>
+        <div class="caja-sub">Período: +$${ing.transferencia_rm.toLocaleString('es-AR')} / <span style="color:var(--red);">-$${gas.transferencia_rm.toLocaleString('es-AR')}</span></div>
       </div>
       <div class="caja-card caja-tarjeta">
         <div class="caja-icon">💳</div>
         <div class="caja-label">Tarjeta</div>
-        <div class="caja-val ${netoClass(ing.tarjeta-gas.tarjeta)}">${fmt(ing.tarjeta-gas.tarjeta)}</div>
-        <div class="caja-sub">Ingresos: $${ing.tarjeta.toLocaleString('es-AR')}</div>
-        <div class="caja-sub" style="color:var(--red);">Gastos: -$${gas.tarjeta.toLocaleString('es-AR')}</div>
+        <div class="caja-val ${netoClass(saldo.tarjeta)}">${fmt(saldo.tarjeta)}</div>
+        <div class="caja-sub" style="opacity:0.9;">Saldo al día</div>
+        <div class="caja-sub">Período: +$${ing.tarjeta.toLocaleString('es-AR')} / <span style="color:var(--red);">-$${gas.tarjeta.toLocaleString('es-AR')}</span></div>
       </div>
       <div class="caja-card" style="border-color:rgba(245,158,11,0.3);">
         <div class="caja-icon">📊</div>
-        <div class="caja-label">Total neto</div>
+        <div class="caja-label">Total al día</div>
         <div class="caja-val ${netoClass(totalNeto)}" style="${totalNeto>=0?'color:var(--yellow)':''}">${fmt(totalNeto)}</div>
-        <div class="caja-sub">Ingresos: $${totalIng.toLocaleString('es-AR')}</div>
-        <div class="caja-sub" style="color:var(--red);">Gastos: -$${totalGas.toLocaleString('es-AR')}</div>
+        <div class="caja-sub" style="opacity:0.9;">Suma de todas las cajas</div>
       </div>
     `;
 
