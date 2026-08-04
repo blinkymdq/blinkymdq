@@ -600,8 +600,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 
         <div style="display:flex;gap:0.4rem;border-bottom:1px solid var(--border);margin-bottom:1rem;">
           <button class="fc-tab-btn active" id="fc-tabbtn-pedidos" onclick="switchFichaTab('pedidos')">Pedidos</button>
-          <button class="fc-tab-btn" id="fc-tabbtn-consignacion" onclick="switchFichaTab('consignacion')">Consignación</button>
-          <button class="fc-tab-btn" id="fc-tabbtn-pagos" onclick="switchFichaTab('pagos')">Pagos</button>
+          <button class="fc-tab-btn" id="fc-tabbtn-saldo" onclick="switchFichaTab('saldo')">Saldo a favor</button>
         </div>
 
         <!-- TAB PEDIDOS -->
@@ -609,37 +608,26 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <div id="fc-pedidos-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
-        <!-- TAB CONSIGNACIÓN -->
-        <div id="fc-tab-consignacion" style="display:none;">
-          <div class="fc-section-title" style="margin-top:0;">Resumen</div>
-          <div class="fc-resumen" id="fc-resumen"></div>
-
-          <div class="fc-section-title">Productos en consignación</div>
-          <div id="fc-consignacion-tabla"><div class="loading-txt">Cargando...</div></div>
-
-          <div class="fc-form-row">
-            <input id="fc-nuevo-producto" type="text" list="fc-productos-list" placeholder="Nombre del producto..." oninput="autocompletarPrecioConsignacion(this.value)">
-            <datalist id="fc-productos-list"></datalist>
-            <input id="fc-nueva-cant" type="number" min="1" placeholder="Cantidad">
-            <input id="fc-nuevo-precio" type="number" min="0" step="0.01" placeholder="Precio unit.">
-            <button class="fc-btn" onclick="agregarConsignacion()">+ Agregar</button>
-          </div>
-        </div>
-
-        <!-- TAB PAGOS -->
-        <div id="fc-tab-pagos" style="display:none;">
-          <div class="fc-section-title" style="margin-top:0;">Pagos de consignación</div>
-          <div id="fc-pagos-lista"></div>
-          <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;">
-            <input id="fc-pago-monto" type="number" min="0" step="0.01" placeholder="Monto">
-            <select id="fc-pago-forma">
+        <!-- TAB SALDO A FAVOR -->
+        <div id="fc-tab-saldo" style="display:none;">
+          <div class="fc-section-title" style="margin-top:0;">Saldo a favor del cliente</div>
+          <div style="font-size:1.4rem;font-weight:900;color:var(--green);margin-bottom:0.8rem;" id="fc-saldo-actual">$0</div>
+          <div class="fc-section-title">Devolver / enviar saldo</div>
+          <div class="fc-form-row" style="grid-template-columns:1fr 1fr;gap:0.6rem;">
+            <input id="fc-sf-monto" type="number" min="0" step="0.01" placeholder="Monto a enviar">
+            <select id="fc-sf-caja">
               <option value="efectivo">💵 Efectivo</option>
               <option value="transferencia">📲 Transferencia</option>
               <option value="transferencia_rm">🏦 Transferencia RM</option>
               <option value="tarjeta">💳 Tarjeta</option>
             </select>
-            <button class="fc-btn" onclick="agregarPagoConsignacion()">+ Agregar</button>
           </div>
+          <div class="fc-form-row" style="grid-template-columns:1fr auto;gap:0.6rem;margin-top:0.5rem;">
+            <input id="fc-sf-motivo" type="text" placeholder="Motivo (obligatorio)">
+            <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="enviarSaldoFavor()">Enviar</button>
+          </div>
+          <div class="fc-section-title">Historial de envíos</div>
+          <div id="fc-sf-historial"><div class="loading-txt">Cargando...</div></div>
         </div>
       </div>
     </div>
@@ -2430,9 +2418,6 @@ async function abrirFichaCliente(u) {
   document.getElementById('modal-cliente').style.display = 'flex';
   switchFichaTab('pedidos');
 
-  poblarDatalistProductosFicha();
-  await cargarConsignacionCliente();
-  await cargarPagosConsignacionCliente();
   await cargarPedidosCliente();
 }
 
@@ -2497,10 +2482,63 @@ async function guardarEdicionFicha() {
 }
 
 function switchFichaTab(tab) {
-  ['pedidos','consignacion','pagos'].forEach(t => {
-    document.getElementById(`fc-tab-${t}`).style.display = t===tab ? 'block' : 'none';
-    document.getElementById(`fc-tabbtn-${t}`).classList.toggle('active', t===tab);
+  ['pedidos','saldo'].forEach(t => {
+    const d = document.getElementById(`fc-tab-${t}`); if(d) d.style.display = t===tab ? 'block' : 'none';
+    const b = document.getElementById(`fc-tabbtn-${t}`); if(b) b.classList.toggle('active', t===tab);
   });
+  if(tab==='saldo') cargarSaldoFavorFicha();
+}
+
+async function cargarSaldoFavorFicha(){
+  if(!clienteActual) return;
+  const saldo = Number(clienteActual.saldo_favor||0);
+  document.getElementById('fc-saldo-actual').textContent = '$'+saldo.toLocaleString('es-AR');
+  const mEl = document.getElementById('fc-sf-monto'); if(mEl && !mEl.value && saldo>0) mEl.value = saldo;
+  const cont = document.getElementById('fc-sf-historial');
+  try {
+    const hist = await (await fetch(`${SUPA_URL}/rest/v1/saldos_favor_enviados?usuario_id=eq.${clienteActual.id}&order=created_at.desc`, {headers:hdrs})).json();
+    if(!Array.isArray(hist) || !hist.length){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Sin envíos registrados.</div>'; return; }
+    cont.innerHTML = hist.map(h=>{
+      const f = new Date(h.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[h.forma_pago]||h.forma_pago||'—';
+      return `<div class="pago-item">
+        <span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${h.numero}</b> · <b>$${Number(h.monto).toLocaleString('es-AR')}</b> · ${cajaLbl}
+        <br><span style="font-size:0.72rem;color:var(--text3);">${f}${h.motivo?` · ${esc(h.motivo)}`:''}</span></span>
+      </div>`;
+    }).join('');
+  } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar el historial.</div>'; }
+}
+
+async function enviarSaldoFavor(){
+  if(!clienteActual) return;
+  const saldo = Number(clienteActual.saldo_favor||0);
+  const monto = parseFloat(document.getElementById('fc-sf-monto').value);
+  const caja = document.getElementById('fc-sf-caja').value;
+  const motivo = (document.getElementById('fc-sf-motivo').value||'').trim();
+  if(saldo<=0){ toast('El cliente no tiene saldo a favor','err'); return; }
+  if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
+  if(monto>saldo){ toast('El monto supera el saldo a favor disponible','err'); return; }
+  if(!motivo){ toast('Poné un motivo','err'); return; }
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja];
+  if(!confirm(`Enviar $${monto.toLocaleString('es-AR')} de saldo a favor desde ${cajaLbl}?`)) return;
+  try {
+    // 1) Registrar el envío (numerado)
+    const rR = await fetch(`${SUPA_URL}/rest/v1/saldos_favor_enviados`, {method:'POST', headers:hdrs, body:JSON.stringify({ usuario_id: clienteActual.id, monto, forma_pago: caja, motivo })});
+    const reg = (await rR.json())[0];
+    // 2) Descontar de la caja (gasto)
+    await fetch(`${SUPA_URL}/rest/v1/gastos`, {method:'POST', headers:hdrs, body:JSON.stringify({ proveedor: clienteActual.nombre||'Cliente', descripcion: `Saldo a favor enviado ${reg?reg.numero:''}${motivo?' - '+motivo:''}`, monto, forma_pago: caja, fecha: hoyStr() })});
+    // 3) Bajar el saldo a favor del cliente
+    const nuevo = Math.max(0, saldo - monto);
+    await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ saldo_favor: nuevo })});
+    clienteActual.saldo_favor = nuevo;
+    // refrescar badge
+    const badge = document.getElementById('fc-saldo-favor-badge');
+    if(nuevo>0){ badge.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+nuevo.toLocaleString('es-AR'); }
+    else badge.style.display='none';
+    document.getElementById('fc-sf-monto').value=''; document.getElementById('fc-sf-motivo').value='';
+    toast(`Saldo a favor enviado ${reg?reg.numero:''} ✓`,'ok');
+    cargarSaldoFavorFicha();
+  } catch(e){ toast('Error al enviar el saldo a favor','err'); }
 }
 
 function cerrarFichaCliente() {
