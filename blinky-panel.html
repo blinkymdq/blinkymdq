@@ -456,8 +456,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <div class="gasto-form-grid">
             <input class="gasto-input" id="co-n-nombre" type="text" placeholder="Nombre del producto nuevo">
             <input class="gasto-input" id="co-n-codigo" type="text" placeholder="Código (opcional, se autogenera)">
-            <input class="gasto-input" id="co-n-categoria" type="text" placeholder="Categoría (opcional)">
-            <input class="gasto-input" id="co-n-marca" type="text" placeholder="Marca (opcional)">
+            <input class="gasto-input" id="co-n-categoria" type="text" list="co-cats" placeholder="Categoría (elegí o escribí)">
+            <datalist id="co-cats"></datalist>
+            <input class="gasto-input" id="co-n-marca" type="text" list="co-marcas" placeholder="Marca (elegí o escribí)">
+            <datalist id="co-marcas"></datalist>
           </div>
         </div>
         <div class="gasto-form-grid" style="margin-top:0.5rem;">
@@ -1089,9 +1091,14 @@ async function cargarCompras(){
   } catch(e){}
   // Productos para el buscador
   try {
-    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda&order=nombre.asc`, {headers:hdrs})).json();
+    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda,categoria,marca&order=nombre.asc`, {headers:hdrs})).json();
     const dl = document.getElementById('co-prods');
     if(dl) dl.innerHTML = (coProds||[]).map(p=>`<option value="${(p.nombre||'').replace(/"/g,'&quot;')} — ${p.codigo}">`).join('');
+    // Datalists de categoría y marca (para producto nuevo)
+    const cats = [...new Set((coProds||[]).map(p=>(p.categoria||'').trim()).filter(Boolean))].sort();
+    const marcas = [...new Set((coProds||[]).map(p=>(p.marca||'').trim()).filter(Boolean))].sort();
+    const dlc = document.getElementById('co-cats'); if(dlc) dlc.innerHTML = cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+    const dlm = document.getElementById('co-marcas'); if(dlm) dlm.innerHTML = marcas.map(m=>`<option value="${m.replace(/"/g,'&quot;')}">`).join('');
   } catch(e){ coProds = []; }
   renderCoLista();
   renderComprasRegistradas();
@@ -1230,6 +1237,7 @@ async function confirmarCompra(){
         await fetch(`${SUPA_URL}/rest/v1/productos`, {method:'POST', headers:hdrs, body:JSON.stringify({
           codigo: cod, nombre: it.nombre, stock: it.cantidad,
           costo_usd: moneda==='usd'?it.costo_unitario:null, costo_final: it.costo_final, moneda,
+          imp_e: 15, ganancia: 50, ganancia_mayorista: 30,
           categoria: it.nuevo&&it.nuevo.categoria?it.nuevo.categoria:null, marca: it.nuevo&&it.nuevo.marca?it.nuevo.marca:null,
           precio_publico: 0, precio_mayorista: 0, estado: 'inactivo'
         })});
@@ -1254,10 +1262,11 @@ async function confirmarCompra(){
       })});
     }
 
-    // 5) Descontar de la caja: registrar gasto
-    await fetch(`${SUPA_URL}/rest/v1/gastos`, {method:'POST', headers:hdrs, body:JSON.stringify({
+    // 5) Descontar de la caja: registrar gasto y guardar su id en la compra
+    const gR = await fetch(`${SUPA_URL}/rest/v1/gastos`, {method:'POST', headers:hdrs, body:JSON.stringify({
       proveedor: proveedor||'Compra', descripcion: `Compra ${compra.numero_compra}`, monto: total, forma_pago: caja, fecha: hoyStr()
     })});
+    try { const g = (await gR.json())[0]; if(g && g.id) await fetch(`${SUPA_URL}/rest/v1/compras?id=eq.${compra.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({gasto_id:g.id})}); } catch(e){}
 
     toast(`Compra ${compra.numero_compra} registrada ✓`,'ok');
     coItems = [];
@@ -1269,6 +1278,35 @@ async function confirmarCompra(){
   } catch(e){ toast('Error al confirmar la compra','err'); }
 }
 
+async function anularCompra(id){
+  const motivo = (prompt('¿Por qué se anula esta compra? (obligatorio)') || '').trim();
+  if(motivo === '') { toast('Necesitás poner un motivo para anular','err'); return; }
+  try {
+    // Traer la compra y sus ítems
+    const c = (await (await fetch(`${SUPA_URL}/rest/v1/compras?id=eq.${id}&select=*`, {headers:hdrs})).json())[0];
+    if(!c){ toast('Compra no encontrada','err'); return; }
+    if(c.anulada){ toast('Esa compra ya está anulada','err'); return; }
+    const items = await (await fetch(`${SUPA_URL}/rest/v1/compra_items?compra_id=eq.${id}&select=*`, {headers:hdrs})).json();
+
+    // 1) Revertir stock (restar lo que se había sumado)
+    for(const it of (items||[])){
+      if(!it.codigo) continue;
+      const ps = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs})).json();
+      const stockActual = (ps[0] && Number(ps[0].stock)) || 0;
+      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ stock: Math.max(0, stockActual - Number(it.cantidad||0)) })});
+    }
+
+    // 2) Devolver la plata: borrar el gasto asociado
+    if(c.gasto_id) await fetch(`${SUPA_URL}/rest/v1/gastos?id=eq.${c.gasto_id}`, {method:'DELETE', headers:hdrs});
+
+    // 3) Marcar la compra como anulada (queda el registro)
+    await fetch(`${SUPA_URL}/rest/v1/compras?id=eq.${id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ anulada:true, motivo_anulacion:motivo, anulada_at:new Date().toISOString() })});
+
+    toast('Compra anulada · stock y plata revertidos ✓','ok');
+    renderComprasRegistradas();
+  } catch(e){ toast('Error al anular la compra','err'); }
+}
+
 async function renderComprasRegistradas(){
   const cont = document.getElementById('lista-compras'); if(!cont) return;
   try {
@@ -1277,12 +1315,14 @@ async function renderComprasRegistradas(){
     cont.innerHTML = compras.map(c=>{
       const fecha = new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
       const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[c.forma_pago]||c.forma_pago||'—';
-      return `<div class="pago-item">
+      const anulada = c.anulada === true;
+      return `<div class="pago-item" style="${anulada?'opacity:0.6;':''}">
         <span style="min-width:0;flex:1;">
-          <b style="font-family:monospace;color:var(--violet-light);">${c.numero_compra}</b> · <b>${_coMoney(c.total)}</b> · ${c.moneda==='usd'?'USD':'Pesos'}
-          <br><span style="font-size:0.72rem;color:var(--text3);">${fecha}${c.proveedor?` · ${c.proveedor}`:''} · ${cajaLbl}</span>
+          <b style="font-family:monospace;color:var(--violet-light);${anulada?'text-decoration:line-through;':''}">${c.numero_compra}</b> · <b>${_coMoney(c.total)}</b> · ${c.moneda==='usd'?'USD':'Pesos'}${anulada?' · <span style="color:var(--red);font-weight:700;">ANULADA</span>':''}
+          <br><span style="font-size:0.72rem;color:var(--text3);">${fecha}${c.proveedor?` · ${c.proveedor}`:''} · ${cajaLbl}${anulada&&c.motivo_anulacion?` · Motivo: ${esc(c.motivo_anulacion)}`:''}</span>
         </span>
         <a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/compra-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a>
+        ${anulada?'':`<button class="fc-btn" style="padding:2px 10px;background:var(--red);color:#fff;" onclick="anularCompra(${c.id})">Anular</button>`}
       </div>`;
     }).join('');
   } catch(e){ cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
