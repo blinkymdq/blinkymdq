@@ -309,6 +309,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
     <button class="nav-tab" onclick="switchTab('pagos',this)">Pagos</button>
     <button class="nav-tab" onclick="switchTab('gastos',this)">Gastos</button>
+    <button class="nav-tab" onclick="switchTab('compras',this)">Compras</button>
     <button class="nav-tab" onclick="switchTab('usuarios',this)">Usuarios</button>
     <button class="nav-tab" onclick="switchTab('vendedores',this)">Vendedores</button>
     <button class="nav-tab" onclick="switchTab('cupones',this)">Cupones</button>
@@ -418,6 +419,64 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <button class="btn-refresh" onclick="cargarGastos()">↻ Actualizar</button>
       </div>
       <div id="lista-gastos"><div class="loading-txt">Cargando...</div></div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div id="panel-compras" class="panel">
+      <div class="gasto-form-card">
+        <div class="gasto-form-title">🛒 Nueva compra</div>
+        <div class="gasto-form-grid">
+          <select class="gasto-select" id="co-moneda" onchange="coRecalc()">
+            <option value="usd">Costos en USD</option>
+            <option value="pesos">Costos en Pesos</option>
+          </select>
+          <input class="gasto-input" id="co-dolar" type="number" min="0" placeholder="Valor dólar" oninput="coRecalc()">
+          <select class="gasto-select" id="co-caja">
+            <option value="">Cuenta / caja…</option>
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="transferencia">📲 Transferencia</option>
+            <option value="transferencia_rm">🏦 Transferencia RM</option>
+            <option value="tarjeta">💳 Tarjeta</option>
+          </select>
+          <input class="gasto-input" id="co-proveedor" type="text" placeholder="Proveedor (opcional)">
+        </div>
+        <div class="gasto-form-grid">
+          <input class="gasto-input" id="co-notas" type="text" placeholder="Notas (opcional)" style="grid-column:span 2 / span 2;">
+        </div>
+      </div>
+
+      <div class="gasto-form-card">
+        <div class="gasto-form-title">Agregar producto</div>
+        <div class="gasto-form-grid">
+          <input class="gasto-input" id="co-prod-search" list="co-prods" placeholder="Buscar producto existente (nombre o código)" oninput="coProdElegido(this.value)" style="grid-column:span 2 / span 2;">
+          <datalist id="co-prods"></datalist>
+          <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text2);"><input type="checkbox" id="co-nuevo" onchange="coToggleNuevo()"> Producto nuevo</label>
+        </div>
+        <div id="co-nuevo-campos" style="display:none;">
+          <div class="gasto-form-grid">
+            <input class="gasto-input" id="co-n-nombre" type="text" placeholder="Nombre del producto nuevo">
+            <input class="gasto-input" id="co-n-codigo" type="text" placeholder="Código (opcional, se autogenera)">
+            <input class="gasto-input" id="co-n-categoria" type="text" placeholder="Categoría (opcional)">
+            <input class="gasto-input" id="co-n-marca" type="text" placeholder="Marca (opcional)">
+          </div>
+        </div>
+        <div class="gasto-form-grid" style="margin-top:0.5rem;">
+          <input class="gasto-input" id="co-cant" type="number" min="1" value="1" placeholder="Cantidad" oninput="coPreview()">
+          <input class="gasto-input" id="co-costo" type="number" min="0" step="0.01" placeholder="Costo x unidad" oninput="coPreview()">
+          <input class="gasto-input" id="co-final" type="text" readonly placeholder="Costo final $" style="background:var(--surface2);">
+          <input class="gasto-input" id="co-tot" type="text" readonly placeholder="Costo total" style="background:var(--surface2);">
+        </div>
+        <button class="fc-btn" style="background:var(--violet);color:#fff;margin-top:0.6rem;" onclick="coAgregarItem()">➕ Agregar al listado</button>
+      </div>
+
+      <div id="co-lista" style="margin-bottom:0.8rem;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <div style="font-size:1.1rem;font-weight:900;">Total compra: <span id="co-total" style="color:var(--violet-light);">$0</span></div>
+        <button class="fc-btn" style="background:var(--green);color:#fff;padding:0.6rem 1.4rem;" onclick="confirmarCompra()">✓ Confirmar compra</button>
+      </div>
+
+      <div class="fc-section-title" style="margin-top:1.5rem;">Compras registradas</div>
+      <div id="lista-compras"><div class="loading-txt">Cargando...</div></div>
     </div>
 
     <!-- PRODUCTOS (ex Stock) -->
@@ -1011,6 +1070,222 @@ function switchTab(tab, btn) {
   if(tab==='cupones') cargarCupones();
   if(tab==='reportes') cargarReportes();
   if(tab==='stock') cargarProductos();
+  if(tab==='compras') cargarCompras();
+}
+
+// ── COMPRAS ────────────────────────────────────
+const CO_MARKUP = 0.15; // 15% sobre el costo USD
+let coItems = [];
+let coProds = []; // {codigo, nombre, costo_usd, moneda}
+
+function _coMoney(n){ return '$' + Math.round(Number(n)||0).toLocaleString('es-AR'); }
+
+async function cargarCompras(){
+  // Dólar por defecto desde configuracion
+  try {
+    const cfg = await (await fetch(`${SUPA_URL}/rest/v1/configuracion?select=dolar&limit=1`, {headers:hdrs})).json();
+    const dEl = document.getElementById('co-dolar');
+    if(dEl && !dEl.value && cfg && cfg[0] && cfg[0].dolar) dEl.value = cfg[0].dolar;
+  } catch(e){}
+  // Productos para el buscador
+  try {
+    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda&order=nombre.asc`, {headers:hdrs})).json();
+    const dl = document.getElementById('co-prods');
+    if(dl) dl.innerHTML = (coProds||[]).map(p=>`<option value="${(p.nombre||'').replace(/"/g,'&quot;')} — ${p.codigo}">`).join('');
+  } catch(e){ coProds = []; }
+  renderCoLista();
+  renderComprasRegistradas();
+}
+
+function coToggleNuevo(){
+  const on = document.getElementById('co-nuevo').checked;
+  document.getElementById('co-nuevo-campos').style.display = on ? 'block' : 'none';
+  const s = document.getElementById('co-prod-search'); s.disabled = on; if(on) s.value='';
+}
+
+function coProdElegido(val){
+  // val = "Nombre — CODIGO"; si matchea un producto existente en USD, precarga su costo_usd
+  const cod = (val.split('—').pop()||'').trim();
+  const p = coProds.find(x=>String(x.codigo)===cod) || coProds.find(x=>`${x.nombre} — ${x.codigo}`===val);
+  if(p){
+    const moneda = document.getElementById('co-moneda').value;
+    const costoEl = document.getElementById('co-costo');
+    if(moneda==='usd' && p.costo_usd) costoEl.value = p.costo_usd;
+    else if(moneda==='pesos' && p.costo_final) costoEl.value = p.costo_final;
+    coPreview();
+  }
+}
+
+function coCostoFinal(costoUnit){
+  const moneda = document.getElementById('co-moneda').value;
+  const dolar = parseFloat(document.getElementById('co-dolar').value)||0;
+  const c = parseFloat(costoUnit)||0;
+  if(moneda==='usd') return Math.round(c * (1+CO_MARKUP) * dolar);
+  return Math.round(c); // pesos: el costo ya es final
+}
+
+function coPreview(){
+  const cant = parseInt(document.getElementById('co-cant').value)||0;
+  const costo = parseFloat(document.getElementById('co-costo').value)||0;
+  const final = coCostoFinal(costo);
+  document.getElementById('co-final').value = _coMoney(final);
+  document.getElementById('co-tot').value = _coMoney(final*cant);
+}
+
+function coRecalc(){
+  // Cambió moneda o dólar: recalcular final/total de los ítems ya cargados
+  coItems.forEach(it=>{ it.costo_final = coCostoFinal(it.costo_unitario); it.costo_total = it.costo_final * it.cantidad; });
+  coPreview();
+  renderCoLista();
+}
+
+function coAgregarItem(){
+  const esNuevo = document.getElementById('co-nuevo').checked;
+  const cant = parseInt(document.getElementById('co-cant').value)||0;
+  const costo = parseFloat(document.getElementById('co-costo').value);
+  if(!cant || cant<1){ toast('Poné una cantidad válida','err'); return; }
+  if(isNaN(costo) || costo<0){ toast('Poné el costo por unidad','err'); return; }
+  let codigo='', nombre='', nuevo=null;
+  if(esNuevo){
+    nombre = (document.getElementById('co-n-nombre').value||'').trim();
+    if(!nombre){ toast('Poné el nombre del producto nuevo','err'); return; }
+    codigo = (document.getElementById('co-n-codigo').value||'').trim();
+    nuevo = { categoria:(document.getElementById('co-n-categoria').value||'').trim(), marca:(document.getElementById('co-n-marca').value||'').trim() };
+  } else {
+    const val = document.getElementById('co-prod-search').value;
+    const cod = (val.split('—').pop()||'').trim();
+    const p = coProds.find(x=>String(x.codigo)===cod) || coProds.find(x=>`${x.nombre} — ${x.codigo}`===val);
+    if(!p){ toast('Elegí un producto de la lista o marcá "Producto nuevo"','err'); return; }
+    codigo = p.codigo; nombre = p.nombre;
+  }
+  const final = coCostoFinal(costo);
+  coItems.push({ codigo, nombre, esNuevo, nuevo, cantidad:cant, costo_unitario:costo, costo_final:final, costo_total:final*cant });
+  // limpiar
+  document.getElementById('co-cant').value='1';
+  document.getElementById('co-costo').value='';
+  document.getElementById('co-final').value='';
+  document.getElementById('co-tot').value='';
+  document.getElementById('co-prod-search').value='';
+  ['co-n-nombre','co-n-codigo','co-n-categoria','co-n-marca'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
+  if(document.getElementById('co-nuevo').checked){ document.getElementById('co-nuevo').checked=false; coToggleNuevo(); }
+  renderCoLista();
+}
+
+function quitarCoItem(i){ coItems.splice(i,1); renderCoLista(); }
+
+function renderCoLista(){
+  const cont = document.getElementById('co-lista'); if(!cont) return;
+  const moneda = document.getElementById('co-moneda').value;
+  if(!coItems.length){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Agregá productos a la compra.</div>'; document.getElementById('co-total').textContent='$0'; return; }
+  let total=0;
+  cont.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+    <thead><tr>
+      <th style="text-align:left;padding:8px;color:var(--text3);border-bottom:1px solid var(--border);">Producto</th>
+      <th style="text-align:center;padding:8px;color:var(--text3);border-bottom:1px solid var(--border);">Cant.</th>
+      <th style="text-align:right;padding:8px;color:var(--text3);border-bottom:1px solid var(--border);">Costo u.</th>
+      <th style="text-align:right;padding:8px;color:var(--text3);border-bottom:1px solid var(--border);">Final $</th>
+      <th style="text-align:right;padding:8px;color:var(--text3);border-bottom:1px solid var(--border);">Total</th>
+      <th style="border-bottom:1px solid var(--border);"></th>
+    </tr></thead><tbody>` +
+    coItems.map((it,i)=>{ total+=it.costo_total; return `<tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border);">${it.esNuevo?'🆕 ':''}${it.nombre}${it.codigo?` <span style="color:var(--text3);">(${it.codigo})</span>`:''}</td>
+      <td style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">${it.cantidad}</td>
+      <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);">${moneda==='usd'?'US$'+it.costo_unitario:_coMoney(it.costo_unitario)}</td>
+      <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);">${_coMoney(it.costo_final)}</td>
+      <td style="padding:8px;text-align:right;font-weight:700;border-bottom:1px solid var(--border);">${_coMoney(it.costo_total)}</td>
+      <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);"><button onclick="quitarCoItem(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button></td>
+    </tr>`; }).join('') + `</tbody></table></div>`;
+  document.getElementById('co-total').textContent = _coMoney(total);
+}
+
+async function confirmarCompra(){
+  if(!coItems.length){ toast('Agregá al menos un producto','err'); return; }
+  const moneda = document.getElementById('co-moneda').value;
+  const dolar = parseFloat(document.getElementById('co-dolar').value)||0;
+  const caja = document.getElementById('co-caja').value;
+  const proveedor = (document.getElementById('co-proveedor').value||'').trim()||null;
+  const notas = (document.getElementById('co-notas').value||'').trim()||null;
+  if(moneda==='usd' && dolar<=0){ toast('Poné el valor del dólar','err'); return; }
+  if(!caja){ toast('Elegí la cuenta/caja','err'); return; }
+  const total = coItems.reduce((s,it)=>s+it.costo_total,0);
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja];
+  if(!confirm(`Confirmar compra por ${_coMoney(total)}.\nSe sumará el stock y se descontará de ${cajaLbl}. ¿Está todo OK?`)) return;
+
+  try {
+    // 1) Crear compra
+    const compraBody = { moneda, valor_dolar: moneda==='usd'?dolar:0, proveedor, notas, forma_pago: caja, total };
+    const cR = await fetch(`${SUPA_URL}/rest/v1/compras`, {method:'POST', headers:hdrs, body:JSON.stringify(compraBody)});
+    if(!cR.ok){ toast('Error al crear la compra','err'); return; }
+    const compra = (await cR.json())[0];
+
+    // 2) Productos nuevos: crearlos (código correlativo si no se puso)
+    let nextCod = null;
+    if(coItems.some(it=>it.esNuevo && !it.codigo)){
+      try { const rc = await fetch(`${SUPA_URL}/rest/v1/rpc/siguiente_codigo_producto`, {method:'POST', headers:hdrs, body:'{}'}); nextCod = parseInt(await rc.json())||null; } catch(e){}
+    }
+    for(const it of coItems){
+      if(it.esNuevo){
+        let cod = it.codigo;
+        if(!cod){ cod = nextCod ? String(nextCod++) : ('C'+Date.now().toString().slice(-6)); it.codigo = cod; }
+        await fetch(`${SUPA_URL}/rest/v1/productos`, {method:'POST', headers:hdrs, body:JSON.stringify({
+          codigo: cod, nombre: it.nombre, stock: it.cantidad,
+          costo_usd: moneda==='usd'?it.costo_unitario:null, costo_final: it.costo_final, moneda,
+          categoria: it.nuevo&&it.nuevo.categoria?it.nuevo.categoria:null, marca: it.nuevo&&it.nuevo.marca?it.nuevo.marca:null,
+          precio_publico: 0, precio_mayorista: 0, estado: 'inactivo'
+        })});
+      }
+    }
+
+    // 3) Items de la compra
+    await fetch(`${SUPA_URL}/rest/v1/compra_items`, {method:'POST', headers:hdrs, body:JSON.stringify(
+      coItems.map(it=>({ compra_id: compra.id, codigo: it.codigo||null, producto: it.nombre, cantidad: it.cantidad, costo_unitario: it.costo_unitario, costo_final: it.costo_final, costo_total: it.costo_total }))
+    )});
+
+    // 4) Existentes: sumar stock + actualizar costo
+    for(const it of coItems){
+      if(it.esNuevo) continue;
+      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs});
+      const ps = await pR.json();
+      const stockActual = (ps[0] && Number(ps[0].stock)) || 0;
+      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({
+        stock: stockActual + it.cantidad,
+        costo_usd: moneda==='usd'?it.costo_unitario:null,
+        costo_final: it.costo_final, moneda
+      })});
+    }
+
+    // 5) Descontar de la caja: registrar gasto
+    await fetch(`${SUPA_URL}/rest/v1/gastos`, {method:'POST', headers:hdrs, body:JSON.stringify({
+      proveedor: proveedor||'Compra', descripcion: `Compra ${compra.numero_compra}`, monto: total, forma_pago: caja, fecha: hoyStr()
+    })});
+
+    toast(`Compra ${compra.numero_compra} registrada ✓`,'ok');
+    coItems = [];
+    document.getElementById('co-proveedor').value=''; document.getElementById('co-notas').value=''; document.getElementById('co-caja').value='';
+    renderCoLista();
+    cargarCompras();
+    // Abrir comprobante
+    window.open(`https://blinkymdq.github.io/blinkymdq/compra-imprimir.html?t=${compra.token}`, '_blank');
+  } catch(e){ toast('Error al confirmar la compra','err'); }
+}
+
+async function renderComprasRegistradas(){
+  const cont = document.getElementById('lista-compras'); if(!cont) return;
+  try {
+    const compras = await (await fetch(`${SUPA_URL}/rest/v1/compras?select=*&order=created_at.desc&limit=60`, {headers:hdrs})).json();
+    if(!Array.isArray(compras) || !compras.length){ cont.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><p>Todavía no registraste compras.</p></div>'; return; }
+    cont.innerHTML = compras.map(c=>{
+      const fecha = new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[c.forma_pago]||c.forma_pago||'—';
+      return `<div class="pago-item">
+        <span style="min-width:0;flex:1;">
+          <b style="font-family:monospace;color:var(--violet-light);">${c.numero_compra}</b> · <b>${_coMoney(c.total)}</b> · ${c.moneda==='usd'?'USD':'Pesos'}
+          <br><span style="font-size:0.72rem;color:var(--text3);">${fecha}${c.proveedor?` · ${c.proveedor}`:''} · ${cajaLbl}</span>
+        </span>
+        <a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/compra-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a>
+      </div>`;
+    }).join('');
+  } catch(e){ cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
 
 // ── STATS ──────────────────────────────────────
