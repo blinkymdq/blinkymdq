@@ -1874,6 +1874,7 @@ async function verPedido(num, esEliminado) {
     }
 
     document.getElementById('modal-body').innerHTML=`
+      ${p.nota_admin?`<div style="background:rgba(245,158,11,0.15);border:1px solid var(--yellow);border-radius:10px;padding:10px 12px;margin-bottom:0.9rem;color:var(--yellow);font-weight:700;font-size:0.85rem;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:1.1rem;line-height:1;">⚠️</span><span>${esc(p.nota_admin)}</span></div>`:''}
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
       ${p.email?`<div class="detail-row"><span class="detail-key">Email</span><span>${p.email}</span></div>`:''}
