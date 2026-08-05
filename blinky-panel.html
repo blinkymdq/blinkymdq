@@ -1874,8 +1874,30 @@ async function verPedido(num, esEliminado) {
       } catch(e){}
     }
 
+    // Aviso admin (en vivo): qué vendedor tiene actualmente cada producto de este pedido
+    let vendMap = {};
+    if (!esEliminado) {
+      try {
+        const cods = [...new Set(items.map(i=>i.codigo).filter(Boolean))];
+        if (cods.length) {
+          const ev = await (await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?codigo=in.(${cods.map(encodeURIComponent).join(',')})&select=usuario_id,codigo,entregado,vendido,devuelto`,{headers:hdrs})).json();
+          const uids = [...new Set((ev||[]).map(e=>e.usuario_id).filter(Boolean))];
+          let nombres = {};
+          if (uids.length) {
+            const us = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?id=in.(${uids.join(',')})&select=id,nombre`,{headers:hdrs})).json();
+            (us||[]).forEach(u=>nombres[u.id]=u.nombre);
+          }
+          const acc = {};
+          (ev||[]).forEach(e=>{
+            const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
+            if (pend>0) { (acc[e.codigo]=acc[e.codigo]||[]).push(`${nombres[e.usuario_id]||'Vendedor'} (${pend})`); }
+          });
+          Object.keys(acc).forEach(c=> vendMap[c]=acc[c].join(', '));
+        }
+      } catch(e){}
+    }
+
     document.getElementById('modal-body').innerHTML=`
-      ${p.nota_admin?`<div style="background:rgba(245,158,11,0.15);border:1px solid var(--yellow);border-radius:10px;padding:10px 12px;margin-bottom:0.9rem;color:var(--yellow);font-weight:700;font-size:0.85rem;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:1.1rem;line-height:1;">⚠️</span><span>${esc(p.nota_admin)}</span></div>`:''}
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
       ${p.email?`<div class="detail-row"><span class="detail-key">Email</span><span>${p.email}</span></div>`:''}
@@ -1891,7 +1913,7 @@ async function verPedido(num, esEliminado) {
       <table class="items-table">
         <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th>${!esEliminado?'<th style="width:30px;"></th>':''}</tr></thead>
         <tbody>${items.map(i=>`<tr>
-          <td>${i.producto}</td>
+          <td>${i.producto}${vendMap[i.codigo]?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}</td>
           <td style="text-align:right;">${i.cantidad}</td>
           <td style="text-align:right;">$${Number(i.precio_unitario).toLocaleString('es-AR')}</td>
           <td style="text-align:right;font-weight:700;">$${Number(i.subtotal).toLocaleString('es-AR')}</td>
