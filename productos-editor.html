@@ -1137,9 +1137,41 @@ function insertarEmoji(e, emoji) {
   document.getElementById('desc-editor').focus();
   document.execCommand('insertText', false, emoji);
 }
+// Limpia HTML pegado/guardado: deja solo formato básico, saca clases/atributos/junk de otras webs
+function limpiarHtmlDesc(html){
+  if(!html) return '';
+  const permitidos = new Set(['B','STRONG','I','EM','U','P','DIV','BR','UL','OL','LI','H1','H2','H3','H4','SPAN','A','HR']);
+  const doc = new DOMParser().parseFromString('<div id="__root">'+html+'</div>','text/html');
+  const root = doc.getElementById('__root');
+  root.querySelectorAll('script,style,svg,button,img,path,canvas,video,source,picture,iframe,noscript,meta,link,head').forEach(n=>n.remove());
+  (function walk(node){
+    Array.from(node.children).forEach(el=>{
+      walk(el);
+      Array.from(el.attributes).forEach(a=>{ if(!(el.tagName==='A' && a.name==='href')) el.removeAttribute(a.name); });
+      if(!permitidos.has(el.tagName)){
+        const parent = el.parentNode;
+        while(el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+      }
+    });
+  })(root);
+  return root.innerHTML.replace(/<span>\s*<\/span>/gi,'').replace(/<div>\s*<\/div>/gi,'').trim();
+}
+
 function abrirEditorDesc(codigo) {
   descEditandoCodigo = codigo;
   const editor = document.getElementById('desc-editor');
+  if(!editor._pasteHooked){
+    editor._pasteHooked = true;
+    editor.addEventListener('paste', function(e){
+      const cb = e.clipboardData || window.clipboardData; if(!cb) return;
+      e.preventDefault();
+      const rawHtml = cb.getData('text/html');
+      const txt = cb.getData('text/plain') || '';
+      const limpio = rawHtml ? limpiarHtmlDesc(rawHtml) : txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+      document.execCommand('insertHTML', false, limpio);
+    });
+  }
   const titulo = document.getElementById('modal-desc-titulo');
   if (codigo === '__nuevo__') {
     titulo.textContent = 'Descripción — producto nuevo';
@@ -1158,8 +1190,8 @@ function cerrarEditorDesc() {
 }
 async function guardarEditorDesc() {
   const editor = document.getElementById('desc-editor');
-  let html = editor.innerHTML.trim();
-  if (!editor.textContent.trim() && !/<img/i.test(html)) html = '';
+  let html = limpiarHtmlDesc(editor.innerHTML).trim();
+  if (!editor.textContent.trim()) html = '';
   if (descEditandoCodigo === '__nuevo__') {
     nuevaDescHtml = html;
     const prev = document.getElementById('np-desc-preview');
