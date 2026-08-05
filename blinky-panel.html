@@ -1906,6 +1906,15 @@ async function verPedido(num, esEliminado) {
       } catch(e){}
     }
 
+    // Productos que se descontaron de la mercadería del propio comprador (vendedor)
+    let descontadoSet = new Set();
+    if (!esEliminado) {
+      try {
+        const mv = await (await fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?numero_pedido=eq.${encodeURIComponent(num)}&tipo=eq.venta&select=codigo`,{headers:hdrs})).json();
+        (mv||[]).forEach(m=>descontadoSet.add(m.codigo));
+      } catch(e){}
+    }
+
     document.getElementById('modal-body').innerHTML=`
       <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
@@ -1922,7 +1931,7 @@ async function verPedido(num, esEliminado) {
       <table class="items-table">
         <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th>${!esEliminado?'<th style="width:30px;"></th>':''}</tr></thead>
         <tbody>${items.map(i=>`<tr>
-          <td>${i.producto}${vendMap[i.codigo]?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}</td>
+          <td>${i.producto}${vendMap[i.codigo]?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}${descontadoSet.has(i.codigo)?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;">⚠️ Producto descontado de su mercadería</div>`:''}</td>
           <td style="text-align:right;">${i.cantidad}</td>
           <td style="text-align:right;">$${Number(i.precio_unitario).toLocaleString('es-AR')}</td>
           <td style="text-align:right;font-weight:700;">$${Number(i.subtotal).toLocaleString('es-AR')}</td>
