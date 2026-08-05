@@ -1880,19 +1880,28 @@ async function verPedido(num, esEliminado) {
       try {
         const cods = [...new Set(items.map(i=>i.codigo).filter(Boolean))];
         if (cods.length) {
-          const ev = await (await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?codigo=in.(${cods.map(encodeURIComponent).join(',')})&select=usuario_id,codigo,entregado,vendido,devuelto`,{headers:hdrs})).json();
+          const inCods = cods.map(encodeURIComponent).join(',');
+          const [ev, prods] = await Promise.all([
+            (await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?codigo=in.(${inCods})&select=usuario_id,codigo,entregado,vendido,devuelto`,{headers:hdrs})).json(),
+            (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=in.(${inCods})&select=codigo,stock`,{headers:hdrs})).json()
+          ]);
+          const stockMap = {}; (prods||[]).forEach(p=>stockMap[p.codigo]=Number(p.stock||0));
           const uids = [...new Set((ev||[]).map(e=>e.usuario_id).filter(Boolean))];
           let nombres = {};
           if (uids.length) {
             const us = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?id=in.(${uids.join(',')})&select=id,nombre`,{headers:hdrs})).json();
             (us||[]).forEach(u=>nombres[u.id]=u.nombre);
           }
-          const acc = {};
+          const acc = {}, pendTot = {};
           (ev||[]).forEach(e=>{
             const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
-            if (pend>0) { (acc[e.codigo]=acc[e.codigo]||[]).push(`${nombres[e.usuario_id]||'Vendedor'} (${pend})`); }
+            if (pend>0) { (acc[e.codigo]=acc[e.codigo]||[]).push(`${nombres[e.usuario_id]||'Vendedor'} (${pend})`); pendTot[e.codigo]=(pendTot[e.codigo]||0)+pend; }
           });
-          Object.keys(acc).forEach(c=> vendMap[c]=acc[c].join(', '));
+          // Solo avisar si en depósito no queda ninguno (stock central = stock - lo que tienen los vendedores <= 0)
+          Object.keys(acc).forEach(c=>{
+            const central = (stockMap[c]||0) - (pendTot[c]||0);
+            if (central <= 0) vendMap[c] = acc[c].join(', ');
+          });
         }
       } catch(e){}
     }
