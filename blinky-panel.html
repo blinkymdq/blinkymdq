@@ -592,6 +592,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
               <button onclick="cancelarEdicionFicha()" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;font-size:0.72rem;font-weight:700;padding:5px 12px;cursor:pointer;">✕ Cancelar</button>
             </div>
           </div>
+          <div id="fc-pendiente-badge" style="display:none;background:rgba(239,68,68,0.12);border:1px solid var(--red);border-radius:10px;padding:6px 12px;text-align:center;flex-shrink:0;">
+            <div style="font-size:0.62rem;color:var(--red);text-transform:uppercase;font-weight:700;">Pendiente</div>
+            <div id="fc-pendiente-val" style="font-size:1rem;font-weight:900;color:var(--red);"></div>
+          </div>
           <div id="fc-saldo-favor-badge" style="display:none;background:rgba(16,185,129,0.15);border:1px solid var(--green);border-radius:10px;padding:6px 12px;text-align:center;flex-shrink:0;">
             <div style="font-size:0.62rem;color:var(--green);text-transform:uppercase;font-weight:700;">Saldo a favor</div>
             <div id="fc-saldo-favor-val" style="font-size:1rem;font-weight:900;color:var(--green);"></div>
@@ -601,6 +605,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div style="display:flex;gap:0.4rem;border-bottom:1px solid var(--border);margin-bottom:1rem;">
           <button class="fc-tab-btn active" id="fc-tabbtn-pedidos" onclick="switchFichaTab('pedidos')">Pedidos</button>
           <button class="fc-tab-btn" id="fc-tabbtn-pagos" onclick="switchFichaTab('pagos')">Pagos</button>
+          <button class="fc-tab-btn" id="fc-tabbtn-pendiente" onclick="switchFichaTab('pendiente')">Pendiente</button>
           <button class="fc-tab-btn" id="fc-tabbtn-saldo" onclick="switchFichaTab('saldo')">Saldo a favor</button>
         </div>
 
@@ -613,6 +618,27 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div id="fc-tab-pagos" style="display:none;">
           <div class="fc-section-title" style="margin-top:0;">Pagos realizados por el cliente</div>
           <div id="fc-pagos-cliente-lista"><div class="loading-txt">Cargando...</div></div>
+        </div>
+
+        <!-- TAB PENDIENTE (pedidos sin pagar del todo) -->
+        <div id="fc-tab-pendiente" style="display:none;">
+          <div class="fc-section-title" style="margin-top:0;">Registrar pago a cuenta</div>
+          <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;gap:0.6rem;align-items:center;">
+            <input id="fc-pg-monto" type="number" min="0" step="0.01" placeholder="Monto a pagar">
+            <select id="fc-pg-caja">
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="transferencia">📲 Transferencia</option>
+              <option value="transferencia_rm">🏦 Transferencia RM</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+            </select>
+            <input id="fc-pg-fecha" type="date" title="Fecha" style="max-width:150px;">
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:0.5rem;">
+            <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="registrarPagoGeneral()">Registrar pago</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se aplica a los pedidos impagos, del más viejo al más nuevo. Si sobra, queda como saldo a favor.</div>
+          <div class="fc-section-title">Saldo pendiente de pago</div>
+          <div id="fc-pendiente-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
         <!-- TAB SALDO A FAVOR -->
@@ -2426,6 +2452,8 @@ async function abrirFichaCliente(u) {
   document.getElementById('modal-cliente').style.display = 'flex';
   switchFichaTab('pedidos');
 
+  document.getElementById('fc-pendiente-badge').style.display='none';
+  actualizarBadgePendienteFicha();
   await cargarPedidosCliente();
 }
 
@@ -2490,12 +2518,96 @@ async function guardarEdicionFicha() {
 }
 
 function switchFichaTab(tab) {
-  ['pedidos','pagos','saldo'].forEach(t => {
+  ['pedidos','pagos','pendiente','saldo'].forEach(t => {
     const d = document.getElementById(`fc-tab-${t}`); if(d) d.style.display = t===tab ? 'block' : 'none';
     const b = document.getElementById(`fc-tabbtn-${t}`); if(b) b.classList.toggle('active', t===tab);
   });
   if(tab==='saldo') cargarSaldoFavorFicha();
   if(tab==='pagos') cargarPagosCliente();
+  if(tab==='pendiente') cargarPendienteCliente();
+}
+
+async function _fetchPendientesCliente(){
+  if(!clienteActual) return [];
+  const conds = [`user_id.eq.${clienteActual.id}`];
+  if(clienteActual.email) conds.push(`email.eq.${encodeURIComponent(clienteActual.email)}`);
+  const peds = await (await fetch(`${SUPA_URL}/rest/v1/pedidos?or=(${conds.join(',')})&select=numero_pedido,total,monto_pagado,estado,created_at&order=created_at.asc`, {headers:hdrs})).json();
+  return (peds||[]).filter(p=> (p.estado||'').toLowerCase()!=='cancelado' && (Number(p.total||0)-Number(p.monto_pagado||0))>0 );
+}
+function _setBadgePendiente(total){
+  const b = document.getElementById('fc-pendiente-badge'); if(!b) return;
+  if(total>0){ b.style.display='block'; document.getElementById('fc-pendiente-val').textContent = '$'+total.toLocaleString('es-AR'); }
+  else b.style.display='none';
+}
+async function actualizarBadgePendienteFicha(){
+  try { const p = await _fetchPendientesCliente(); const t = p.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0); _setBadgePendiente(t); } catch(e){}
+}
+
+async function cargarPendienteCliente(){
+  if(!clienteActual) return;
+  const cont = document.getElementById('fc-pendiente-lista');
+  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  const fEl = document.getElementById('fc-pg-fecha'); if(fEl && !fEl.value) fEl.value = hoyStr();
+  try {
+    const pend = await _fetchPendientesCliente();
+    let totalPend = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    _setBadgePendiente(totalPend);
+    const mEl = document.getElementById('fc-pg-monto'); if(mEl && !mEl.value && totalPend>0) mEl.value = totalPend;
+    if(!pend.length){ cont.innerHTML = '<div style="color:var(--green);font-size:0.9rem;font-weight:700;">✓ Sin saldo pendiente. El cliente está al día.</div>'; return; }
+    const disp = pend.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+    cont.innerHTML = disp.map(p=>{
+      const total = Number(p.total||0), pagado = Number(p.monto_pagado||0), pen = total - pagado;
+      const f = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      return `<div class="pago-item">
+        <span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${p.numero_pedido}</b> · Total $${total.toLocaleString('es-AR')} · Pagado $${pagado.toLocaleString('es-AR')}
+        <br><span style="font-size:0.72rem;color:var(--text3);">${f} · ${estadoLabel(p.estado)}</span></span>
+        <span class="pago-monto" style="color:var(--red);font-weight:900;">-$${pen.toLocaleString('es-AR')}</span>
+      </div>`;
+    }).join('') + `<div style="text-align:right;font-weight:900;margin-top:0.7rem;font-size:1.05rem;">Saldo pendiente total: <span style="color:var(--red);">$${totalPend.toLocaleString('es-AR')}</span></div>`;
+  } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar el saldo pendiente.</div>'; }
+}
+
+async function registrarPagoGeneral(){
+  if(!clienteActual) return;
+  const monto = parseFloat(document.getElementById('fc-pg-monto').value);
+  const caja = document.getElementById('fc-pg-caja').value;
+  const fecha = document.getElementById('fc-pg-fecha').value || hoyStr();
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja];
+  if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
+  try {
+    const pend = await _fetchPendientesCliente(); // más viejo primero
+    const totalPend = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    if(totalPend<=0){ toast('El cliente no tiene saldo pendiente','err'); return; }
+    if(!confirm(`Registrar pago de $${monto.toLocaleString('es-AR')} en ${cajaLbl}?\nSe aplica a los pedidos impagos (del más viejo al más nuevo).`)) return;
+    const createdAt = fecha + 'T12:00:00-03:00';
+    let restante = monto;
+    for(const p of pend){
+      if(restante<=0) break;
+      const pen = Number(p.total||0) - Number(p.monto_pagado||0);
+      const aplicar = Math.min(restante, pen);
+      if(aplicar<=0) continue;
+      await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido:p.numero_pedido, monto:aplicar, forma_pago:caja, exceso_acreditado:0, descripcion:'Pago a cuenta', created_at:createdAt })});
+      await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(p.numero_pedido)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ monto_pagado: Number(p.monto_pagado||0) + aplicar })});
+      restante -= aplicar;
+    }
+    // Excedente: queda como saldo a favor (y se registra en el último pedido para que la caja refleje el total)
+    if(restante>0 && pend.length){
+      const last = pend[pend.length-1];
+      await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido:last.numero_pedido, monto:restante, forma_pago:caja, exceso_acreditado:restante, descripcion:'Pago a cuenta (excedente a saldo a favor)', created_at:createdAt })});
+      const saldoActual = Number(clienteActual.saldo_favor||0);
+      await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ saldo_favor: saldoActual + restante })});
+      clienteActual.saldo_favor = saldoActual + restante;
+      const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+(saldoActual+restante).toLocaleString('es-AR'); }
+    }
+    // Mail al cliente (opcional, si tiene email)
+    if(clienteActual.email){
+      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: caja })}).catch(()=>{});
+    }
+    toast('Pago a cuenta registrado ✓','ok');
+    document.getElementById('fc-pg-monto').value='';
+    cargarPendienteCliente();
+    cargarPagosCliente();
+  } catch(e){ toast('Error al registrar el pago','err'); }
 }
 
 async function cargarPagosCliente(){
