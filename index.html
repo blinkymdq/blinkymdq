@@ -1837,12 +1837,14 @@
                 const msgAmigo    = encodeURIComponent(`¡Mirá esto en Blinky MDQ!\n\n${p.nombre}\nPrecio: ${precioPublicoTxt}\n\n${link}`);
 
                 const badgeSinStock = p.sinStock ? `<div class="badge-sin-stock">Sin Stock</div>` : '';
+                const miCantMerc = (logueado && window._userRol === 'mayorista' && window._miMercaderia) ? Number(window._miMercaderia[p.codigo] || 0) : 0;
+                const badgeMerc = miCantMerc > 0 ? `<div title="Tenés ${miCantMerc} en tu poder" style="position:absolute;top:8px;left:8px;z-index:3;background:#0891b2;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;gap:3px;">📦 Tenés ${miCantMerc}</div>` : '';
 
                 return `
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between card-hover-violeta relative" style="padding-bottom:2.75rem;">
                         <div onclick="window.location.href=generarLink('${p.codigo}')" class="cursor-pointer">
                             <div class="relative overflow-hidden rounded-[1.5rem]">
-                                <div class="img-container">${badgeSinStock}<img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" ></div>
+                                <div class="img-container">${badgeSinStock}${badgeMerc}<img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" ></div>
                                 <button onclick="event.stopPropagation();compartirProducto('${p.codigo}', '${p.nombre.replace(/'/g,"\\'")}')"
                                     title="Compartir"
                                     class="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow-sm text-slate-700">
@@ -2176,6 +2178,16 @@
             document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
             document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
             cerrarLogin();
+
+            // Mercadería que el vendedor tiene en su poder (badge "Tenés N") — solo mayoristas
+            window._miMercaderia = {};
+            if (esMayorista) {
+                try {
+                    const { data: ev } = await supabaseClient.from('entregas_vendedor').select('codigo,entregado,vendido,devuelto').eq('usuario_id', user.id);
+                    (ev||[]).forEach(e=>{ const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0)); if(pend>0) window._miMercaderia[e.codigo]=(window._miMercaderia[e.codigo]||0)+pend; });
+                } catch(e){}
+            }
+
             render(filtrados.length > 0 ? filtrados : productos);
 
             // Solo a cuentas recién creadas les pedimos completar los datos —
