@@ -61,6 +61,10 @@
   .thumb img { width:100%; height:100%; object-fit:contain; }
 
   .info-card { background:white; border-radius:20px; padding:24px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  .badge-merc { display:inline-flex; align-items:center; gap:5px; background:#0891b2; color:#fff; font-size:12px; font-weight:800; padding:5px 12px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,0.15); white-space:nowrap; }
+  .badge-merc-mobile { margin-bottom:14px; }
+  @media (min-width:800px){ .badge-merc-mobile { display:none; } }
+  @media (max-width:799px){ .badge-merc-desktop { display:none; } }
   .marca { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#7c3aed; margin-bottom:6px; }
   .codigo-row { display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border-radius:8px; padding:3px 10px; font-size:0.72rem; color:#64748b; font-family:Arial,sans-serif; margin-bottom:14px; cursor:pointer; }
   .codigo-row:hover { background:#e2e8f0; }
@@ -521,6 +525,15 @@ async function aplicarSesion(user) {
   if (esMayorista) document.body.classList.add('es-mayorista');
   else document.body.classList.remove('es-mayorista');
 
+  // Mercadería que el vendedor tiene en su poder (badge "Tenés N") — solo mayoristas
+  window._miMercaderia = {};
+  if (esMayorista) {
+    try {
+      const { data: ev } = await supabaseClient.from('entregas_vendedor').select('codigo,entregado,vendido,devuelto').eq('usuario_id', user.id);
+      (ev||[]).forEach(e=>{ const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0)); if(pend>0) window._miMercaderia[e.codigo]=(window._miMercaderia[e.codigo]||0)+pend; });
+    } catch(e){}
+  }
+
   const nombreCorto = (nombre || '').split(' ')[0].toUpperCase();
   const nameEl = document.getElementById('user-badge-name');
   const nameElM = document.getElementById('user-badge-name-mobile');
@@ -605,6 +618,9 @@ function renderProducto(p) {
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const mostrarPrecio = !sinStock || esMayoristaLogueado;
+  const miCantMerc = (esMayoristaLogueado && window._miMercaderia) ? Number(window._miMercaderia[p.codigo] || 0) : 0;
+  const badgeMercMobile  = miCantMerc > 0 ? `<div class="badge-merc badge-merc-mobile">📦 Tenés ${miCantMerc}</div>` : '';
+  const badgeMercDesktop = miCantMerc > 0 ? `<div class="badge-merc badge-merc-desktop">📦 Tenés ${miCantMerc}</div>` : '';
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
@@ -647,6 +663,7 @@ function renderProducto(p) {
       </div>
 
       <div class="info-card">
+        ${badgeMercMobile}
         ${p.marca ? `<div class="marca">${p.marca}</div>` : ''}
         <h1 class="nombre">${p.nombre}</h1>
         ${p.codigo ? `
@@ -661,7 +678,10 @@ function renderProducto(p) {
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
         ` : ''}
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
-        <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
+          ${badgeMercDesktop}
+        </div>
 
         <div class="btns">
           <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
