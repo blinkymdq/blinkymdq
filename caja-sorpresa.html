@@ -21,6 +21,9 @@
   .box:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 16px 40px rgba(124,58,237,.5);}
   .box .emoji{font-size:3.2rem;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));transition:transform .2s;}
   .box:hover .emoji{transform:rotate(-6deg) scale(1.08);}
+  .caja-img{width:96px;height:96px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4));transition:transform .2s;}
+  .box:hover .caja-img{transform:rotate(-5deg) scale(1.08);}
+  @media(max-width:560px){ .caja-img{width:74px;height:74px;} }
   .box .lbl{display:block;margin-top:12px;font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#f5f3ff;}
   .box.abriendo{animation:shake .5s ease;}
   .box.ganadora{background:linear-gradient(160deg,#f59e0b,#d97706);box-shadow:0 16px 45px rgba(245,158,11,.55);}
@@ -62,9 +65,9 @@
     <!-- Cajas -->
     <div id="vista-juego" class="hidden">
       <div class="boxes" id="boxes">
-        <button class="box" data-i="0" onclick="abrir(0)"><span class="emoji">🎁</span><span class="lbl">Caja 1</span></button>
-        <button class="box" data-i="1" onclick="abrir(1)"><span class="emoji">🎁</span><span class="lbl">Caja 2</span></button>
-        <button class="box" data-i="2" onclick="abrir(2)"><span class="emoji">🎁</span><span class="lbl">Caja 3</span></button>
+        <button class="box" data-i="0" onclick="abrir(0)"><img class="caja-img" src="caja-cerrada.png" alt="Caja 1" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emoji',textContent:'🎁'}))"><span class="lbl">Caja 1</span></button>
+        <button class="box" data-i="1" onclick="abrir(1)"><img class="caja-img" src="caja-cerrada.png" alt="Caja 2" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emoji',textContent:'🎁'}))"><span class="lbl">Caja 2</span></button>
+        <button class="box" data-i="2" onclick="abrir(2)"><img class="caja-img" src="caja-cerrada.png" alt="Caja 3" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emoji',textContent:'🎁'}))"><span class="lbl">Caja 3</span></button>
       </div>
     </div>
 
@@ -129,7 +132,7 @@ async function abrir(i){
     if(error || !data || !data.ok){ jugando=false; boxes[i].classList.remove('abriendo'); alert((data&&data.motivo)||'No se pudo abrir la caja.'); return; }
     // animación: la elegida gana, las otras se apagan
     setTimeout(()=>{
-      boxes.forEach((b,idx)=>{ if(idx===i){ b.classList.add('ganadora'); b.querySelector('.emoji').textContent='🎉'; } else b.classList.add('perdedora'); });
+      boxes.forEach((b,idx)=>{ if(idx===i){ b.classList.add('ganadora'); const im=b.querySelector('.caja-img'); if(im){ im.onerror=null; im.src='caja-abierta.png'; } const em=b.querySelector('.emoji'); if(em) em.textContent='🎉'; } else b.classList.add('perdedora'); });
       setTimeout(()=> verResultado(data.valor, data.codigo, data, false), 650);
     }, 500);
   }catch(e){ jugando=false; boxes[i].classList.remove('abriendo'); alert('No se pudo abrir la caja.'); }
