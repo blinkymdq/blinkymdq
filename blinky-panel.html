@@ -851,8 +851,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <input id="csp-valor" type="number" min="0" placeholder="Monto premio $ (ej: 3000)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="csp-min" type="number" min="0" placeholder="Compra mínima $ (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
         <input id="csp-peso" type="number" min="0" step="0.1" placeholder="Peso / probabilidad (ej: 30)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
+        <input id="csp-vence" type="date" title="Vence (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.7rem;">
       </div>
-      <button class="fc-btn" style="background:var(--violet);color:#fff;" onclick="crearPremioCaja()">➕ Agregar premio</button>
+      <button id="btn-premio-caja" class="fc-btn" style="background:var(--violet);color:#fff;" onclick="crearPremioCaja()">➕ Agregar premio</button>
+      <button id="btn-premio-caja-cancel" class="fc-btn" style="display:none;margin-left:6px;" onclick="cancelarEdicionPremioCaja()">Cancelar</button>
       <div id="lista-premios-caja" style="margin-top:1rem;"><div class="loading-txt">Cargando...</div></div>
     </div>
 
@@ -948,18 +950,23 @@ async function cargarCupones(){
   cargarPremiosCaja();
 }
 
+let _premiosCajaCache = [];
+let _editPremioCaja = null;
+
 async function cargarPremiosCaja(){
   const cont = document.getElementById('lista-premios-caja'); if(!cont) return;
   try{
     const premios = await (await fetch(`${SUPA_URL}/rest/v1/caja_sorpresa_premios?select=*&order=peso.desc`, {headers:hdrs})).json();
+    _premiosCajaCache = Array.isArray(premios) ? premios : [];
     const total = (premios||[]).filter(p=>p.activo).reduce((s,p)=>s+Number(p.peso||0),0) || 1;
     if(!Array.isArray(premios) || !premios.length){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Sin premios cargados. Agregá al menos uno para que la caja funcione.</div>'; return; }
     cont.innerHTML = premios.map(p=>{
       const prob = p.activo ? Math.round(Number(p.peso||0)/total*100) : 0;
       return `<div class="pago-item" style="${p.activo?'':'opacity:0.5;'}">
         <span style="min-width:0;flex:1;">${p.nombre?`<b style="font-family:monospace;color:var(--violet-light);">${esc(p.nombre)}</b> · `:''}<b style="color:var(--green);">$${Number(p.valor).toLocaleString('es-AR')}</b> OFF · peso ${(+p.peso)} ${p.activo?`· ~${prob}% de chance`:'· inactivo'}
-        <br><span style="font-size:0.72rem;color:var(--text3);">${p.min_compra?`compra mínima $${Number(p.min_compra).toLocaleString('es-AR')}`:'sin mínimo'}</span></span>
+        <br><span style="font-size:0.72rem;color:var(--text3);">${p.min_compra?`compra mínima $${Number(p.min_compra).toLocaleString('es-AR')}`:'sin mínimo'} · ${p.vence_fecha?`vence ${new Date(p.vence_fecha+'T00:00:00').toLocaleDateString('es-AR')}`:'vence a 30 días'}</span></span>
         <span style="display:flex;gap:6px;">
+          <button class="fc-btn" style="padding:2px 9px;" onclick="editarPremioCaja(${p.id})">✏️ Editar</button>
           <button class="fc-btn" style="padding:2px 9px;" onclick="togglePremioCaja(${p.id}, ${p.activo})">${p.activo?'Desactivar':'Activar'}</button>
           <button class="fc-btn" style="padding:2px 9px;background:var(--red);color:#fff;" onclick="eliminarPremioCaja(${p.id})">🗑</button>
         </span>
@@ -973,13 +980,41 @@ async function crearPremioCaja(){
   const valor = parseFloat(document.getElementById('csp-valor').value)||0;
   const min   = parseFloat(document.getElementById('csp-min').value)||0;
   const peso  = parseFloat(document.getElementById('csp-peso').value);
+  const vence = document.getElementById('csp-vence').value || null;
   if(valor<=0){ toast('Poné el monto del premio','err'); return; }
   if(isNaN(peso) || peso<0){ toast('Poné un peso/probabilidad válido','err'); return; }
-  const r = await fetch(`${SUPA_URL}/rest/v1/caja_sorpresa_premios`, {method:'POST', headers:hdrs, body:JSON.stringify({ nombre, valor, min_compra:min, peso, activo:true })});
-  if(!r.ok){ toast('Error al agregar el premio','err'); return; }
-  toast('Premio agregado ✓','ok');
-  ['csp-nombre','csp-valor','csp-min','csp-peso'].forEach(id=>document.getElementById(id).value='');
+  const body = { nombre, valor, min_compra:min, peso, vence_fecha:vence };
+  let r;
+  if(_editPremioCaja){
+    r = await fetch(`${SUPA_URL}/rest/v1/caja_sorpresa_premios?id=eq.${_editPremioCaja}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(body)});
+  } else {
+    body.activo = true;
+    r = await fetch(`${SUPA_URL}/rest/v1/caja_sorpresa_premios`, {method:'POST', headers:hdrs, body:JSON.stringify(body)});
+  }
+  if(!r.ok){ toast('Error al guardar el premio','err'); return; }
+  toast(_editPremioCaja?'Premio actualizado ✓':'Premio agregado ✓','ok');
+  cancelarEdicionPremioCaja();
   cargarPremiosCaja();
+}
+
+function editarPremioCaja(id){
+  const p = _premiosCajaCache.find(x=>x.id===id); if(!p) return;
+  document.getElementById('csp-nombre').value = p.nombre||'';
+  document.getElementById('csp-valor').value  = p.valor||'';
+  document.getElementById('csp-min').value    = p.min_compra||'';
+  document.getElementById('csp-peso').value   = p.peso!=null?p.peso:'';
+  document.getElementById('csp-vence').value  = p.vence_fecha||'';
+  _editPremioCaja = id;
+  const b = document.getElementById('btn-premio-caja'); if(b) b.textContent='💾 Guardar cambios';
+  const c = document.getElementById('btn-premio-caja-cancel'); if(c) c.style.display='inline-flex';
+  document.getElementById('csp-nombre').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelarEdicionPremioCaja(){
+  _editPremioCaja = null;
+  ['csp-nombre','csp-valor','csp-min','csp-peso','csp-vence'].forEach(id=>document.getElementById(id).value='');
+  const b = document.getElementById('btn-premio-caja'); if(b) b.textContent='➕ Agregar premio';
+  const c = document.getElementById('btn-premio-caja-cancel'); if(c) c.style.display='none';
 }
 
 async function togglePremioCaja(id, activo){
