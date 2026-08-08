@@ -19,6 +19,11 @@
   @media(max-width:560px){ .boxes{gap:10px;} h1{font-size:1.6rem;} }
   .box{background:linear-gradient(160deg,#7c3aed,#5b21b6);border:none;border-radius:20px;padding:26px 10px 22px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s ease, box-shadow .18s ease;box-shadow:0 10px 30px rgba(124,58,237,.35);}
   .box:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 16px 40px rgba(124,58,237,.5);}
+  .box::before{content:'';position:absolute;top:0;left:-140%;width:65%;height:100%;background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,0.45) 50%,transparent 100%);transform:skewX(-20deg);pointer-events:none;z-index:4;animation:boxShine 3.6s ease-in-out infinite;}
+  .box:nth-child(2)::before{animation-delay:1.2s;}
+  .box:nth-child(3)::before{animation-delay:2.4s;}
+  @keyframes boxShine{0%{left:-140%;}28%{left:150%;}100%{left:150%;}}
+  .box::after{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0) 42%);pointer-events:none;}
   .box .emoji{font-size:3.2rem;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));transition:transform .2s;}
   .box:hover .emoji{transform:rotate(-6deg) scale(1.08);}
   .caja-img{width:96px;height:96px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4));transition:transform .2s;}
@@ -48,7 +53,7 @@
   </div>
 
   <div class="wrap">
-    <img src="Cajas-sorpresa-banner.png" alt="Cajas Sorpresa" style="max-width:100%;width:460px;height:auto;display:block;margin:14px auto 0;" onerror="this.replaceWith(Object.assign(document.createElement('h1'),{textContent:'🎁 Cajas Sorpresa',style:'font-size:2rem;font-weight:900;margin-top:14px;'}))">
+    <img src="Cajas-sorpresa-banner.png" alt="Cajas Sorpresa" style="width:100%;max-width:100%;height:auto;display:block;margin:14px auto 0;border-radius:16px;" onerror="this.replaceWith(Object.assign(document.createElement('h1'),{textContent:'🎁 Cajas Sorpresa',style:'font-size:2rem;font-weight:900;margin-top:14px;'}))">
     <div class="sub" id="sub">Elegí una caja y ganá un cupón de descuento para tu próxima compra.<br>Tenés <b>un solo intento</b>.</div>
 
     <!-- No logueado -->
