@@ -1998,11 +1998,11 @@
         // SLIDER
         // ════════════════════════════════════════
         const misDestacados = [
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg`,
-            `https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg`
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`, link:`caja-sorpresa.html` },
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpg` },
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpg` },
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg` },
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg` }
         ];
         let bannerIndex     = 0;
         let bannerTimer     = null;
@@ -2054,11 +2054,13 @@
             const ind = document.getElementById('indicadoresBanner');
             if (!b || !ind) return;
 
-            b.innerHTML = misDestacados.map((img, i) =>
-                `<div class="min-w-full h-full snap-start flex-shrink-0 relative overflow-hidden bg-black">
-                    <img src="${img}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
-                </div>`
-            ).join('');
+            b.innerHTML = misDestacados.map((it, i) => {
+                const url = (typeof it === 'string') ? it : it.img;
+                const link = (typeof it === 'object' && it.link) ? it.link : null;
+                const imgTag = `<img src="${url}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">`;
+                const inner = link ? `<a href="${link}" style="position:absolute;inset:0;display:block;">${imgTag}</a>` : imgTag;
+                return `<div class="min-w-full h-full snap-start flex-shrink-0 relative overflow-hidden bg-black">${inner}</div>`;
+            }).join('');
 
             ind.innerHTML = misDestacados.map((_, i) =>
                 `<div class="h-1.5 rounded-full transition-all ${i === 0 ? 'bg-violet-600 w-4' : 'bg-slate-300 w-1.5'} cursor-pointer"

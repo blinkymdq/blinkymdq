@@ -51,6 +51,7 @@
   .bk-search input{width:100%;height:44px;padding:0 3rem 0 1.25rem;background:#fff;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;color:#1e293b;outline:none;}
   .bk-search .lupa{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .bk-user{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .bk-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .bk-cart{background:none;border:none;cursor:pointer;padding:6px;display:flex;position:relative;}
   .bk-row2{border-top:1px solid rgba(255,255,255,0.08);}
   .bk-row2-inner{max-width:80rem;margin:0 auto;padding:0 1rem;height:46px;display:flex;align-items:center;gap:0.25rem;}
@@ -63,7 +64,11 @@
   @keyframes logoDrop{0%{opacity:0;transform:translateY(-180px);animation-timing-function:ease-in;}50%{opacity:1;transform:translateY(0);animation-timing-function:ease-out;}66%{transform:translateY(-34px);animation-timing-function:ease-in;}80%{transform:translateY(0);animation-timing-function:ease-out;}90%{transform:translateY(-13px);animation-timing-function:ease-in;}96%{transform:translateY(0);animation-timing-function:ease-out;}98%{transform:translateY(-4px);}100%{transform:translateY(0);}}
   .logo-anim{animation:logoDrop 1.3s both;}
   @media (prefers-reduced-motion:reduce){.logo-anim{animation:none;}}
-  @media (max-width:640px){ .bk-row1{min-height:auto;padding:8px 12px;} .bk-row2-inner{padding:0 12px;} }
+  @media (max-width:640px){
+    .bk-row1{min-height:auto;padding:10px 12px;justify-content:space-between;}
+    .bk-search{order:3;flex-basis:100%;min-width:0;}
+    .bk-row2-inner{padding:0 12px;}
+  }
 </style>
 </head>
 <body>
@@ -78,6 +83,7 @@
           <svg style="width:16px;height:16px;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
+      <div class="bk-right">
       <div class="bk-user" style="position:relative;">
         <div onclick="bkUserClick()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -98,6 +104,7 @@
       <a href="index.html" class="bk-cart" title="Ir al carrito">
         <svg style="width:26px;height:26px;" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       </a>
+      </div>
     </div>
     <div class="bk-row2">
       <div class="bk-row2-inner">
