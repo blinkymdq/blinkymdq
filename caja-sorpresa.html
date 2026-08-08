@@ -44,17 +44,81 @@
   .acciones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
   .hidden{display:none;}
   .conf{font-size:1.6rem;letter-spacing:6px;}
+  /* ===== Header estilo tienda (oscuro) ===== */
+  .bk-header{background:#0a0a0a url('back.webp') center/cover no-repeat;position:sticky;top:0;z-index:50;}
+  .bk-row1{max-width:80rem;margin:0 auto;padding:0 1rem;min-height:96px;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+  .bk-search{flex:1;min-width:180px;position:relative;}
+  .bk-search input{width:100%;height:44px;padding:0 3rem 0 1.25rem;background:#fff;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;color:#1e293b;outline:none;}
+  .bk-search .lupa{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .bk-user{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .bk-cart{background:none;border:none;cursor:pointer;padding:6px;display:flex;position:relative;}
+  .bk-row2{border-top:1px solid rgba(255,255,255,0.08);}
+  .bk-row2-inner{max-width:80rem;margin:0 auto;padding:0 1rem;height:46px;display:flex;align-items:center;gap:0.25rem;}
+  .nav-link{position:relative;overflow:hidden;border-radius:9px;}
+  .nav-link select{appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2.25rem 0 2.5rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;}
+  .nav-link select option{color:#1e293b;background:#fff;}
+  .nav-link::after{content:'';position:absolute;top:0;left:-130%;width:55%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.4),transparent);transform:skewX(-20deg);pointer-events:none;opacity:0;}
+  .nav-link:hover::after{animation:navShine 0.7s ease;}
+  @keyframes navShine{0%{left:-130%;opacity:1;}100%{left:140%;opacity:1;}}
+  @keyframes logoDrop{0%{opacity:0;transform:translateY(-180px);animation-timing-function:ease-in;}50%{opacity:1;transform:translateY(0);animation-timing-function:ease-out;}66%{transform:translateY(-34px);animation-timing-function:ease-in;}80%{transform:translateY(0);animation-timing-function:ease-out;}90%{transform:translateY(-13px);animation-timing-function:ease-in;}96%{transform:translateY(0);animation-timing-function:ease-out;}98%{transform:translateY(-4px);}100%{transform:translateY(0);}}
+  .logo-anim{animation:logoDrop 1.3s both;}
+  @media (prefers-reduced-motion:reduce){.logo-anim{animation:none;}}
+  @media (max-width:640px){ .bk-row1{min-height:auto;padding:8px 12px;} .bk-row2-inner{padding:0 12px;} }
 </style>
 </head>
 <body>
-  <div class="top">
-    <a href="index.html"><img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ"></a>
-    <a class="volver" href="index.html">← Volver a la tienda</a>
-  </div>
+  <header class="bk-header">
+    <div class="bk-row1">
+      <a href="index.html" title="Volver a la tienda" style="flex-shrink:0;">
+        <img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:58px;width:auto;object-fit:contain;">
+      </a>
+      <div class="bk-search">
+        <input type="text" id="bk-buscar" placeholder="Buscar producto..." autocomplete="off" onkeydown="if(event.key==='Enter') bkBuscar()">
+        <button class="lupa" onclick="bkBuscar()" aria-label="Buscar">
+          <svg style="width:16px;height:16px;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+      <div class="bk-user" style="position:relative;">
+        <div onclick="bkUserClick()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div style="text-align:left;">
+            <div id="bk-hola" style="font-size:9px;color:#cbd5e1;font-weight:600;line-height:1;display:none;">Hola,</div>
+            <div id="bk-header-name" style="font-size:11px;font-weight:900;color:#fff;text-transform:uppercase;line-height:1.2;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ingresá</div>
+          </div>
+          <span id="bk-chev" style="display:none;align-items:center;justify-content:center;width:22px;height:22px;background:#7c3aed;border-radius:6px;flex-shrink:0;">
+            <svg style="width:12px;height:12px;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </div>
+        <div id="bk-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:6px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);border:1px solid #e2e8f0;padding:4px;min-width:170px;z-index:60;">
+          <a href="mi-cuenta.html" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:.03em;">Mi cuenta</a>
+          <a href="index.html" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:.03em;">← Volver a la tienda</a>
+          <button onclick="logout()" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.03em;background:none;border:none;cursor:pointer;text-align:left;">Cerrar sesión</button>
+        </div>
+      </div>
+      <a href="index.html" class="bk-cart" title="Ir al carrito">
+        <svg style="width:26px;height:26px;" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      </a>
+    </div>
+    <div class="bk-row2">
+      <div class="bk-row2-inner">
+        <div class="nav-link">
+          <select id="bk-cat" onchange="bkFiltrar(this.value,'cat')"><option value="" style="color:#1e293b;">Categorías</option></select>
+          <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <span style="color:rgba(255,255,255,0.25);font-weight:300;font-size:18px;line-height:1;user-select:none;">|</span>
+        <div class="nav-link">
+          <select id="bk-marca" onchange="bkFiltrar(this.value,'marca')" style="padding:0 2rem 0 2.25rem;"><option value="" style="color:#1e293b;">Marcas</option></select>
+          <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
+          <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+  </header>
 
   <div class="wrap">
     <img src="Cajas-sorpresa-banner.png" alt="Cajas Sorpresa" style="width:100%;max-width:100%;height:auto;display:block;margin:14px auto 0;border-radius:16px;" onerror="this.replaceWith(Object.assign(document.createElement('h1'),{textContent:'🎁 Cajas Sorpresa',style:'font-size:2rem;font-weight:900;margin-top:14px;'}))">
-    <div class="sub" id="sub">Elegí una caja y ganá un cupón de descuento para tu próxima compra.<br>Tenés <b>un solo intento</b>.</div>
+    <div class="sub" id="sub" style="min-height:0;margin:0;"></div>
 
     <!-- No logueado -->
     <div id="vista-login" class="card hidden">
@@ -117,8 +181,43 @@ async function ensureUsuario(user){
   }catch(e){}
 }
 
+// ===== Header tienda =====
+function bkBuscar(){ const v=(document.getElementById('bk-buscar').value||'').trim(); if(!v) return; window.location.href='index.html?q='+encodeURIComponent(v.toLowerCase().replace(/\s+/g,'-')); }
+function bkFiltrar(valor,tipo){ if(!valor) return; window.location.href='index.html?'+tipo+'='+encodeURIComponent(valor); }
+function bkToggleMenu(){ const m=document.getElementById('bk-menu'); if(m) m.style.display = m.style.display==='block'?'none':'block'; }
+function bkUserClick(){ if(window._cajaLogueado) bkToggleMenu(); else login(); }
+async function logout(){ await supa.auth.signOut(); location.reload(); }
+document.addEventListener('click', e=>{ const u=e.target.closest('.bk-user'); if(!u){ const m=document.getElementById('bk-menu'); if(m) m.style.display='none'; } });
+async function bkLlenarSelects(){
+  try{
+    const { data } = await supa.from('productos').select('categoria,marca').neq('estado','inactivo');
+    if(!data) return;
+    const cats = [...new Set(data.map(p=>p.categoria).filter(Boolean))].sort();
+    const marcas = [...new Set(data.map(p=>p.marca).filter(Boolean))].sort();
+    const sc=document.getElementById('bk-cat'); if(sc) sc.innerHTML='<option value="" style="color:#1e293b;">Categorías</option>'+cats.map(c=>`<option value="${c}" style="color:#1e293b;">${c}</option>`).join('');
+    const sm=document.getElementById('bk-marca'); if(sm) sm.innerHTML='<option value="" style="color:#1e293b;">Marcas</option>'+marcas.map(m=>`<option value="${m}" style="color:#1e293b;">${m}</option>`).join('');
+  }catch(e){}
+}
+function setHeaderUsuario(session){
+  const hola=document.getElementById('bk-hola'), chev=document.getElementById('bk-chev'), name=document.getElementById('bk-header-name');
+  if(session){
+    window._cajaLogueado = true;
+    const n = (session.user.user_metadata && session.user.user_metadata.full_name) || (session.user.email? session.user.email.split('@')[0] : 'Mi cuenta');
+    if(name) name.textContent = (n||'').split(' ')[0];
+    if(hola) hola.style.display='block';
+    if(chev) chev.style.display='inline-flex';
+  } else {
+    window._cajaLogueado = false;
+    if(name) name.textContent = 'Ingresá';
+    if(hola) hola.style.display='none';
+    if(chev) chev.style.display='none';
+  }
+}
+bkLlenarSelects();
+
 async function init(){
   const { data:{ session } } = await supa.auth.getSession();
+  setHeaderUsuario(session);
   if(!session){ mostrar('vista-login'); return; }
   await ensureUsuario(session.user);
   try{
