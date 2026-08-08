@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cajas Sorpresa — Blinky MDQ</title>
+<link rel="icon" href="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',Arial,sans-serif;min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%, #2b1466 0%, #17093a 45%, #0b0620 100%);color:#fff;display:flex;flex-direction:column;}
+  a{color:inherit;text-decoration:none;}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;}
+  .top img{height:42px;}
+  .top .volver{font-size:0.82rem;font-weight:700;color:#c4b5fd;background:rgba(255,255,255,0.08);padding:8px 14px;border-radius:999px;}
+  .wrap{flex:1;max-width:760px;margin:0 auto;padding:10px 18px 60px;width:100%;text-align:center;}
+  h1{font-size:2rem;font-weight:900;margin-top:14px;letter-spacing:-0.5px;}
+  .sub{color:#c4b5fd;font-size:0.95rem;margin-top:8px;line-height:1.5;}
+  .boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px;}
+  @media(max-width:560px){ .boxes{gap:10px;} h1{font-size:1.6rem;} }
+  .box{background:linear-gradient(160deg,#7c3aed,#5b21b6);border:none;border-radius:20px;padding:26px 10px 22px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s ease, box-shadow .18s ease;box-shadow:0 10px 30px rgba(124,58,237,.35);}
+  .box:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 16px 40px rgba(124,58,237,.5);}
+  .box .emoji{font-size:3.2rem;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));transition:transform .2s;}
+  .box:hover .emoji{transform:rotate(-6deg) scale(1.08);}
+  .box .lbl{display:block;margin-top:12px;font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#f5f3ff;}
+  .box.abriendo{animation:shake .5s ease;}
+  .box.ganadora{background:linear-gradient(160deg,#f59e0b,#d97706);box-shadow:0 16px 45px rgba(245,158,11,.55);}
+  .box.perdedora{opacity:.35;filter:grayscale(.5);pointer-events:none;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px) rotate(-3deg)}40%{transform:translateX(8px) rotate(3deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+  .card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:22px;padding:30px 26px;margin-top:30px;backdrop-filter:blur(6px);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#5b21b6;font-weight:900;border:none;border-radius:14px;padding:14px 22px;font-size:0.95rem;cursor:pointer;text-transform:uppercase;letter-spacing:.03em;}
+  .btn.alt{background:rgba(255,255,255,0.12);color:#fff;}
+  .btn.google{background:#fff;color:#334155;font-weight:700;text-transform:none;}
+  .premio-monto{font-size:3rem;font-weight:900;color:#fbbf24;margin:6px 0;text-shadow:0 4px 20px rgba(251,191,36,.4);}
+  .cupon-code{display:inline-block;font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:2px;background:#fff;color:#5b21b6;padding:10px 18px;border-radius:12px;margin:10px 0;}
+  .muted{color:#c4b5fd;font-size:0.85rem;line-height:1.55;}
+  .acciones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+  .hidden{display:none;}
+  .conf{font-size:1.6rem;letter-spacing:6px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a href="index.html"><img src="https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/blinkysinfondo.png" alt="Blinky MDQ"></a>
+    <a class="volver" href="index.html">← Volver a la tienda</a>
+  </div>
+
+  <div class="wrap">
+    <h1>🎁 Cajas Sorpresa</h1>
+    <div class="sub" id="sub">Elegí una caja y ganá un cupón de descuento para tu próxima compra.<br>Tenés <b>un solo intento</b>.</div>
+
+    <!-- No logueado -->
+    <div id="vista-login" class="card hidden">
+      <div style="font-size:2.4rem;">🔒</div>
+      <div style="font-size:1.15rem;font-weight:800;margin-top:8px;">Ingresá para jugar</div>
+      <div class="muted" style="margin:8px 0 18px;">Necesitás tu cuenta para que el premio quede guardado en tus cupones.</div>
+      <button class="btn google" onclick="login()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;"> Ingresar con Google
+      </button>
+      <div class="muted" style="margin-top:14px;">¿Usás email y contraseña? <a href="index.html" style="color:#fff;text-decoration:underline;">Ingresá desde la tienda</a> y volvé.</div>
+    </div>
+
+    <!-- Cajas -->
+    <div id="vista-juego" class="hidden">
+      <div class="boxes" id="boxes">
+        <button class="box" data-i="0" onclick="abrir(0)"><span class="emoji">🎁</span><span class="lbl">Caja 1</span></button>
+        <button class="box" data-i="1" onclick="abrir(1)"><span class="emoji">🎁</span><span class="lbl">Caja 2</span></button>
+        <button class="box" data-i="2" onclick="abrir(2)"><span class="emoji">🎁</span><span class="lbl">Caja 3</span></button>
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div id="vista-resultado" class="card hidden">
+      <div class="conf" id="conf">🎉 ✨ 🎉</div>
+      <div style="font-size:1.15rem;font-weight:800;margin-top:6px;" id="res-titulo">¡Ganaste!</div>
+      <div class="premio-monto" id="res-monto">$0</div>
+      <div class="muted">de descuento en tu próxima compra</div>
+      <div style="margin-top:14px;">Tu cupón:</div>
+      <div class="cupon-code" id="res-codigo">—</div>
+      <div class="muted" id="res-detalle"></div>
+      <div class="acciones">
+        <a class="btn" href="mi-cuenta.html">Ver mis cupones</a>
+        <a class="btn alt" href="index.html">Ir a comprar 🛍️</a>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+let jugando = false;
+
+function $(id){ return document.getElementById(id); }
+function money(n){ return '$' + Number(n||0).toLocaleString('es-AR'); }
+function mostrar(v){ ['vista-login','vista-juego','vista-resultado'].forEach(x=>$(x).classList.toggle('hidden', x!==v)); }
+
+async function login(){
+  await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
+}
+
+async function ensureUsuario(user){
+  try{
+    const { data } = await supa.from('usuarios').select('id').eq('id', user.id).maybeSingle();
+    if(!data){
+      const nombre = user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Cliente');
+      await supa.from('usuarios').upsert({ id:user.id, email:user.email, nombre, rol:'minorista' });
+    }
+  }catch(e){}
+}
+
+async function init(){
+  const { data:{ session } } = await supa.auth.getSession();
+  if(!session){ mostrar('vista-login'); return; }
+  await ensureUsuario(session.user);
+  try{
+    const { data } = await supa.rpc('estado_caja_sorpresa');
+    if(data && data.jugo){ verResultado(data.valor, data.codigo, null, true); return; }
+    mostrar('vista-juego');
+  }catch(e){ mostrar('vista-juego'); }
+}
+
+async function abrir(i){
+  if(jugando) return; jugando = true;
+  const boxes = document.querySelectorAll('#boxes .box');
+  boxes[i].classList.add('abriendo');
+  try{
+    const { data, error } = await supa.rpc('abrir_caja_sorpresa');
+    if(error || !data || !data.ok){ jugando=false; boxes[i].classList.remove('abriendo'); alert((data&&data.motivo)||'No se pudo abrir la caja.'); return; }
+    // animación: la elegida gana, las otras se apagan
+    setTimeout(()=>{
+      boxes.forEach((b,idx)=>{ if(idx===i){ b.classList.add('ganadora'); b.querySelector('.emoji').textContent='🎉'; } else b.classList.add('perdedora'); });
+      setTimeout(()=> verResultado(data.valor, data.codigo, data, false), 650);
+    }, 500);
+  }catch(e){ jugando=false; boxes[i].classList.remove('abriendo'); alert('No se pudo abrir la caja.'); }
+}
+
+function verResultado(valor, codigo, data, yaJugo){
+  $('res-monto').textContent = money(valor);
+  $('res-codigo').textContent = codigo || '—';
+  $('res-titulo').textContent = yaJugo ? 'Tu premio' : '¡Ganaste!';
+  let det = 'Ya está cargado en tus cupones.';
+  if(data && data.min_compra) det += ' Compra mínima ' + money(data.min_compra) + '.';
+  if(data && data.vence) det += ' Vence el ' + new Date(data.vence+'T00:00:00').toLocaleDateString('es-AR') + '.';
+  if(yaJugo) det = 'Ya jugaste tu intento. Este cupón está en tu cuenta.';
+  $('res-detalle').textContent = det;
+  $('sub').textContent = yaJugo ? 'Ya usaste tu intento 🎁' : '¡Felicitaciones! 🎉';
+  mostrar('vista-resultado');
+}
+
+supa.auth.onAuthStateChange((_e, s)=>{ if(s) init(); });
+init();
+</script>
+</body>
+</html>
