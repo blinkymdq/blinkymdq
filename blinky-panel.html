@@ -3379,6 +3379,7 @@ let vendUsuarios = [];
 let vendEntregas = [];
 let vendMovs = [];
 let vendProductos = null;
+let VEND_DOLAR = 0; // cotización actual del dólar para precios en vivo
 let vendActualId = null;
 
 async function cargarVendedores() {
@@ -3394,8 +3395,13 @@ async function cargarVendedores() {
     vendEntregas = await eR.json();
     vendMovs = await mR.json();
     if (!vendProductos) {
-      vendProductos = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,stock,estado,foto&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
+      vendProductos = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,costo_usd,costo_final,imp_e,ganancia,ganancia_mayorista,moneda,stock,estado,foto&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
     }
+    // Cotización del dólar (para precios en vivo, misma fórmula que el editor de productos)
+    try {
+      const _cfg = await (await fetch(`${SUPA_URL}/rest/v1/configuracion?select=dolar&id=eq.1`, {headers:hdrs})).json();
+      if (_cfg && _cfg[0] && _cfg[0].dolar) VEND_DOLAR = parseFloat(_cfg[0].dolar) || 0;
+    } catch(_){}
     const dl = document.getElementById('vend-prod-list');
     if (dl) dl.innerHTML = (vendProductos||[]).map(p=>`<option value="${p.nombre}">`).join('');
     renderVendedores();
@@ -3406,7 +3412,22 @@ async function cargarVendedores() {
 
 function prodVend(codigo){ return (vendProductos||[]).find(p=>p.codigo===codigo); }
 function fotoVend(codigo){ const p=prodVend(codigo); const f=((p&&p.foto)||'').split(',')[0].trim(); return f?getImgUrl(f):''; }
-function precioVend(codigo, rol){ const p=prodVend(codigo); if(!p) return 0; return Number((rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0); }
+// Precio EN VIVO: misma fórmula que el editor de productos (costo × (1+imp_e%) × dólar × (1+ganancia%)).
+// Los productos en USD se recalculan con el dólar actual; los de pesos usan su costo final.
+// Si falta info de costo, cae al precio guardado.
+function precioVend(codigo, rol){
+  const p = prodVend(codigo); if(!p) return 0;
+  const gan = rol==='mayorista' ? Number(p.ganancia_mayorista||0) : Number(p.ganancia||0);
+  const moneda = String(p.moneda||'').toLowerCase();
+  let costoPesos = 0;
+  if(moneda==='usd'){
+    costoPesos = Math.round(Number(p.costo_usd||0) * (1 + Number(p.imp_e||0)/100) * (VEND_DOLAR||0));
+  } else {
+    costoPesos = Number(p.costo_final||0) || Math.round(Number(p.costo_usd||0) * (1 + Number(p.imp_e||0)/100));
+  }
+  if(costoPesos>0 && gan>0) return Math.round(costoPesos * (1 + gan/100));
+  return Number((rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0);
+}
 function entregasDe(uid){ return vendEntregas.filter(e=>e.usuario_id===uid); }
 function pendItem(e){ return Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0); }
 
@@ -3549,9 +3570,13 @@ function renderModalVendedor(id) {
     <div class="fc-section-title">Comprobantes de entrega</div>
     <div id="mv-comprobantes"><div class="loading-txt">Cargando...</div></div>
 
+    <div class="fc-section-title">Comprobantes de devolución</div>
+    <div id="mv-comprobantes-dev"><div class="loading-txt">Cargando...</div></div>
+
     <div class="fc-section-title">Historial de movimientos</div>
     <div class="pagos-list">${movsHtml}</div>`;
   cargarComprobantesEntrega(id);
+  cargarComprobantesDevolucion(id);
 }
 
 async function cargarComprobantesEntrega(id){
@@ -3562,6 +3587,18 @@ async function cargarComprobantesEntrega(id){
     cont.innerHTML = cs.map(c=>{
       const f=new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
       return `<div class="pago-item"><span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${c.numero}</b> · ${c.total_unidades} u. <br><span style="font-size:0.72rem;color:var(--text3);">${f}</span></span><a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/entrega-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a></div>`;
+    }).join('');
+  }catch(e){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Error.</div>'; }
+}
+
+async function cargarComprobantesDevolucion(id){
+  const cont=document.getElementById('mv-comprobantes-dev'); if(!cont) return;
+  try{
+    const cs = await (await fetch(`${SUPA_URL}/rest/v1/devoluciones_comprobantes?usuario_id=eq.${id}&select=numero,total_unidades,created_at,token&order=created_at.desc`, {headers:hdrs})).json();
+    if(!Array.isArray(cs)||!cs.length){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Sin comprobantes de devolución.</div>'; return; }
+    cont.innerHTML = cs.map(c=>{
+      const f=new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      return `<div class="pago-item"><span style="min-width:0;flex:1;"><b style="font-family:monospace;color:#fb923c;">${c.numero}</b> · ${c.total_unidades} u. <br><span style="font-size:0.72rem;color:var(--text3);">${f}</span></span><a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/devolucion-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a></div>`;
     }).join('');
   }catch(e){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Error.</div>'; }
 }
@@ -3779,6 +3816,15 @@ async function registrarDevolucionVendedor(id){
     }
     await logMov(items.map(it=>({usuario_id:id, codigo:it.e.codigo, producto:it.e.producto, tipo:'devolucion', cantidad:it.n})));
 
+    // Comprobante de devolución guardado
+    let _compDev=null;
+    try{
+      const _its = items.map(it=>({codigo:it.e.codigo, producto:it.e.producto, cantidad:it.n}));
+      const _tot = _its.reduce((s,i)=>s+Number(i.cantidad||0),0);
+      const _r = await fetch(`${SUPA_URL}/rest/v1/devoluciones_comprobantes`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:id, vendedor_nombre:v.nombre, items:_its, total_unidades:_tot})});
+      _compDev = (await _r.json())[0];
+    }catch(e){}
+
     // Mail al vendedor con el listado devuelto (no bloquea si falla)
     let avisoMail = '';
     if(v.email){
@@ -3798,6 +3844,7 @@ async function registrarDevolucionVendedor(id){
     }
 
     toast('Devolución registrada ✓'+avisoMail,'ok');
+    if(_compDev && _compDev.token) window.open('https://blinkymdq.github.io/blinkymdq/devolucion-imprimir.html?t='+_compDev.token,'_blank');
     await cargarVendedores();
   } catch(err){ console.error(err); toast('Error al registrar la devolución','err'); }
 }
