@@ -2065,6 +2065,7 @@ async function verPedido(num, esEliminado) {
                 </span>
                 <span class="pago-monto">$${Number(pg.monto).toLocaleString('es-AR')}</span>
                 <span class="pago-fecha">${new Date(pg.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+                ${pg.token?`<a href="https://blinkymdq.github.io/blinkymdq/recibo-pago.html?t=${pg.token}" target="_blank" title="Recibo de pago ${pg.numero_recibo||''}" style="text-decoration:none;font-size:0.95rem;padding:0 2px;">🧾</a>`:''}
                 <button onclick="eliminarPago(${pg.id},'${num}',${pg.monto})" title="Eliminar pago" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0 0 8px;">🗑️</button>
               </div>`).join('')}
             </div>
@@ -2810,6 +2811,7 @@ async function cargarPagosCliente(){
       return `<div class="pago-item">
         <span style="min-width:0;flex:1;"><b>$${Number(p.monto).toLocaleString('es-AR')}</b> · ${formaLabel(p.forma_pago)} · <span style="font-family:monospace;color:var(--violet-light);">${p.numero_pedido}</span>
         <br><span style="font-size:0.72rem;color:var(--text3);">${f}${p.descripcion?` · ${esc(p.descripcion)}`:''}</span></span>
+        ${p.token?`<a href="https://blinkymdq.github.io/blinkymdq/recibo-pago.html?t=${p.token}" target="_blank" class="fc-btn" style="padding:2px 9px;text-decoration:none;">🧾 Recibo</a>`:''}
       </div>`;
     }).join('') + `<div style="text-align:right;font-weight:900;margin-top:0.6rem;">Total pagado: $${tot.toLocaleString('es-AR')}</div>`;
   } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar los pagos.</div>'; }
@@ -3541,8 +3543,24 @@ function renderModalVendedor(id) {
     <div id="entrega-carrito"></div>
     <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Agregá uno o varios productos y tocá "Entregar": se registra todo junto y se le manda el detalle por mail al vendedor. No descuenta stock, pero valida disponibilidad.</div>
 
+    <div class="fc-section-title">Comprobantes de entrega</div>
+    <div id="mv-comprobantes"><div class="loading-txt">Cargando...</div></div>
+
     <div class="fc-section-title">Historial de movimientos</div>
     <div class="pagos-list">${movsHtml}</div>`;
+  cargarComprobantesEntrega(id);
+}
+
+async function cargarComprobantesEntrega(id){
+  const cont=document.getElementById('mv-comprobantes'); if(!cont) return;
+  try{
+    const cs = await (await fetch(`${SUPA_URL}/rest/v1/entregas_comprobantes?usuario_id=eq.${id}&select=numero,total_unidades,created_at,token&order=created_at.desc`, {headers:hdrs})).json();
+    if(!Array.isArray(cs)||!cs.length){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Sin comprobantes de entrega.</div>'; return; }
+    cont.innerHTML = cs.map(c=>{
+      const f=new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      return `<div class="pago-item"><span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${c.numero}</b> · ${c.total_unidades} u. <br><span style="font-size:0.72rem;color:var(--text3);">${f}</span></span><a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/entrega-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a></div>`;
+    }).join('');
+  }catch(e){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Error.</div>'; }
 }
 
 async function logMov(rows){
@@ -3641,6 +3659,14 @@ async function confirmarEntrega(uid){
       else await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:uid,codigo:c.codigo,producto:c.nombre,entregado:c.cant})});
     }
     await logMov(entregaCarrito.map(c=>({usuario_id:uid, codigo:c.codigo, producto:c.nombre, tipo:'entrega', cantidad:c.cant})));
+    // Comprobante de entrega (remito) guardado
+    let _compEnt=null;
+    try{
+      const _its = entregaCarrito.map(c=>({codigo:c.codigo, producto:c.nombre, cantidad:c.cant}));
+      const _tot = _its.reduce((s,i)=>s+Number(i.cantidad||0),0);
+      const _r = await fetch(`${SUPA_URL}/rest/v1/entregas_comprobantes`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:uid, vendedor_nombre:v.nombre, items:_its, total_unidades:_tot})});
+      _compEnt = (await _r.json())[0];
+    }catch(e){}
     let avisoMail='';
     if(v.email){
       try {
@@ -3654,6 +3680,7 @@ async function confirmarEntrega(uid){
     } else { avisoMail = ' — sin email cargado, no se envió aviso'; }
     entregaCarrito = [];
     toast('Mercadería entregada ✓'+avisoMail,'ok');
+    if(_compEnt && _compEnt.token) window.open('https://blinkymdq.github.io/blinkymdq/entrega-imprimir.html?t='+_compEnt.token,'_blank');
     await cargarVendedores();
   } catch(err){ console.error(err); toast('Error al entregar','err'); }
 }
