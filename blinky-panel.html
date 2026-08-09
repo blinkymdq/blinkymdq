@@ -218,6 +218,9 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
 /* Botones post-pago */
 .post-pago-btns { display:grid;grid-template-columns:1fr auto;gap:0.5rem;margin-top:0.75rem;align-items:center; }
 .btn-finalizar { background:var(--green);color:white;border:none;border-radius:9px;padding:0.65rem 1rem;font-size:0.875rem;font-weight:700;cursor:pointer; }
+.btn-finalizar:disabled, .fc-btn:disabled { opacity:0.8;cursor:progress; }
+@keyframes bk-spin { to { transform: rotate(360deg); } }
+.bk-spinner { display:inline-block;width:14px;height:14px;border:2px solid rgba(128,128,128,.35);border-top-color:currentColor;border-radius:50%;animation:bk-spin .6s linear infinite;vertical-align:-2px;margin-right:7px; }
 .btn-finalizar:hover { background:#059669; }
 .btn-eliminar-chico { background:transparent;border:1px solid var(--red);color:var(--red);border-radius:9px;padding:0.65rem 1rem;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap; }
 .btn-eliminar-chico:hover { background:rgba(239,68,68,0.1); }
@@ -3553,8 +3556,8 @@ function renderModalVendedor(id) {
     <div class="vmerc-grid" id="mv-merc-grid">${filasHtml}</div>
     <div id="mv-sin-resultados" style="display:none;color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin coincidencias.</div>
     <div class="post-pago-btns" style="margin-top:0.75rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
-      <button class="btn-finalizar" onclick="registrarVentaVendedor('${id}')">✓ Registrar venta de lo marcado</button>
-      <button class="fc-btn" style="background:var(--yellow);color:#1a1a26;font-weight:800;" onclick="registrarDevolucionVendedor('${id}')">↩ Registrar devolución de lo marcado</button>
+      <button class="btn-finalizar" onclick="registrarVentaVendedor('${id}', this)">✓ Registrar venta de lo marcado</button>
+      <button class="fc-btn" style="background:var(--yellow);color:#1a1a26;font-weight:800;" onclick="registrarDevolucionVendedor('${id}', this)">↩ Registrar devolución de lo marcado</button>
     </div>`:'<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Todavía no tiene mercadería.</div>'}
 
     <div class="fc-section-title">Entregar mercadería</div>
@@ -3678,20 +3681,22 @@ function renderEntregaCarrito(uid){
   box.innerHTML = `<div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin:0.5rem 0 0.2rem;">A entregar (${totalU} u.)</div>
     <div class="pagos-list">${filas}</div>
     <div class="post-pago-btns" style="margin-top:0.5rem;">
-      <button class="btn-finalizar" onclick="confirmarEntrega('${uid}')">✓ Entregar ${totalU} u. y avisar al vendedor</button>
+      <button class="btn-finalizar" onclick="confirmarEntrega('${uid}', this)">✓ Entregar ${totalU} u. y avisar al vendedor</button>
     </div>`;
 }
 
-async function confirmarEntrega(uid){
+async function confirmarEntrega(uid, btn){
   const v = vendUsuarios.find(u=>u.id===uid); if(!v) return;
   if(!entregaCarrito.length){ toast('Agregá al menos un producto','err'); return; }
+  if(btn){ btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Entregando...'; }
+  const _restaurarBtn = () => { if(btn && btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } };
   try {
     // Re-chequeo de disponibilidad con stock fresco
     for(const c of entregaCarrito){
       let stockActual = 0;
       try { const sr=await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(c.codigo)}&select=stock`,{headers:hdrs}); const sj=await sr.json(); if(sj&&sj[0]) stockActual=Number(sj[0].stock||0); } catch(_){}
       const afuera=(vendEntregas||[]).filter(e=>e.codigo===c.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
-      if(c.cant > (stockActual-afuera)){ toast(`"${c.nombre}": sin stock (disp ${Math.max(0,stockActual-afuera)})`,'err'); return; }
+      if(c.cant > (stockActual-afuera)){ toast(`"${c.nombre}": sin stock (disp ${Math.max(0,stockActual-afuera)})`,'err'); _restaurarBtn(); return; }
     }
     for(const c of entregaCarrito){
       const existente = vendEntregas.find(e=>e.usuario_id===uid && e.codigo===c.codigo);
@@ -3722,10 +3727,10 @@ async function confirmarEntrega(uid){
     toast('Mercadería entregada ✓'+avisoMail,'ok');
     if(_compEnt && _compEnt.token) window.open('https://blinkymdq.github.io/blinkymdq/entrega-imprimir.html?t='+_compEnt.token,'_blank');
     await cargarVendedores();
-  } catch(err){ console.error(err); toast('Error al entregar','err'); }
+  } catch(err){ console.error(err); toast('Error al entregar','err'); _restaurarBtn(); }
 }
 
-async function registrarVentaVendedor(id) {
+async function registrarVentaVendedor(id, btn) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
   const filas = entregasDe(id);
   const items = [];
@@ -3740,6 +3745,8 @@ async function registrarVentaVendedor(id) {
   }
   if(!items.length){ toast('Marcá al menos una cantidad para vender','err'); return; }
   const total = items.reduce((s,it)=>s+it.precio*it.n,0);
+  if(btn){ btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Registrando...'; }
+  const _restaurarBtn = () => { if(btn && btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } };
   try {
     const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos`,{method:'POST',headers:hdrs,body:JSON.stringify({
       nombre:v.nombre, telefono:v.telefono||null, email:v.email||null,
@@ -3762,7 +3769,7 @@ async function registrarVentaVendedor(id) {
     toast(`Venta registrada — pedido ${numero} (a deber) ✓`,'ok');
     await cargarVendedores();
     if(typeof cargarPedidos==='function') cargarPedidos();
-  } catch(err){ console.error(err); toast('Error al registrar la venta','err'); }
+  } catch(err){ console.error(err); toast('Error al registrar la venta','err'); _restaurarBtn(); }
 }
 
 async function devolverMercaderia(entregaId) {
@@ -3796,7 +3803,7 @@ function filtrarMercaderiaModal(){
 }
 
 // Devoluciones en tanda (multi-selección, igual que las ventas) + mail al vendedor
-async function registrarDevolucionVendedor(id){
+async function registrarDevolucionVendedor(id, btn){
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
   const filas = entregasDe(id);
   const items = [];
@@ -3810,6 +3817,8 @@ async function registrarDevolucionVendedor(id){
     }
   }
   if(!items.length){ toast('Marcá al menos una cantidad para devolver','err'); return; }
+  if(btn){ btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Registrando...'; }
+  const _restaurarBtn = () => { if(btn && btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } };
   try {
     for(const it of items){
       await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${it.e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({devuelto:Number(it.e.devuelto||0)+it.n})});
@@ -3846,7 +3855,7 @@ async function registrarDevolucionVendedor(id){
     toast('Devolución registrada ✓'+avisoMail,'ok');
     if(_compDev && _compDev.token) window.open('https://blinkymdq.github.io/blinkymdq/devolucion-imprimir.html?t='+_compDev.token,'_blank');
     await cargarVendedores();
-  } catch(err){ console.error(err); toast('Error al registrar la devolución','err'); }
+  } catch(err){ console.error(err); toast('Error al registrar la devolución','err'); _restaurarBtn(); }
 }
 
 function buscarProductoVendedores(){
