@@ -3524,7 +3524,10 @@ function renderModalVendedor(id) {
       <div class="fc-resumen-item"><div class="label">Precio</div><div class="val">${v.rol==='mayorista'?'Mayorista':'Público'}</div></div>
     </div>
 
-    <div class="fc-section-title">Mercadería en su poder</div>
+    <div class="fc-section-title" style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;">
+      <span>Mercadería en su poder</span>
+      <button class="fc-btn" style="background:#0891b2;color:#fff;font-weight:800;font-size:0.74rem;padding:0.35rem 0.7rem;" onclick="window.open('https://blinkymdq.github.io/blinkymdq/resumen-vendedor.html?u=${id}','_blank')">🖨️ Imprimir resumen</button>
+    </div>
     ${filas.length?`<input id="mv-buscar-prod" type="text" oninput="filtrarMercaderiaModal()" placeholder="🔎 Filtrar producto de esta lista..." style="width:100%;margin-bottom:0.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.5rem 0.7rem;font-size:0.82rem;">
     <div class="vmerc-grid" id="mv-merc-grid">${filasHtml}</div>
     <div id="mv-sin-resultados" style="display:none;color:var(--text3);font-size:0.82rem;padding:0.5rem 0;">Sin coincidencias.</div>
