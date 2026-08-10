@@ -2427,20 +2427,20 @@
         }
 
         function cambiarCantidad(id, delta) {
-            const item = carrito.find(i => i.id === id);
+            const item = carrito.find(i => String(i.id) === String(id));
             if (!item) return;
             if (delta > 0 && item.cantidad >= item.stock) {
                 toast(`Solo hay ${item.stock} unidad${item.stock === 1 ? '' : 'es'} disponible${item.stock === 1 ? '' : 's'}`);
                 return;
             }
             item.cantidad += delta;
-            if (item.cantidad <= 0) carrito = carrito.filter(i => i.id !== id);
+            if (item.cantidad <= 0) carrito = carrito.filter(i => String(i.id) !== String(id));
             actualizarCarritoUI();
             if (carrito.length === 0) mostrarBtnFlotante();
         }
 
         function eliminarDelCarrito(id) {
-            carrito = carrito.filter(i => i.id !== id);
+            carrito = carrito.filter(i => String(i.id) !== String(id));
             actualizarCarritoUI();
             if (carrito.length === 0) mostrarBtnFlotante();
         }
@@ -2515,11 +2515,11 @@
                         <p class="text-[11px] font-black text-violet-600 mt-1">${subtotal}</p>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <button onclick="eliminarDelCarrito(${item.id})" class="text-slate-300 hover:text-red-400 transition-colors text-xs">✕</button>
+                        <button onclick="eliminarDelCarrito('${String(item.id).replace(/'/g,"\\'")}')" class="text-slate-300 hover:text-red-400 transition-colors text-xs">✕</button>
                         <div class="flex items-center gap-1.5">
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1)">−</button>
+                            <button class="qty-btn" onclick="cambiarCantidad('${String(item.id).replace(/'/g,"\\'")}', -1)">−</button>
                             <span class="text-xs font-black text-slate-700 w-4 text-center">${item.cantidad}</span>
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1)">+</button>
+                            <button class="qty-btn" onclick="cambiarCantidad('${String(item.id).replace(/'/g,"\\'")}', 1)">+</button>
                         </div>
                     </div>
                 </div>`;
@@ -2678,9 +2678,9 @@
                       <p class="text-[12px] font-normal text-slate-900 leading-snug line-clamp-2">${i.nombre}</p>
                       <div class="flex items-center gap-2 mt-1.5">
                         <div class="flex items-center gap-1.5">
-                          <button onclick="cambiarCantidadCheckout(${i.id},-1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100" title="Restar">−</button>
+                          <button onclick="cambiarCantidadCheckout('${String(i.id).replace(/'/g,"\\'")}',-1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100" title="Restar">−</button>
                           <span class="text-[12px] font-semibold text-slate-900 min-w-[16px] text-center">${i.cantidad}</span>
-                          <button onclick="cambiarCantidadCheckout(${i.id},1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100 ${lleno ? 'opacity-40 cursor-not-allowed' : ''}" title="${lleno ? 'Sin más stock' : 'Sumar'}">+</button>
+                          <button onclick="cambiarCantidadCheckout('${String(i.id).replace(/'/g,"\\'")}',1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100 ${lleno ? 'opacity-40 cursor-not-allowed' : ''}" title="${lleno ? 'Sin más stock' : 'Sumar'}">+</button>
                         </div>
                         <span class="text-[12px] font-semibold text-violet-600">${formatPrecio(i.precio * i.cantidad)}</span>
                       </div>
@@ -2709,7 +2709,7 @@
             return total;
         }
         function cambiarCantidadCheckout(id, delta){
-            var it = carrito.find(function(i){ return i.id === id; });
+            var it = carrito.find(function(i){ return String(i.id) === String(id); });
             if(!it) return;
             var nueva = (it.cantidad || 1) + delta;
             if(nueva < 1){ quitarItemCheckout(id); return; }
@@ -2722,7 +2722,7 @@
             if(window._cupon && ci && ci.value.trim()){ aplicarCupon(); }
         }
         function quitarItemCheckout(id){
-            carrito = carrito.filter(function(i){ return i.id !== id; });
+            carrito = carrito.filter(function(i){ return String(i.id) !== String(id); });
             actualizarCarritoUI();
             window._cupon = null;
             var cm = document.getElementById('checkout-cupon-msg'); if(cm){ cm.classList.add('hidden'); cm.textContent=''; }
