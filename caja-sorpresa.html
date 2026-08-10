@@ -9,10 +9,19 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',Arial,sans-serif;min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%, #2b1466 0%, #17093a 45%, #0b0620 100%);color:#fff;display:flex;flex-direction:column;}
   a{color:inherit;text-decoration:none;}
+  /* Confeti de fondo */
+  .confetti{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .confetti i{position:absolute;top:-12%;width:10px;height:16px;border-radius:2px;opacity:.9;will-change:transform;animation:confFall linear infinite;}
+  @keyframes confFall{
+    0%{transform:translateY(-12vh) translateX(0) rotateZ(0deg);}
+    50%{transform:translateY(50vh) translateX(22px) rotateZ(180deg);}
+    100%{transform:translateY(112vh) translateX(-14px) rotateZ(360deg);}
+  }
+  @media (prefers-reduced-motion: reduce){ .confetti{display:none;} }
   .top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;}
   .top img{height:42px;}
   .top .volver{font-size:0.82rem;font-weight:700;color:#c4b5fd;background:rgba(255,255,255,0.08);padding:8px 14px;border-radius:999px;}
-  .wrap{flex:1;max-width:760px;margin:0 auto;padding:10px 18px 60px;width:100%;text-align:center;}
+  .wrap{flex:1;max-width:760px;margin:0 auto;padding:10px 18px 60px;width:100%;text-align:center;position:relative;z-index:1;}
   h1{font-size:2rem;font-weight:900;margin-top:14px;letter-spacing:-0.5px;}
   .sub{color:#c4b5fd;font-size:0.95rem;margin-top:8px;line-height:1.5;}
   .boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px;}
@@ -72,6 +81,7 @@
 </style>
 </head>
 <body>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
   <header class="bk-header">
     <div class="bk-row1">
       <a href="index.html" title="Volver a la tienda" style="flex-shrink:0;">
@@ -172,9 +182,32 @@ let jugando = false;
 
 function $(id){ return document.getElementById(id); }
 function money(n){ return '$' + Number(n||0).toLocaleString('es-AR'); }
+
+// Confeti de fondo (papelitos cayendo)
+(function(){
+  const cont = document.getElementById('confetti');
+  if(!cont || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colores = ['#7c3aed','#a78bfa','#f0abfc','#fbbf24','#34d399','#f87171','#38bdf8','#fff'];
+  const N = window.innerWidth < 560 ? 30 : 50;
+  for(let k=0;k<N;k++){
+    const i = document.createElement('i');
+    const size = 6 + Math.random()*8;
+    i.style.left = Math.random()*100 + 'vw';
+    i.style.width = size + 'px';
+    i.style.height = (size*1.6) + 'px';
+    i.style.background = colores[Math.floor(Math.random()*colores.length)];
+    i.style.animationDuration = (5 + Math.random()*6) + 's';
+    i.style.animationDelay = (-Math.random()*10) + 's';
+    if(Math.random() > 0.6) i.style.borderRadius = '50%';
+    i.style.opacity = (0.55 + Math.random()*0.4).toFixed(2);
+    cont.appendChild(i);
+  }
+})();
 function mostrar(v){ ['vista-login','vista-juego','vista-resultado'].forEach(x=>$(x).classList.toggle('hidden', x!==v)); }
 
 async function login(){
+  // Dejamos una marca por si Supabase nos redirige al index: el index rebota de vuelta a la caja.
+  try{ localStorage.setItem('bkPostLogin', JSON.stringify({ page:'caja-sorpresa.html', ts:Date.now() })); }catch(e){}
   await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
 }
 
@@ -225,8 +258,13 @@ bkLlenarSelects();
 async function init(){
   const { data:{ session } } = await supa.auth.getSession();
   setHeaderUsuario(session);
-  if(!session){ mostrar('vista-login'); return; }
+  if(!session){ const sb=document.getElementById('sub'); if(sb) sb.innerHTML=''; mostrar('vista-login'); return; }
+  try{ localStorage.removeItem('bkPostLogin'); }catch(e){}
   await ensureUsuario(session.user);
+  // Bienvenida con el nombre
+  const _n = (session.user.user_metadata && session.user.user_metadata.full_name) || (session.user.email ? session.user.email.split('@')[0] : '');
+  const _sub = document.getElementById('sub');
+  if(_sub) _sub.innerHTML = _n ? `¡Bienvenido, <b>${(_n||'').split(' ')[0]}</b>! 🎉<br>Elegí una caja y ganá tu premio` : '';
   try{
     const { data } = await supa.rpc('estado_caja_sorpresa');
     if(data && data.jugo){ verResultado(data.valor, data.codigo, null, true); return; }
