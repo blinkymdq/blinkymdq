@@ -1539,11 +1539,9 @@
                     if (!p.sinStock && (!p.foto || p.foto.trim() === "")) return 2;
                     return 3;
                 }
-                productos = shuffle(productos).sort((a, b) => {
-                    const catDiff = catOrder(a) - catOrder(b);
-                    if (catDiff !== 0) return catDiff;
-                    return stockFotoOrder(a) - stockFotoOrder(b);
-                });
+                // Todo mezclado al azar en cada visita: primero los que tienen stock y foto,
+                // y dentro de cada grupo, orden aleatorio distinto cada vez (sin agrupar por categoría).
+                productos = shuffle(productos).sort((a, b) => stockFotoOrder(a) - stockFotoOrder(b));
 
                 renderSlider();
                 llenarSelect('selectCat',        'cat');
