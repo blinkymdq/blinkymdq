@@ -358,6 +358,7 @@
 </div>
 
 <div id="toast"></div>
+<div id="ok-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f2e1f;border:1px solid #22c55e;color:#dcfce7;border-radius:14px;padding:0.8rem 1.4rem;font-size:0.92rem;font-weight:800;z-index:999;opacity:0;transition:all 0.3s;pointer-events:none;text-align:center;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.35);"></div>
 
 <div id="lightbox" class="lightbox" onclick="cerrarZoom()">
   <button class="lightbox-cerrar" onclick="event.stopPropagation();cerrarZoom()">✕</button>
@@ -614,6 +615,7 @@ async function cargarProducto() {
 
 function renderProducto(p) {
   productoActual = p;
+  if (typeof actualizarBadgeCarrito === 'function') actualizarBadgeCarrito();
   const precio = formatPrecio(p.precio_publico);
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
@@ -706,8 +708,45 @@ function renderProducto(p) {
   `;
 }
 
+function leerCarrito() {
+  try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e) { return []; }
+}
+function actualizarBadgeCarrito() {
+  const carrito = leerCarrito();
+  const n = carrito.reduce((s,i)=>s + Number(i.cantidad||0), 0);
+  ['carritoContadorHeader','carritoContadorHeaderMobile'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = n;
+    el.classList.toggle('hidden', n === 0);
+  });
+}
 function agregarYVerCarrito(cod) {
-  window.location.href = `index.html?add=${encodeURIComponent(cod)}`;
+  const p = productoActual;
+  if (!p || !p.stock || p.stock <= 0) return;
+  const esMay = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
+  const precio = (esMay && Number(p.precio_mayorista) > 0) ? Number(p.precio_mayorista) : Number(p.precio_publico);
+  const img = getImgUrl((p.foto || '').split(',')[0].trim(), '200');
+  const stock = Number(p.stock || 0);
+  const carrito = leerCarrito();
+  const existente = carrito.find(i => i.codigo === p.codigo);
+  if (existente) {
+    if (existente.cantidad >= stock) { toast(`Solo hay ${stock} unidad${stock===1?'':'es'} disponible${stock===1?'':'s'}`); return; }
+    existente.cantidad++;
+  } else {
+    carrito.push({ id: p.codigo, codigo: p.codigo || '', nombre: p.nombre, precio: precio, img: img, stock: stock, cantidad: 1 });
+  }
+  try { localStorage.setItem('blinky_carrito', JSON.stringify(carrito)); } catch(e){}
+  actualizarBadgeCarrito();
+  toastAgregado();
+}
+function toastAgregado() {
+  const t = document.getElementById('ok-toast');
+  t.innerHTML = '🛒 ¡Agregado al carrito!<br><span style="font-weight:600;color:#86efac;">Seguí chusmeando tranqui 😉</span>';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 2500);
 }
 
 function consultarWsp() {
