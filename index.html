@@ -2616,10 +2616,18 @@
                 document.getElementById('checkout-provincia').value = window._userData.provincia || '';
                 document.getElementById('checkout-localidad').value = window._userData.localidad || '';
             }
-            // Datos del cliente verificado: no editables en el checkout (se cambian en Mi cuenta)
+            // Datos del cliente verificado: solo se bloquean si YA tienen dato de la cuenta.
+            // Si están vacíos (o es invitado), quedan editables para poder completarlos.
+            var _verificado = !!(logueado && window._userData);
             ['checkout-nombre','checkout-email','checkout-provincia','checkout-localidad'].forEach(function(id){
                 var el = document.getElementById(id);
-                if(el){ el.readOnly = true; el.style.background = '#f1f5f9'; el.style.color = '#475569'; el.style.cursor = 'not-allowed'; el.classList.remove('error'); }
+                if(!el) return;
+                var bloquear = _verificado && el.value.trim() !== '';
+                el.readOnly = bloquear;
+                el.style.background = bloquear ? '#f1f5f9' : '';
+                el.style.color = bloquear ? '#475569' : '';
+                el.style.cursor = bloquear ? 'not-allowed' : '';
+                el.classList.remove('error');
             });
             var _tel = document.getElementById('checkout-telefono'); if(_tel){ _tel.readOnly = false; _tel.style.background=''; _tel.style.color=''; _tel.style.cursor=''; }
 

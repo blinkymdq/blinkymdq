@@ -45,8 +45,11 @@
   .field{display:flex;flex-direction:column;gap:4px;}
   .field.full{grid-column:1/-1;}
   .field label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text3);}
-  .field input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.75rem;font-size:0.9rem;color:var(--text);}
+  .field input,.field select{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.75rem;font-size:0.9rem;color:var(--text);}
   .field input:disabled{opacity:1;background:transparent;border-color:transparent;padding-left:2px;color:var(--text);font-weight:600;}
+  .field select:disabled{opacity:1;background:transparent;border-color:transparent;color:var(--text);font-weight:600;-webkit-appearance:none;appearance:none;}
+  .nac-selects{display:flex;gap:8px;}
+  .nac-selects select{flex:1;min-width:0;}
   .save-row{margin-top:1.2rem;display:flex;gap:0.7rem;align-items:center;}
   .saldo-chip{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:10px;padding:0.5rem 0.9rem;font-size:0.85rem;font-weight:800;}
 
@@ -341,7 +344,7 @@ function renderDatos(){
       <div class="field"><label>Localidad</label><input id="d-localidad" type="text" value="${esc(u.localidad)}" ${dis}></div>
       <div class="field"><label>Provincia</label><input id="d-provincia" type="text" value="${esc(u.provincia)}" ${dis}></div>
       <div class="field"><label>DNI</label><input id="d-dni" type="text" value="${esc(u.dni)}" ${dis}></div>
-      <div class="field"><label>Fecha de nacimiento</label><input id="d-nacimiento" type="date" value="${esc(u.nacimiento)}" ${dis}></div>
+      <div class="field"><label>Fecha de nacimiento</label>${selectsNacimiento(u.nacimiento, dis)}</div>
       <div class="field"><label>Email</label><input type="text" value="${esc(u.email)}" disabled></div>
     </div>
     <div class="save-row">
@@ -350,6 +353,23 @@ function renderDatos(){
         : `<button class="btn" onclick="editarDatos()">\u270f\ufe0f Editar datos</button>`}
       ${Number(u.saldo_favor||0)>0?`<span class="saldo-chip">Saldo a favor: ${fmt(u.saldo_favor)}</span>`:''}
     </div>`;
+}
+function selectsNacimiento(valor, dis){
+  const v = (valor || '').slice(0,10);           // YYYY-MM-DD
+  const [yy, mm, dd] = v.split('-');
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let diaOpts = '<option value="">Día</option>';
+  for(let d=1; d<=31; d++){ const p=String(d).padStart(2,'0'); diaOpts += `<option value="${p}" ${p===dd?'selected':''}>${d}</option>`; }
+  let mesOpts = '<option value="">Mes</option>';
+  meses.forEach((nm,i)=>{ const p=String(i+1).padStart(2,'0'); mesOpts += `<option value="${p}" ${p===mm?'selected':''}>${nm}</option>`; });
+  const ahora = new Date().getFullYear();
+  let anioOpts = '<option value="">Año</option>';
+  for(let a=ahora-13; a>=ahora-100; a--){ anioOpts += `<option value="${a}" ${String(a)===yy?'selected':''}>${a}</option>`; }
+  return `<div class="nac-selects">
+    <select id="d-nac-dia" ${dis}>${diaOpts}</select>
+    <select id="d-nac-mes" ${dis}>${mesOpts}</select>
+    <select id="d-nac-anio" ${dis}>${anioOpts}</select>
+  </div>`;
 }
 function editarDatos(){ editandoDatos = true; renderDatos(); }
 function cancelarEdicion(){ editandoDatos = false; renderDatos(); }
@@ -362,7 +382,12 @@ async function guardarDatos(){
     localidad: document.getElementById('d-localidad').value.trim() || null,
     provincia: document.getElementById('d-provincia').value.trim() || null,
     dni: document.getElementById('d-dni').value.trim() || null,
-    nacimiento: document.getElementById('d-nacimiento').value || null
+    nacimiento: (function(){
+      const d = document.getElementById('d-nac-dia').value;
+      const m = document.getElementById('d-nac-mes').value;
+      const a = document.getElementById('d-nac-anio').value;
+      return (d && m && a) ? `${a}-${m}-${d}` : null;
+    })()
   };
   if(!body.nombre){ toast('El nombre no puede quedar vacío','err'); return; }
   const { error } = await supa.from('usuarios').update(body).eq('id', uid);
