@@ -305,9 +305,18 @@
     <div class="foto-drop" style="margin-top:1rem;" onclick="document.getElementById('mf-input').click()">📷 Click para agregar más fotos</div>
     <input type="file" id="mf-input" accept="image/*" multiple style="display:none;" onchange="onFotosModalSeleccionadas(event)">
     <div class="foto-previews" id="mf-nuevas"></div>
+
+    <div style="border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1rem;">
+      <div style="font-size:0.8rem;color:var(--violet-light);font-weight:700;margin-bottom:0.6rem;">🎬 Video corto (opcional)</div>
+      <div id="mf-video-cont"></div>
+      <div class="foto-drop" style="margin-top:0.6rem;" onclick="document.getElementById('mf-video-input').click()">🎬 Click para subir un video (mp4, hasta 25MB)</div>
+      <input type="file" id="mf-video-input" accept="video/*" style="display:none;" onchange="onVideoModalSeleccionado(event)">
+      <div style="font-size:0.68rem;color:var(--text3);margin-top:0.4rem;">Ideal: vertical, 5–15 seg, sin audio. Se reproduce solo y en loop en la página del producto.</div>
+    </div>
+
     <div class="modal-fotos-actions">
       <button class="btn-modal-cancelar" onclick="cerrarModalFotos()">Cancelar</button>
-      <button class="btn-modal-guardar" id="mf-btn-guardar" onclick="guardarFotosProducto()">Guardar fotos</button>
+      <button class="btn-modal-guardar" id="mf-btn-guardar" onclick="guardarFotosProducto()">Guardar</button>
     </div>
   </div>
 </div>
@@ -611,6 +620,8 @@ async function subirFotos(codigo, archivos) {
 let mfCodigo = null;
 let mfActuales = [];   // tokens/URLs ya guardados en la base
 let mfNuevas = [];     // Files nuevos, comprimidos, pendientes de subir
+let mfVideo = null;    // URL del video ya guardado
+let mfVideoNuevo = null; // File de video nuevo, pendiente de subir
 
 function abrirModalFotos(codigo) {
   const p = todosLosProductos.find(x => x.codigo === codigo);
@@ -618,6 +629,8 @@ function abrirModalFotos(codigo) {
   mfCodigo = codigo;
   mfActuales = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   mfNuevas = [];
+  mfVideo = p.video || null;
+  mfVideoNuevo = null;
   document.getElementById('modal-fotos-titulo').textContent = `Fotos de ${p.nombre}`;
   renderFotosModal();
   document.getElementById('modal-fotos').classList.add('open');
@@ -625,7 +638,38 @@ function abrirModalFotos(codigo) {
 
 function cerrarModalFotos() {
   document.getElementById('modal-fotos').classList.remove('open');
-  mfCodigo = null; mfActuales = []; mfNuevas = [];
+  mfCodigo = null; mfActuales = []; mfNuevas = []; mfVideo = null; mfVideoNuevo = null;
+}
+
+function onVideoModalSeleccionado(event) {
+  const file = (event.target.files || [])[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('video/')) { toast('Ese archivo no es un video', 'err'); return; }
+  if (file.size > 26214400) { toast('El video supera los 25MB. Comprimilo o acortalo.', 'err'); return; }
+  mfVideoNuevo = file;
+  renderFotosModal();
+}
+function quitarVideoActual() { mfVideo = null; renderFotosModal(); }
+function quitarVideoNuevo() { mfVideoNuevo = null; renderFotosModal(); }
+
+function renderVideoModal() {
+  const cont = document.getElementById('mf-video-cont');
+  if (!cont) return;
+  if (mfVideoNuevo) {
+    cont.innerHTML = `<div style="position:relative;display:inline-block;">
+      <video src="${URL.createObjectURL(mfVideoNuevo)}" style="width:120px;height:160px;object-fit:cover;border-radius:10px;background:#000;" muted playsinline></video>
+      <button class="del-foto" onclick="quitarVideoNuevo()" style="top:-6px;right:-6px;">×</button>
+      <div style="position:absolute;bottom:-2px;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;font-size:0.6rem;text-align:center;border-radius:0 0 10px 10px;padding:1px 0;">nuevo · ${fmtKB(mfVideoNuevo.size)}</div>
+    </div>`;
+  } else if (mfVideo) {
+    cont.innerHTML = `<div style="position:relative;display:inline-block;">
+      <video src="${mfVideo}" style="width:120px;height:160px;object-fit:cover;border-radius:10px;background:#000;" muted playsinline controls></video>
+      <button class="del-foto" onclick="quitarVideoActual()" style="top:-6px;right:-6px;">×</button>
+    </div>`;
+  } else {
+    cont.innerHTML = '';
+  }
 }
 
 function renderFotosModal() {
@@ -640,6 +684,22 @@ function renderFotosModal() {
       <button class="del-foto" onclick="quitarFotoNueva(${i})">×</button>
       <div style="position:absolute;bottom:-2px;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;font-size:0.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0;">nueva</div>
     </div>`).join('');
+  renderVideoModal();
+}
+
+async function subirVideo(codigo, file) {
+  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+  const path = `${codigo}/video-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const res = await fetch(`${SUPA_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': file.type || 'video/mp4' },
+    body: file
+  });
+  if (!res.ok) {
+    const errTxt = await res.text().catch(()=> '');
+    throw new Error(`Error subiendo el video: ${errTxt}`);
+  }
+  return `${SUPA_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
 }
 
 function quitarFotoActual(i) { mfActuales.splice(i, 1); renderFotosModal(); }
@@ -674,8 +734,15 @@ async function guardarFotosProducto() {
     }
     const fotoField = [...mfActuales, ...urlsNuevas].join(',');
 
+    // Video: subir el nuevo si hay, o mantener/quitar el actual
+    let videoField = mfVideo || null;
+    if (mfVideoNuevo) {
+      btn.textContent = 'Subiendo video...';
+      videoField = await subirVideo(mfCodigo, mfVideoNuevo);
+    }
+
     const res = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(mfCodigo)}`, {
-      method: 'PATCH', headers: hdrs, body: JSON.stringify({ foto: fotoField || null })
+      method: 'PATCH', headers: hdrs, body: JSON.stringify({ foto: fotoField || null, video: videoField })
     });
     if (!res.ok) {
       const errTxt = await res.text().catch(()=> '');
@@ -683,16 +750,16 @@ async function guardarFotosProducto() {
     }
 
     const p = todosLosProductos.find(x => x.codigo === mfCodigo);
-    if (p) p.foto = fotoField;
+    if (p) { p.foto = fotoField; p.video = videoField; }
 
-    toast('Fotos actualizadas ✓', 'ok');
+    toast('Medios actualizados ✓', 'ok');
     cerrarModalFotos();
     filtrarTabla();
   } catch (e) {
     console.error(e);
     toast('Error al guardar las fotos', 'err');
   } finally {
-    btn.disabled = false; btn.textContent = 'Guardar fotos';
+    btn.disabled = false; btn.textContent = 'Guardar';
   }
 }
 

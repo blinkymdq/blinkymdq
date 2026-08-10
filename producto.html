@@ -568,21 +568,33 @@ async function poblarFiltrosHeader() {
 poblarFiltrosHeader();
 
 let fotos = [];
+let medios = [];      // [{tipo:'video'|'img', src}]
 let fotoActual = 0;
 let productoActual = null;
+const FOTO_FALLBACK = 'https://blinkymdq.com/blinkysinfondo.png';
 
 function mostrarFoto(idx) {
   fotoActual = idx;
+  const m = medios[idx] || { tipo:'img', src:'' };
   const img = document.getElementById('foto-principal');
-  if (img) img.src = getImgUrl(fotos[idx], 1600) || 'https://blinkymdq.com/blinkysinfondo.png';
+  const vid = document.getElementById('video-principal');
+  if (m.tipo === 'video') {
+    if (img) img.style.display = 'none';
+    if (vid) { vid.style.display = 'block'; try { vid.currentTime = 0; vid.play().catch(()=>{}); } catch(e){} }
+  } else {
+    if (vid) { try { vid.pause(); } catch(e){} vid.style.display = 'none'; }
+    if (img) { img.style.display = 'block'; img.src = getImgUrl(m.src, 1600) || FOTO_FALLBACK; }
+  }
   document.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i===idx));
 }
 
 function fotoAnterior() { if (fotoActual > 0) mostrarFoto(fotoActual - 1); }
-function fotoSiguiente() { if (fotoActual < fotos.length - 1) mostrarFoto(fotoActual + 1); }
+function fotoSiguiente() { if (fotoActual < medios.length - 1) mostrarFoto(fotoActual + 1); }
 
 function abrirZoom() {
-  document.getElementById('lightbox-img').src = getImgUrl(fotos[fotoActual], 1600) || 'https://blinkymdq.com/blinkysinfondo.png';
+  const m = medios[fotoActual];
+  if (!m || m.tipo !== 'img') return; // el video no hace zoom
+  document.getElementById('lightbox-img').src = getImgUrl(m.src, 1600) || FOTO_FALLBACK;
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -626,6 +638,11 @@ function renderProducto(p) {
 
   fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fotos.length) fotos = [''];
+  // Medios: video primero (si hay), después las fotos
+  medios = [];
+  if (p.video) medios.push({ tipo:'video', src:p.video });
+  fotos.forEach(f => { if (f) medios.push({ tipo:'img', src:f }); });
+  if (!medios.length) medios.push({ tipo:'img', src:'' });
 
   document.title = `${p.nombre} — Blinky MDQ`;
   document.getElementById('og-title').content = p.nombre;
@@ -640,13 +657,15 @@ function renderProducto(p) {
     <span>›</span><span class="actual">${p.nombre}</span>
   `;
 
-  const mostrarNav = fotos.length > 1;
+  const mostrarNav = medios.length > 1;
+  const primero = medios[0];
 
   document.getElementById('contenido').innerHTML = `
     <div class="layout">
       <div class="galeria-wrap">
         <div class="galeria">
-          <img id="foto-principal" src="${getImgUrl(fotos[0], 1600) || 'https://blinkymdq.com/blinkysinfondo.png'}" alt="${p.nombre}" onclick="abrirZoom()" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
+          <video id="video-principal" src="${p.video || ''}" style="display:${primero.tipo==='video'?'block':'none'};width:100%;height:100%;object-fit:contain;background:#000;" muted loop playsinline autoplay preload="metadata"></video>
+          <img id="foto-principal" src="${primero.tipo==='img' ? (getImgUrl(primero.src, 1600) || 'https://blinkymdq.com/blinkysinfondo.png') : 'https://blinkymdq.com/blinkysinfondo.png'}" style="display:${primero.tipo==='img'?'block':'none'};" alt="${p.nombre}" onclick="abrirZoom()" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
           <div class="galeria-iconos">
             <button class="icono-flotante" onclick="compartir()" title="Compartir">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -659,7 +678,10 @@ function renderProducto(p) {
         </div>
         ${mostrarNav ? `
           <div class="thumbs">
-            ${fotos.map((f,i) => `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})"><img src="${getImgUrl(f)}" onerror="this.style.opacity='0.2'"></div>`).join('')}
+            ${medios.map((m,i) => m.tipo==='video'
+              ? `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})" style="position:relative;background:#000;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.1rem;">▶</span></div>`
+              : `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})"><img src="${getImgUrl(m.src)}" onerror="this.style.opacity='0.2'"></div>`
+            ).join('')}
           </div>
         ` : ''}
       </div>
