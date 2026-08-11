@@ -2222,10 +2222,12 @@ async function usarSaldoFavor(num, totalPedido, email) {
 let npUsuariosCache = [];
 let npProductosCache = [];
 let npClienteSeleccionado = null;
+let npClienteMercaderia = {}; // codigo -> { pending, rows:[entregas_vendedor] } de lo que el cliente tiene en su poder
 let npCarrito = [];
 
 async function abrirModalNuevoPedido() {
   npClienteSeleccionado = null;
+  npClienteMercaderia = {};
   npCarrito = [];
   document.getElementById('np-cliente-input').value = '';
   document.getElementById('np-cliente-info').textContent = '';
@@ -2257,19 +2259,38 @@ function cerrarModalNuevoPedido() {
   document.getElementById('modal-nuevo-pedido').style.display = 'none';
 }
 
-function seleccionarClienteNP(valor) {
+async function seleccionarClienteNP(valor) {
   const match = npUsuariosCache.find(u => `#${u.numero_usuario} - ${u.nombre} (${u.email})` === valor);
   npClienteSeleccionado = match || null;
+  npClienteMercaderia = {};
   const info = document.getElementById('np-cliente-info');
   if (match) {
     info.innerHTML = `✓ <strong>${match.nombre}</strong> — ${match.rol==='mayorista'?'Mayorista':'Minorista'}${match.telefono?` — 📱 ${match.telefono}`:''}`;
     info.style.color = 'var(--green)';
+    // Cargar la mercadería que el cliente tiene en su poder (consignación)
+    try {
+      const ev = await (await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?usuario_id=eq.${match.id}&select=id,codigo,producto,entregado,vendido,devuelto`, {headers:hdrs})).json();
+      (ev||[]).forEach(e=>{
+        const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
+        if(pend>0){
+          if(!npClienteMercaderia[e.codigo]) npClienteMercaderia[e.codigo] = { pending:0, rows:[] };
+          npClienteMercaderia[e.codigo].pending += pend;
+          npClienteMercaderia[e.codigo].rows.push(e);
+        }
+      });
+      const cods = Object.keys(npClienteMercaderia);
+      if(cods.length){
+        const tot = cods.reduce((s,c)=>s+npClienteMercaderia[c].pending,0);
+        info.innerHTML += `<div style="margin-top:5px;background:rgba(251,191,36,.12);border:1px solid var(--yellow);border-radius:8px;padding:6px 9px;color:var(--yellow);font-weight:700;font-size:0.78rem;">📦 Este cliente tiene ${tot} u. en su poder. Lo que le cargues se descuenta primero de <u>su</u> mercadería y solo el resto del depósito.</div>`;
+      }
+    } catch(_){}
   } else {
     info.textContent = '';
   }
   // Si ya hay un producto cargado, recalculamos el precio con el rol de este cliente
   const productoActual = document.getElementById('np-producto-input').value;
   if (productoActual) autocompletarPrecioNP(productoActual);
+  renderCarritoNP();
 }
 
 function autocompletarPrecioNP(valor) {
@@ -2291,9 +2312,15 @@ function autocompletarPrecioNP(valor) {
   }
   document.getElementById('np-precio-input').value = precio;
   const stockTxt = Number(prod.stock||0) <= 0 ? ` — ⚠️ SIN STOCK` : ` — stock: ${prod.stock}`;
+  const merc = npClienteMercaderia[prod.codigo];
   if (tipoLabel) {
-    tipoLabel.textContent = `Precio ${esMayorista?'mayorista':'público'} aplicado${stockTxt}`;
-    tipoLabel.style.color = Number(prod.stock||0) <= 0 ? 'var(--red)' : 'var(--text3)';
+    if (merc && merc.pending > 0) {
+      tipoLabel.innerHTML = `📦 El cliente tiene ${merc.pending} de este producto en su poder — se descontará de su mercadería`;
+      tipoLabel.style.color = 'var(--yellow)';
+    } else {
+      tipoLabel.textContent = `Precio ${esMayorista?'mayorista':'público'} aplicado${stockTxt}`;
+      tipoLabel.style.color = Number(prod.stock||0) <= 0 ? 'var(--red)' : 'var(--text3)';
+    }
   }
 }
 
@@ -2310,12 +2337,14 @@ function agregarItemNP() {
   if (!prod) { toast('Ese producto no existe en el catálogo', 'err'); return; }
 
   const stock = Number(prod.stock || 0);
+  const enPoder = (npClienteMercaderia[prod.codigo] && npClienteMercaderia[prod.codigo].pending) || 0;
+  const dispTotal = stock + enPoder; // lo del cliente + depósito
   const yaEnCarrito = npCarrito.filter(it => it.codigo === prod.codigo).reduce((s,it)=>s+it.cantidad, 0);
 
-  if (stock <= 0) {
+  if (dispTotal <= 0) {
     if (!confirm(`"${nombre}" no tiene stock disponible. ¿Agregarlo igual (por ejemplo, para reponer)?`)) return;
-  } else if (yaEnCarrito + cantidad > stock) {
-    toast(`Solo hay ${stock} unidades de "${nombre}" (ya agregaste ${yaEnCarrito})`, 'err');
+  } else if (yaEnCarrito + cantidad > dispTotal) {
+    toast(`Solo hay ${dispTotal} disponible${dispTotal===1?'':'s'} de "${nombre}"${enPoder>0?` (${enPoder} en su poder + ${stock} depósito)`:''} (ya agregaste ${yaEnCarrito})`, 'err');
     return;
   }
 
@@ -2343,14 +2372,22 @@ function renderCarritoNP() {
   if (!npCarrito.length) {
     cont.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;">Sin productos agregados.</div>';
   } else {
-    cont.innerHTML = npCarrito.map((it, i) => `
+    cont.innerHTML = npCarrito.map((it, i) => {
+      const merc = npClienteMercaderia[it.codigo];
+      const deMerc = merc && merc.pending > 0 ? Math.min(it.cantidad, merc.pending) : 0;
+      const aviso = deMerc > 0
+        ? `<div style="grid-column:1/-1;color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:-2px;">📦 ${deMerc} de su poder · ${it.cantidad-deMerc>0?`${it.cantidad-deMerc} del depósito`:'todo de su mercadería'}</div>`
+        : '';
+      return `
       <div class="np-item-row">
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${it.producto}">${it.producto}</div>
         <div>x${it.cantidad}</div>
         <div>$${it.precio_unitario.toLocaleString('es-AR')}</div>
         <div style="font-weight:700;">$${it.subtotal.toLocaleString('es-AR')}</div>
         <button onclick="quitarItemNP(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button>
-      </div>`).join('');
+        ${aviso}
+      </div>`;
+    }).join('');
   }
   const total = npCarrito.reduce((s,it)=>s+it.subtotal, 0);
   document.getElementById('np-total').textContent = `$${total.toLocaleString('es-AR')}`;
@@ -2412,24 +2449,51 @@ async function confirmarNuevoPedido() {
       throw new Error('El pedido se creó pero los productos no se pudieron guardar: ' + errTxt);
     }
 
-    // Descontar stock de cada producto (igual que hace el checkout de la tienda)
+    // Descontar cada producto: primero de la mercadería que el cliente tiene en su poder,
+    // y solo el faltante del depósito central. Registra el movimiento de venta del vendedor.
+    const movs = [];
     for (const it of npCarrito) {
       if (!it.codigo) continue;
-      try {
-        const prodR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {headers:hdrs});
-        const prods = await prodR.json();
-        if (!prods.length) continue;
-        const stockActual = Number(prods[0].stock || 0);
-        const nuevoStock = Math.max(0, stockActual - it.cantidad);
-        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {
-          method:'PATCH', headers:hdrs, body: JSON.stringify({stock: nuevoStock})
-        });
-      } catch(se) { console.warn('Stock no actualizado para', it.codigo, se); }
+      let restante = it.cantidad;
+      // 1) de su consignación (si la tiene)
+      const merc = npClienteMercaderia[it.codigo];
+      if (merc && merc.pending > 0) {
+        for (const e of merc.rows) {
+          if (restante <= 0) break;
+          const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
+          if (pend <= 0) continue;
+          const tomar = Math.min(pend, restante);
+          try {
+            await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`, {
+              method:'PATCH', headers:hdrs, body: JSON.stringify({ vendido: Number(e.vendido||0)+tomar })
+            });
+            e.vendido = Number(e.vendido||0)+tomar;
+            merc.pending -= tomar;
+            restante -= tomar;
+            movs.push({ usuario_id: c.id, codigo: it.codigo, producto: it.producto, tipo:'venta', cantidad: tomar, precio_unit: it.precio_unitario, numero_pedido: numeroPedido });
+          } catch(ce){ console.warn('Consignación no actualizada para', it.codigo, ce); }
+        }
+      }
+      // 2) el resto, del depósito central
+      if (restante > 0) {
+        try {
+          const prods = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs})).json();
+          if (prods.length) {
+            const nuevoStock = Math.max(0, Number(prods[0].stock || 0) - restante);
+            await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {
+              method:'PATCH', headers:hdrs, body: JSON.stringify({stock: nuevoStock})
+            });
+          }
+        } catch(se) { console.warn('Stock no actualizado para', it.codigo, se); }
+      }
     }
+    if (movs.length) { try { await logMov(movs); } catch(_){} }
 
-    toast(`Pedido ${numeroPedido} creado ✓`, 'ok');
+    const totMerc = movs.reduce((s,m)=>s+Number(m.cantidad||0),0);
+    toast(`Pedido ${numeroPedido} creado ✓${totMerc>0?` — ${totMerc} u. descontadas de la mercadería del vendedor`:''}`, 'ok');
     cerrarModalNuevoPedido();
     cargarPedidos();
+    if (typeof cargarVendedores === 'function') cargarVendedores();
   } catch(e) {
     console.error(e);
     toast(e.message || 'Error al crear el pedido', 'err');
