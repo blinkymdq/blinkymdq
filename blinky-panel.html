@@ -2281,7 +2281,7 @@ async function seleccionarClienteNP(valor) {
       const cods = Object.keys(npClienteMercaderia);
       if(cods.length){
         const tot = cods.reduce((s,c)=>s+npClienteMercaderia[c].pending,0);
-        info.innerHTML += `<div style="margin-top:5px;background:rgba(251,191,36,.12);border:1px solid var(--yellow);border-radius:8px;padding:6px 9px;color:var(--yellow);font-weight:700;font-size:0.78rem;">📦 Este cliente tiene ${tot} u. en su poder. Lo que le cargues se descuenta primero de <u>su</u> mercadería y solo el resto del depósito.</div>`;
+        info.innerHTML += `<div style="margin-top:5px;background:rgba(251,191,36,.12);border:1px solid var(--yellow);border-radius:8px;padding:6px 9px;color:var(--yellow);font-weight:700;font-size:0.78rem;">📦 Este cliente tiene ${tot} u. en su poder. Lo que le cargues de eso se registra como venta de <u>su</u> mercadería y se descuenta del stock.</div>`;
       }
     } catch(_){}
   } else {
@@ -2376,7 +2376,7 @@ function renderCarritoNP() {
       const merc = npClienteMercaderia[it.codigo];
       const deMerc = merc && merc.pending > 0 ? Math.min(it.cantidad, merc.pending) : 0;
       const aviso = deMerc > 0
-        ? `<div style="grid-column:1/-1;color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:-2px;">📦 ${deMerc} de su poder · ${it.cantidad-deMerc>0?`${it.cantidad-deMerc} del depósito`:'todo de su mercadería'}</div>`
+        ? `<div style="grid-column:1/-1;color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:-2px;">📦 ${deMerc} u. se registran como venta de su mercadería (y se descuenta del stock)</div>`
         : '';
       return `
       <div class="np-item-row">
@@ -2454,38 +2454,38 @@ async function confirmarNuevoPedido() {
     const movs = [];
     for (const it of npCarrito) {
       if (!it.codigo) continue;
-      let restante = it.cantidad;
-      // 1) de su consignación (si la tiene)
+      // 1) Si el cliente tiene el artículo en su poder, marcar esas unidades como vendidas de su consignación.
+      //    (Es solo el registro de su mercadería; el stock físico se descuenta aparte más abajo.)
+      let restanteMerc = it.cantidad;
       const merc = npClienteMercaderia[it.codigo];
       if (merc && merc.pending > 0) {
         for (const e of merc.rows) {
-          if (restante <= 0) break;
+          if (restanteMerc <= 0) break;
           const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
           if (pend <= 0) continue;
-          const tomar = Math.min(pend, restante);
+          const tomar = Math.min(pend, restanteMerc);
           try {
             await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`, {
               method:'PATCH', headers:hdrs, body: JSON.stringify({ vendido: Number(e.vendido||0)+tomar })
             });
             e.vendido = Number(e.vendido||0)+tomar;
             merc.pending -= tomar;
-            restante -= tomar;
+            restanteMerc -= tomar;
             movs.push({ usuario_id: c.id, codigo: it.codigo, producto: it.producto, tipo:'venta', cantidad: tomar, precio_unit: it.precio_unitario, numero_pedido: numeroPedido });
           } catch(ce){ console.warn('Consignación no actualizada para', it.codigo, ce); }
         }
       }
-      // 2) el resto, del depósito central
-      if (restante > 0) {
-        try {
-          const prods = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs})).json();
-          if (prods.length) {
-            const nuevoStock = Math.max(0, Number(prods[0].stock || 0) - restante);
-            await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {
-              method:'PATCH', headers:hdrs, body: JSON.stringify({stock: nuevoStock})
-            });
-          }
-        } catch(se) { console.warn('Stock no actualizado para', it.codigo, se); }
-      }
+      // 2) Descontar SIEMPRE el total del depósito central. Las unidades que el vendedor tenía en su poder
+      //    también estaban contadas en el stock (la entrega no lo descuenta), así que la venta las quita.
+      try {
+        const prods = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs})).json();
+        if (prods.length) {
+          const nuevoStock = Math.max(0, Number(prods[0].stock || 0) - it.cantidad);
+          await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {
+            method:'PATCH', headers:hdrs, body: JSON.stringify({stock: nuevoStock})
+          });
+        }
+      } catch(se) { console.warn('Stock no actualizado para', it.codigo, se); }
     }
     if (movs.length) { try { await logMov(movs); } catch(_){} }
 
