@@ -115,6 +115,7 @@
         <button data-forma="transferencia" onclick="setForma('transferencia')">🏦 Transferencia</button>
         <button data-forma="transferencia_rm" onclick="setForma('transferencia_rm')">🏦 Transf. RM</button>
         <button data-forma="tarjeta" onclick="setForma('tarjeta')">💳 Tarjeta</button>
+        <button data-forma="descuento" onclick="setForma('descuento')">🏷️ Descuento</button>
       </div>
     </div>
 
@@ -145,7 +146,7 @@ let pedidoSel = null;
 function $(id){ return document.getElementById(id); }
 function money(n){ return '$'+Number(n||0).toLocaleString('es-AR'); }
 function toast(msg, err){ const t=$('toast'); t.innerHTML=msg; t.className='show'+(err?' err':''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
-function formaLabel(f){ return ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[f]||f; }
+function formaLabel(f){ return ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento'})[f]||f; }
 
 // ---- AUTH ----
 async function loginAdmin(){
@@ -308,7 +309,7 @@ async function cobrarPersona(monto){
     }
     await acreditarSaldo(personaSel.email, restante, personaSel.id);
   }
-  if(personaSel.email){ fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email:personaSel.email, nombre:personaSel.nombre||'', monto, forma_pago:forma })}).catch(()=>{}); }
+  if(personaSel.email && forma!=='descuento'){ fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email:personaSel.email, nombre:personaSel.nombre||'', monto, forma_pago:forma })}).catch(()=>{}); }
   toast('✓ Cobro registrado');
   const nuevaDeuda = Math.max(0, totalPend - aplicado);
   let msg = `Cobraste ${money(monto)} a <b>${personaSel.nombre}</b> (${formaLabel(forma)}).`;
