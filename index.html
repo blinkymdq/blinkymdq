@@ -1364,7 +1364,7 @@
         var mes    = ahora.getMonth();              // 5 = junio
         var dia    = ahora.getDate();
 
-        var esBBVA    = (diaSem === 2 || diaSem === 4); // martes o jueves
+        var esBBVA    = false; // popup de martes/jueves DESACTIVADO
         var esVierSab = (diaSem === 5 || diaSem === 6); // viernes o sábado
 
         var target = new Date('2026-06-22T00:00:00-03:00').getTime(); // límite popup padre
