@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blinky MDQ — Panel</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --bg: #0a0a10;
@@ -3622,15 +3624,20 @@ function renderModalVendedor(id) {
         <input id="pr-nombre" type="text" value="${esc(v.nombre_comercio||'')}" placeholder="Nombre del comercio" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
         <input id="pr-dir" type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
         <input id="pr-link" type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web o Instagram (https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+
+        <div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin-top:0.3rem;">📍 Ubicación del local</div>
         <div style="display:flex;gap:0.5rem;">
-          <input id="pr-lat" type="text" value="${v.punto_lat??''}" placeholder="Latitud" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
-          <input id="pr-lng" type="text" value="${v.punto_lng??''}" placeholder="Longitud" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
+          <input id="pr-buscar-dir" type="text" placeholder="Buscar dirección (ej: San Martín 2300, Mar del Plata)" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccionPR();}" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
+          <button class="fc-btn" onclick="buscarDireccionPR()">🔎 Buscar</button>
         </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <div id="pr-map" style="height:220px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--surface);"></div>
+        <div style="font-size:0.68rem;color:var(--text3);">Buscá la dirección o tocá el mapa para marcar el local exacto. También podés usar "📍 Usar mi ubicación" estando ahí.</div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
           <button class="fc-btn" onclick="usarMiUbicacionPR()">📍 Usar mi ubicación</button>
-          <button class="fc-btn" onclick="verMapaPR()">🗺️ Ver en mapa</button>
+          <span id="pr-coords-lbl" style="font-size:0.72rem;color:var(--text3);">${(v.punto_lat!=null&&v.punto_lng!=null)?`✓ Marcado (${Number(v.punto_lat).toFixed(4)}, ${Number(v.punto_lng).toFixed(4)})`:'Sin ubicación marcada'}</span>
         </div>
-        <div style="font-size:0.68rem;color:var(--text3);">Tip: estando en el local, tocá "Usar mi ubicación". O pegá lat/long de Google Maps.</div>
+        <input id="pr-lat" type="hidden" value="${v.punto_lat??''}">
+        <input id="pr-lng" type="hidden" value="${v.punto_lng??''}">
         <button class="btn-finalizar" onclick="guardarPuntoRetiro('${id}')">Guardar punto de retiro</button>
       </div>
     </div>
@@ -3667,6 +3674,7 @@ function renderModalVendedor(id) {
     <div class="pagos-list">${movsHtml}</div>`;
   cargarComprobantesEntrega(id);
   cargarComprobantesDevolucion(id);
+  initMapaPR();
 }
 
 async function cargarComprobantesEntrega(id){
@@ -3693,21 +3701,51 @@ async function cargarComprobantesDevolucion(id){
   }catch(e){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Error.</div>'; }
 }
 
-// ── Punto de retiro (vendedor) ──
+// ── Punto de retiro (vendedor) ── con mini mapa (Leaflet + OpenStreetMap)
+let _prMap=null, _prMarker=null;
+function initMapaPR(){
+  const el=document.getElementById('pr-map');
+  if(!el || typeof L==='undefined') return;
+  if(_prMap){ try{_prMap.remove();}catch(e){} _prMap=null; _prMarker=null; }
+  const lat=parseFloat(document.getElementById('pr-lat').value);
+  const lng=parseFloat(document.getElementById('pr-lng').value);
+  const tiene=!isNaN(lat)&&!isNaN(lng);
+  const center = tiene ? [lat,lng] : [-38.0055,-57.5426]; // Mar del Plata por defecto
+  _prMap = L.map(el).setView(center, tiene?16:13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(_prMap);
+  if(tiene) _prMarker = L.marker(center).addTo(_prMap);
+  _prMap.on('click', e=> setMarkerPR(e.latlng.lat, e.latlng.lng, false));
+  setTimeout(()=>{ try{_prMap.invalidateSize();}catch(e){} }, 250);
+}
+function setMarkerPR(lat,lng,recenter){
+  if(_prMap){
+    if(_prMarker) _prMarker.setLatLng([lat,lng]); else _prMarker=L.marker([lat,lng]).addTo(_prMap);
+    if(recenter) _prMap.setView([lat,lng], 16);
+  }
+  const la=document.getElementById('pr-lat'), ln=document.getElementById('pr-lng'), lbl=document.getElementById('pr-coords-lbl');
+  if(la) la.value=Number(lat).toFixed(6);
+  if(ln) ln.value=Number(lng).toFixed(6);
+  if(lbl) lbl.textContent=`✓ Marcado (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`;
+}
+async function buscarDireccionPR(){
+  const q=(document.getElementById('pr-buscar-dir').value||'').trim();
+  if(!q){ toast('Escribí una dirección','err'); return; }
+  toast('Buscando dirección...','ok');
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(q)}`, {headers:{'Accept':'application/json'}});
+    const d=await r.json();
+    if(!d||!d.length){ toast('No se encontró la dirección. Probá agregando la ciudad.','err'); return; }
+    setMarkerPR(parseFloat(d[0].lat), parseFloat(d[0].lon), true);
+    toast('Ubicación encontrada ✓','ok');
+  }catch(e){ toast('No se pudo buscar la dirección','err'); }
+}
 function usarMiUbicacionPR(){
   if(!navigator.geolocation){ toast('Tu navegador no permite ubicación','err'); return; }
   toast('Obteniendo ubicación...','ok');
   navigator.geolocation.getCurrentPosition(pos=>{
-    document.getElementById('pr-lat').value = pos.coords.latitude.toFixed(6);
-    document.getElementById('pr-lng').value = pos.coords.longitude.toFixed(6);
+    setMarkerPR(pos.coords.latitude, pos.coords.longitude, true);
     toast('Ubicación cargada ✓','ok');
   }, err=>{ toast('No se pudo obtener la ubicación','err'); }, {enableHighAccuracy:true, timeout:10000});
-}
-function verMapaPR(){
-  const la = (document.getElementById('pr-lat').value||'').trim();
-  const ln = (document.getElementById('pr-lng').value||'').trim();
-  if(!la||!ln){ toast('Cargá lat y long primero','err'); return; }
-  window.open(`https://www.google.com/maps?q=${encodeURIComponent(la+','+ln)}`, '_blank');
 }
 async function guardarPuntoRetiro(id){
   const activo = document.getElementById('pr-activo').checked;
