@@ -779,11 +779,19 @@ function distanciaKm(a, b){
 }
 function ordenarPuntosPorCercania(){
   if(!navigator.geolocation){ toast('Tu navegador no permite ubicación'); return; }
-  toast('Buscando puntos cercanos...');
+  if(!window.isSecureContext){ toast('La ubicación necesita abrir la página con https://'); return; }
+  toast('Buscando tu ubicación...');
   navigator.geolocation.getCurrentPosition(pos=>{
     _miUbic = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     renderRecibir();
-  }, err=>{ toast('No pudimos obtener tu ubicación'); }, { enableHighAccuracy:true, timeout:10000 });
+    toast('Puntos ordenados por cercanía ✓');
+  }, err=>{
+    let m = 'No pudimos obtener tu ubicación';
+    if(err.code===1) m='Activá el permiso de ubicación del navegador para ordenar por cercanía';
+    else if(err.code===2) m='Tu ubicación no está disponible por ahora';
+    else if(err.code===3) m='La ubicación tardó demasiado. Probá de nuevo';
+    toast(m);
+  }, { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
 }
 function renderRecibir(){
   const wrap = document.getElementById('recibir-wrap');
