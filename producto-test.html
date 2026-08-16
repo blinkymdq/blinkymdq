@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blinky MDQ</title>
+<meta property="og:type" content="product">
+<meta id="og-title" property="og:title" content="Blinky MDQ">
+<meta id="og-description" property="og:description" content="Perfumes, cosméticos y electrónica en Mar del Plata">
+<meta id="og-image" property="og:image" content="https://blinkymdq.com/blinkysinfondo.png">
+<meta id="og-url" property="og:url" content="https://blinkymdq.com">
+<link rel="icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@keyframes tickerScroll { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
+.search-wrapper { position: relative; flex-grow: 1; }
+.search-wrapper input { padding-right: 2.75rem; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
+  a { color:inherit; }
+
+  .header { background:white; border-bottom:1px solid #e2e8f0; padding:12px 20px; display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:10; }
+  .header img { height:36px; flex-shrink:0; }
+  .header-busqueda { flex:1; position:relative; max-width:480px; }
+  .header-busqueda input { width:100%; height:38px; padding:0 40px 0 14px; border:2px solid #e2e8f0; border-radius:999px; font-size:0.8rem; outline:none; font-family:inherit; }
+  .header-busqueda input:focus { border-color:#7c3aed; }
+  .header-busqueda button { position:absolute; right:3px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%; background:#7c3aed; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .btn-tienda { background:#7c3aed; color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.82rem; font-weight:700; cursor:pointer; text-decoration:none; flex-shrink:0; white-space:nowrap; }
+  .btn-tienda:hover { background:#6d28d9; }
+
+  .breadcrumb { max-width:1280px; margin:0 auto; padding:16px 16px 0; font-size:0.78rem; color:#94a3b8; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+  .breadcrumb a { color:#94a3b8; text-decoration:none; }
+  .breadcrumb a:hover { color:#7c3aed; }
+  .breadcrumb .actual { color:#7c3aed; font-weight:700; }
+
+  .pagina-cont { max-width:1280px; margin:0 auto; padding:14px 16px 50px; }
+  .layout { display:grid; grid-template-columns:1fr; gap:24px; }
+  @media (min-width:800px) { .layout { grid-template-columns:0.36fr 0.64fr; align-items:start; gap:32px; } }
+
+  .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  .galeria { position:relative; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; aspect-ratio:1; overflow:hidden; }
+  .galeria img { width:100%; height:100%; object-fit:contain; cursor:zoom-in; transition:opacity 0.2s; }
+
+  .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; align-items:center; justify-content:center; padding:24px; cursor:zoom-out; }
+  .lightbox.open { display:flex; }
+  .lightbox img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:8px; }
+  .lightbox-cerrar { position:absolute; top:20px; right:24px; width:40px; height:40px; background:rgba(255,255,255,0.15); border:none; border-radius:50%; color:white; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .lightbox-cerrar:hover { background:rgba(255,255,255,0.25); }
+  .galeria-iconos { position:absolute; top:12px; right:12px; display:flex; flex-direction:column; gap:8px; }
+  .icono-flotante { width:38px; height:38px; background:white; border:none; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#334155; }
+  .icono-flotante:hover { background:#f5f3ff; color:#7c3aed; }
+  .btn-nav { position:absolute; top:50%; transform:translateY(-50%); background:white; border:none; border-radius:50%; width:34px; height:34px; font-size:1rem; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; opacity:0.9; }
+  .btn-prev { left:10px; }
+  .btn-next { right:10px; }
+
+  .thumbs { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .thumb { width:56px; height:56px; border-radius:10px; overflow:hidden; border:1px solid #f1f5f9; cursor:pointer; background:#ffffff; flex-shrink:0; }
+  .thumb.active { border:2px solid #10b981; }
+  .thumb img { width:100%; height:100%; object-fit:contain; }
+
+  .info-card { background:white; border-radius:20px; padding:24px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  .badge-merc { display:inline-flex; align-items:center; gap:5px; background:#0891b2; color:#fff; font-size:12px; font-weight:800; padding:5px 12px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,0.15); white-space:nowrap; }
+  .badge-merc-mobile { margin-bottom:14px; }
+  @media (min-width:800px){ .badge-merc-mobile { display:none; } }
+  @media (max-width:799px){ .badge-merc-desktop { display:none; } }
+  .marca { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#7c3aed; margin-bottom:6px; }
+  .codigo-row { display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border-radius:8px; padding:3px 10px; font-size:0.72rem; color:#64748b; font-family:Arial,sans-serif; margin-bottom:14px; cursor:pointer; }
+  .codigo-row:hover { background:#e2e8f0; }
+  .nombre { font-size:1.35rem; font-weight:900; line-height:1.3; margin-bottom:16px; }
+  .precio { font-size:2.1rem; font-weight:900; color:#7c3aed; margin-bottom:4px; letter-spacing:-1px; }
+  .precio-mayorista { display:none; font-size:1rem; font-weight:800; color:#16a34a; margin-bottom:12px; }
+  body.is-logged-in.es-mayorista .precio-mayorista { display:block; }
+  .desc-transf { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.75rem; font-weight:800; padding:5px 12px; border-radius:20px; margin-bottom:12px; }
+  body.is-logged-in #btn-login { display:none; }
+  body.is-logged-in #user-badge { display:flex; }
+  body.is-logged-in #btn-login-mobile { display:none; }
+  body.is-logged-in #user-badge-mobile { display:flex; }
+  .sin-stock { display:inline-block; background:#fee2e2; color:#ef4444; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
+  .en-stock { display:inline-block; background:#dcfce7; color:#16a34a; font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:18px; }
+  .reposicion-aviso { display:flex; align-items:center; gap:5px; color:#ef4444; font-size:0.72rem; font-weight:700; margin:-10px 0 16px; font-family:Arial,sans-serif; }
+
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+  @media (max-width:420px) { .btns { grid-template-columns:1fr; } }
+  .btn-comprar { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; border-radius:14px; padding:16px; font-size:0.95rem; font-weight:900; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; text-transform:uppercase; letter-spacing:0.3px; }
+  .btn-comprar:hover { filter:brightness(1.06); }
+  .btn-comprar:disabled { background:#cbd5e1; cursor:not-allowed; }
+  .btn-wsp { background:#25d366; color:white; border:none; border-radius:14px; padding:14px; font-size:0.9rem; font-weight:800; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn-wsp:hover { background:#22c55e; }
+
+  .descripcion-card { background:white; border-radius:20px; padding:22px 24px; margin-top:20px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  .descripcion-titulo { font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8; margin-bottom:10px; }
+  .descripcion-texto { color:#475569; font-size:0.92rem; line-height:1.7; }
+  .descripcion-texto div, .descripcion-texto p { margin:0 0 0.55em; }
+  .descripcion-texto div:last-child, .descripcion-texto p:last-child { margin-bottom:0; }
+  .descripcion-texto ul, .descripcion-texto ol { margin:0.4em 0 0.7em 1.4em; }
+  .descripcion-texto li { margin:0.15em 0; }
+  .descripcion-texto b, .descripcion-texto strong { font-weight:700; color:#1e293b; }
+  .descripcion-texto u { text-decoration:underline; }
+  .descripcion-texto a { color:#7c3aed; text-decoration:underline; }
+  .descripcion-texto h1, .descripcion-texto h2 { font-size:1.05rem; font-weight:800; color:#1e293b; margin:0.7em 0 0.35em; line-height:1.3; }
+  .descripcion-texto h3, .descripcion-texto h4 { font-size:0.95rem; font-weight:700; color:#334155; margin:0.6em 0 0.3em; line-height:1.3; }
+  .descripcion-texto em, .descripcion-texto i { font-style:italic; }
+  .descripcion-texto hr { border:none; border-top:1px solid #e2e8f0; margin:0.9em 0; }
+
+  .estado { text-align:center; padding:80px 20px; color:#94a3b8; }
+  .estado-icon { font-size:3rem; margin-bottom:12px; }
+  .estado h2 { font-size:1.1rem; font-weight:700; margin-bottom:6px; color:#64748b; }
+  .estado p { font-size:0.85rem; }
+
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e293b; color:white; border-radius:10px; padding:10px 20px; font-size:0.85rem; font-weight:700; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; }
+
+  /* Cómo recibirlo */
+  .recibir-card { margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; }
+  .recibir-title { font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c3aed; margin-bottom:12px; }
+  .recibir-opt { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
+  .recibir-opt.destacado { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:6px; }
+  .recibir-ico { font-size:1.4rem; line-height:1; flex-shrink:0; }
+  .recibir-t { font-size:0.92rem; font-weight:800; color:#1e293b; }
+  .recibir-s { font-size:0.8rem; color:#64748b; margin-top:2px; }
+  .btn-cercania { width:100%; margin-top:10px; background:#7c3aed; color:#fff; border:none; border-radius:12px; padding:12px; font-size:0.88rem; font-weight:800; cursor:pointer; }
+  .puntos-lista { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .punto-item { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:11px 13px; }
+  .punto-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .punto-nom { font-size:0.9rem; font-weight:800; color:#1e293b; }
+  .punto-km { font-size:0.78rem; font-weight:800; color:#7c3aed; background:#f3e8ff; border-radius:999px; padding:2px 9px; white-space:nowrap; }
+  .punto-dir { font-size:0.82rem; color:#64748b; margin-top:3px; }
+  .punto-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .punto-links a { font-size:0.8rem; font-weight:700; color:#7c3aed; text-decoration:none; }
+  .recibir-nota { font-size:0.74rem; color:#94a3b8; margin-top:10px; }
+</style>
+</head>
+<body>
+
+
+<style>
+    .nav-link { position:relative; overflow:hidden; border-radius:9px; }
+    .nav-link select { background:transparent !important; color:#fff !important; }
+    .nav-link select option { color:#1e293b !important; background:#ffffff !important; }
+    #selectCatMobile option, #selectMarcaMobile option { color:#1e293b; background:#ffffff; }
+    .nav-link::after { content:''; position:absolute; top:0; left:-130%; width:55%; height:100%; background:linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent); transform:skewX(-20deg); pointer-events:none; opacity:0; }
+    .nav-link:hover::after { animation: navShine 0.7s ease; }
+    @keyframes navShine { 0%{ left:-130%; opacity:1; } 100%{ left:140%; opacity:1; } }
+    @keyframes logoDrop {
+        0%   { opacity:0; transform: translateY(-180px); animation-timing-function: ease-in; }
+        50%  { opacity:1; transform: translateY(0);      animation-timing-function: ease-out; }
+        66%  { transform: translateY(-34px);             animation-timing-function: ease-in; }
+        80%  { transform: translateY(0);                 animation-timing-function: ease-out; }
+        90%  { transform: translateY(-13px);             animation-timing-function: ease-in; }
+        96%  { transform: translateY(0);                 animation-timing-function: ease-out; }
+        98%  { transform: translateY(-4px); }
+        100% { transform: translateY(0); }
+    }
+    .logo-anim { animation: logoDrop 1.3s both; transform-origin:center; }
+    @media (prefers-reduced-motion: reduce) { .logo-anim { animation:none; } }
+</style>
+<header id="main-header" class="bg-white sticky top-0 z-40 shadow-sm w-full transition-transform duration-300">
+
+    <!-- ── DESKTOP ── -->
+    <div class="hidden md:block" style="background:#0a0a0a url('back.webp') center/cover no-repeat;">
+        <!-- Fila 1: logo + buscador + usuario + carrito -->
+        <div class="max-w-7xl mx-auto px-6 flex items-center gap-4" style="height:110px;">
+
+            <!-- Logo con glow -->
+            <a href="/" title="Volver al inicio" class="flex-shrink-0" style="filter:drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25));transition:filter 0.2s;" onmouseover="this.style.filter='drop-shadow(0 0 14px rgba(124,58,237,0.75)) drop-shadow(0 0 28px rgba(124,58,237,0.4))'" onmouseout="this.style.filter='drop-shadow(0 0 10px rgba(124,58,237,0.5)) drop-shadow(0 0 20px rgba(124,58,237,0.25))'">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:66px;width:auto;object-fit:contain;">
+            </a>
+
+            <!-- Buscador grande -->
+            <div class="flex-1 search-wrapper">
+                <input type="text" id="inputBusqueda" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" readonly
+                    style="width:100%;height:44px;padding:0 3rem 0 1.25rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;outline:none;transition:border-color 0.15s,box-shadow 0.15s;color:#1e293b;"
+                    onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'"
+                    onblur="this.style.borderColor='#7c3aed';this.style.boxShadow='none'">
+                <button id="btnLimpiar" onclick="document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute right-14 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;">
+                    <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button onclick="irABuscarHeader()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+                    <svg id="iconLupa" style="width:16px;height:16px;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Usuario con dropdown -->
+            <div class="flex-shrink-0 relative">
+                <!-- Sin login -->
+                <button onclick="mostrarLogin()" id="btn-login" class="flex items-center gap-2 px-3 py-2 rounded-xl transition-colors" style="background:none;border:none;cursor:pointer;">
+                    <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span style="font-size:13px;font-weight:900;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em;">Ingresá</span>
+                </button>
+                <!-- Logueado -->
+                <div id="user-badge" class="hidden relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                        <svg style="width:22px;height:22px;flex-shrink:0;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <div style="text-align:left;">
+                            <div style="font-size:9px;color:#cbd5e1;font-weight:600;line-height:1;">Hola,</div>
+                            <div id="user-badge-name" style="font-size:11px;font-weight:900;color:#ffffff;text-transform:uppercase;line-height:1.2;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                        </div>
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#7c3aed;border-radius:6px;flex-shrink:0;">
+                            <svg style="width:12px;height:12px;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="userDropdown" class="hidden absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 py-1" style="min-width:160px;z-index:50;">
+                        <button onclick="cerrarSesion();toggleUserMenu()" class="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-slate-50 transition-colors" style="background:none;border:none;cursor:pointer;">
+                            <svg style="width:14px;height:14px;" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            <span style="font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:0.05em;">Cerrar sesión</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carrito header -->
+            <button onclick="abrirCarrito()" id="btnCarritoHeader" class="flex-shrink-0 relative" style="background:none;border:none;cursor:pointer;padding:8px;">
+                <svg style="width:26px;height:26px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span id="carritoContadorHeader" class="hidden absolute -top-1 -right-1 bg-violet-600 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+            </button>
+
+        </div>
+
+        <!-- Fila 2: filtros + badges -->
+        <div style="border-top:1px solid rgba(255,255,255,0.08);">
+            <!-- Desktop: categorías + marcas + badges -->
+            <div class="hidden md:flex max-w-7xl mx-auto px-6 items-center gap-1" style="height:46px;">
+                <div class="relative flex-shrink-0 nav-link">
+                    <select id="selectCat" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2.25rem 0 2.5rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                        <option value="" style="color:#1e293b;">Categorías</option>
+                    </select>
+                    <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <span style="color:rgba(255,255,255,0.25);font-weight:300;font-size:18px;line-height:1;user-select:none;">|</span>
+                <div class="relative flex-shrink-0 nav-link">
+                    <select id="selectMarca" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                        <option value="" style="color:#1e293b;">Marcas</option>
+                    </select>
+                    <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
+                    <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+            <!-- Mobile: ticker badges -->
+            <div class="md:hidden" style="height:36px;overflow:hidden;background:transparent;border-top:1px solid rgba(255,255,255,0.08);">
+                <div style="display:inline-flex;align-items:center;gap:20px;height:36px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                    <span style="color:#c4b5fd;flex-shrink:0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:14px;height:14px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MOBILE ── -->
+    <div class="md:hidden px-3 pt-1 pb-3 flex flex-col gap-3" style="background:#0a0a0a url('back.webp') center/cover no-repeat;">
+        <!-- Fila 1: usuario + carrito (derecha) -->
+        <div class="flex items-center gap-2 justify-end">
+            <!-- Sin login -->
+            <button onclick="mostrarLogin()" id="btn-login-mobile" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
+                <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span style="font-size:11px;font-weight:900;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em;">Ingresá</span>
+            </button>
+            <!-- Logueado -->
+            <div id="user-badge-mobile" class="hidden relative">
+                <button onclick="cerrarSesion()" class="flex items-center gap-1.5 px-2 py-1 rounded-xl" style="background:none;border:none;cursor:pointer;">
+                    <svg style="width:20px;height:20px;" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div style="text-align:left;">
+                        <div style="font-size:8px;color:#cbd5e1;font-weight:600;line-height:1;">Hola,</div>
+                        <span id="user-badge-name-mobile" style="font-size:10px;font-weight:900;color:#ffffff;text-transform:uppercase;line-height:1.2;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;"></span>
+                    </div>
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#7c3aed;border-radius:5px;flex-shrink:0;">
+                        <svg style="width:11px;height:11px;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
+                </button>
+            </div>
+            <!-- Carrito -->
+            <button onclick="abrirCarrito()" class="relative" style="background:none;border:none;cursor:pointer;padding:6px;">
+                <svg style="width:24px;height:24px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span id="carritoContadorHeaderMobile" class="hidden absolute -top-1 -right-1 bg-violet-600 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+            </button>
+        </div>
+        <!-- Fila 2: logo + buscador -->
+        <div class="flex items-center gap-4 pr-3 pl-1">
+            <a href="/" title="Volver al inicio" style="filter:drop-shadow(0 0 5px rgba(124,58,237,0.35));flex-shrink:0;">
+                <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:72px;width:auto;object-fit:contain;">
+            </a>
+            <div class="search-wrapper flex-1">
+                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
+                    style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
+                <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusquedaMobile').value='';document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;right:44px;">
+                    <svg class="w-2.5 h-2.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button onclick="document.getElementById('inputBusqueda').value=document.getElementById('inputBusquedaMobile').value; irABuscarHeader();" aria-label="Buscar" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:#7c3aed;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+                    <svg style="width:15px;height:15px;" fill="none" stroke="white" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Fila 3: desplegables -->
+        <div class="flex gap-2 pr-3 pl-1">
+            <div class="relative flex-1">
+                <select id="selectCatMobile" onchange="irAFiltrarHeader(this.value,'cat')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="" style="color:#1e293b;">Categorías</option>
+                </select>
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="relative flex-1">
+                <select id="selectMarcaMobile" onchange="irAFiltrarHeader(this.value,'marca')" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                    <option value="" style="color:#1e293b;">Marcas</option>
+                </select>
+                <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
+                <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+        </div>
+        <!-- Fila 4: ticker badges mobile -->
+        <div style="margin:0 -12px;overflow:hidden;background:transparent;border-top:1px solid rgba(255,255,255,0.08);height:34px;">
+            <div style="display:inline-flex;align-items:center;gap:20px;height:34px;white-space:nowrap;animation:tickerScroll 16s linear infinite;padding-left:16px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Promos Exclusivas</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>3 Cuotas sin interés con BBVA</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Envíos en MDP en el día</span>
+                <span style="color:#c4b5fd;">•</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;color:#ffffff;text-transform:uppercase;flex-shrink:0;"><svg style="width:13px;height:13px;fill:none;stroke:#7c3aed;stroke-width:1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>Atención personalizada</span>
+            </div>
+        </div>
+        <!-- Fila 5: revender -->
+        <div style="text-align:center;padding:6px 0 4px;">
+            <span style="font-size:10px;font-weight:600;color:#64748b;">¿Te interesa revender nuestros productos?</span>
+            <a href="https://wa.me/5492235910492?text=Hola%2C%20me%20interesa%20revender%20productos%20de%20Blinky%2C%20me%20pasar%C3%ADas%20m%C3%A1s%20info%3F" target="_blank" rel="noopener"
+                style="display:inline-flex;align-items:center;gap:4px;margin-left:5px;font-size:10px;font-weight:900;color:#25D366;text-decoration:none;">
+                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.18-1.622A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.213-3.667.962.978-3.58-.234-.368A9.818 9.818 0 1 1 12 21.818z"/></svg>
+                Contactanos
+            </a>
+        </div>
+    </div>
+
+</header>
+
+
+<div id="breadcrumb" class="breadcrumb"></div>
+
+<div class="pagina-cont">
+  <div id="contenido">
+    <div class="estado">
+      <div class="estado-icon">⏳</div>
+      <h2>Cargando producto...</h2>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="ok-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f2e1f;border:1px solid #22c55e;color:#dcfce7;border-radius:14px;padding:0.8rem 1.4rem;font-size:0.92rem;font-weight:800;z-index:999;opacity:0;transition:all 0.3s;pointer-events:none;text-align:center;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.35);"></div>
+
+<div id="lightbox" class="lightbox" onclick="cerrarZoom()">
+  <button class="lightbox-cerrar" onclick="event.stopPropagation();cerrarZoom()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<footer class="bg-slate-900 text-white mt-10">
+    <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 items-center">
+
+        <div class="flex items-center justify-center col-span-2 md:col-span-1">
+            <img src="https://blinkymdq.com/blinky_sin_fdo.svg" alt="Blinky MDQ" class="w-36 h-auto object-contain">
+        </div>
+
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación</div>
+                <div class="text-xs font-bold text-white leading-snug">Buenos Aires<br>Mar del Plata 7600</div>
+            </div>
+        </div>
+
+        <a href="https://wa.me/5492235910492" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-[#25D366]/20 flex items-center justify-center">
+                <svg class="w-4 h-4 fill-[#25D366]" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">WhatsApp</div>
+                <div class="text-xs font-bold text-white">+54 9 223 5 910492</div>
+            </div>
+        </a>
+
+        <a href="https://instagram.com/blinkymdq" target="_blank" rel="noopener" class="flex items-start gap-3 hover:opacity-80 transition-opacity">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 fill-pink-400" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Instagram</div>
+                <div class="text-xs font-bold text-white">@blinkymdq</div>
+            </div>
+        </a>
+
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 stroke-violet-400" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Envíos</div>
+                <div class="text-xs font-bold text-white leading-snug">Envíos en Mar del Plata<br>en el día</div>
+            </div>
+        </div>
+
+    </div>
+    <div class="border-t border-white/10 py-4 text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
+        © 2026 Blinky MDQ — Todos los derechos reservados
+    </div>
+</footer>
+
+<script>
+const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+const NRO_WSP = '5492235910492';
+
+function getImgUrl(foto, sz) {
+  if (!foto || foto.trim() === '') return '';
+  if (foto.startsWith('http')) return foto;
+  if (foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=${sz || 1200}`;
+  return `https://blinkymdq.com/Productos/${foto}.jpg`;
+}
+
+function formatPrecio(v) {
+  const n = parseFloat(String(v).replace(/[^0-9.]/g,''));
+  if (isNaN(n)) return '$0';
+  return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 2500);
+}
+
+function irABuscar() {
+  const val = document.getElementById('headerBusqueda').value.trim();
+  window.location.href = val
+    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'index.html';
+}
+
+// ── Funciones del header completo (igual a index.html) ──
+function irABuscarHeader() {
+  const val = (document.getElementById('inputBusqueda').value || '').trim();
+  window.location.href = val
+    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : 'index.html';
+}
+
+function irAFiltrarHeader(valor, tipo) {
+  if (!valor) return;
+  window.location.href = `index.html?${tipo}=${encodeURIComponent(valor)}`;
+}
+
+function mostrarLogin() {
+  window.location.href = 'index.html';
+}
+
+function abrirCarrito() {
+  window.location.href = 'index.html';
+}
+
+function toggleUserMenu() {
+  const dd = document.getElementById('userDropdown');
+  if (dd) dd.classList.toggle('hidden');
+}
+
+// ════════════════════════════════════════
+// AUTH (misma lógica que index.html): Supabase Auth + tabla "usuarios".rol
+// ════════════════════════════════════════
+const supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function cerrarSesion() {
+  await supabaseClient.auth.signOut();
+  window._userRol = null;
+  document.body.classList.remove('is-logged-in', 'es-mayorista');
+  if (productoActual) renderProducto(productoActual);
+}
+
+async function initAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await aplicarSesion(session.user);
+
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      await aplicarSesion(session.user);
+    } else {
+      window._userRol = null;
+      document.body.classList.remove('is-logged-in', 'es-mayorista');
+      if (productoActual) renderProducto(productoActual);
+    }
+  });
+}
+
+async function aplicarSesion(user) {
+  const { data } = await supabaseClient
+    .from('usuarios')
+    .select('rol, nombre')
+    .eq('id', user.id)
+    .single();
+
+  const rol = data?.rol || 'minorista';
+  const nombre = data?.nombre || user.user_metadata?.full_name || user.email;
+  const esMayorista = rol === 'mayorista';
+
+  window._userRol = rol;
+
+  document.body.classList.add('is-logged-in');
+  if (esMayorista) document.body.classList.add('es-mayorista');
+  else document.body.classList.remove('es-mayorista');
+
+  // Mercadería que el vendedor tiene en su poder (badge "Tenés N") — solo mayoristas
+  window._miMercaderia = {};
+  if (esMayorista) {
+    try {
+      const { data: ev } = await supabaseClient.from('entregas_vendedor').select('codigo,entregado,vendido,devuelto').eq('usuario_id', user.id);
+      (ev||[]).forEach(e=>{ const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0)); if(pend>0) window._miMercaderia[e.codigo]=(window._miMercaderia[e.codigo]||0)+pend; });
+    } catch(e){}
+  }
+
+  const nombreCorto = (nombre || '').split(' ')[0].toUpperCase();
+  const nameEl = document.getElementById('user-badge-name');
+  const nameElM = document.getElementById('user-badge-name-mobile');
+  if (nameEl) nameEl.innerText = `HOLA, ${nombreCorto}`;
+  if (nameElM) nameElM.innerText = `HOLA, ${nombreCorto}`;
+
+  if (productoActual) renderProducto(productoActual);
+}
+
+// Trae solo categoría y marca de cada producto (consulta liviana) para
+// poblar los desplegables del header con opciones reales.
+async function poblarFiltrosHeader() {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?select=categoria,marca&estado=neq.inactivo`, {
+      headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY }
+    });
+    const data = await res.json();
+    const categorias = [...new Set(data.map(p => p.categoria).filter(Boolean))].sort();
+    const marcas = [...new Set(data.map(p => p.marca).filter(Boolean))].sort();
+
+    ['selectCat', 'selectCatMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Categorías</option>' + categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+    });
+    ['selectMarca', 'selectMarcaMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+    });
+  } catch(e) { console.error('Error cargando filtros del header', e); }
+}
+poblarFiltrosHeader();
+
+let fotos = [];
+let medios = [];      // [{tipo:'video'|'img', src}]
+let fotoActual = 0;
+let productoActual = null;
+const FOTO_FALLBACK = 'https://blinkymdq.com/blinkysinfondo.png';
+
+function mostrarFoto(idx) {
+  fotoActual = idx;
+  const m = medios[idx] || { tipo:'img', src:'' };
+  const img = document.getElementById('foto-principal');
+  const vid = document.getElementById('video-principal');
+  if (m.tipo === 'video') {
+    if (img) img.style.display = 'none';
+    if (vid) { vid.style.display = 'block'; try { vid.currentTime = 0; vid.play().catch(()=>{}); } catch(e){} }
+  } else {
+    if (vid) { try { vid.pause(); } catch(e){} vid.style.display = 'none'; }
+    if (img) { img.style.display = 'block'; img.src = getImgUrl(m.src, 1600) || FOTO_FALLBACK; }
+  }
+  document.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i===idx));
+}
+
+function fotoAnterior() { if (fotoActual > 0) mostrarFoto(fotoActual - 1); }
+function fotoSiguiente() { if (fotoActual < medios.length - 1) mostrarFoto(fotoActual + 1); }
+
+function abrirZoom() {
+  const m = medios[fotoActual];
+  if (!m || m.tipo !== 'img') return; // el video no hace zoom
+  document.getElementById('lightbox-img').src = getImgUrl(m.src, 1600) || FOTO_FALLBACK;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarZoom() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') cerrarZoom();
+});
+
+async function cargarProducto() {
+  const params = new URLSearchParams(window.location.search);
+  const cod = params.get('cod');
+  if (!cod) { mostrarError('No se especificó un producto.'); return; }
+
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(cod)}&limit=1`, {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    const data = await res.json();
+    if (!data.length) { mostrarError('Producto no encontrado.'); return; }
+    renderProducto(data[0]);
+  } catch(e) {
+    mostrarError('Error al cargar el producto.');
+  }
+}
+
+function renderProducto(p) {
+  productoActual = p;
+  if (typeof actualizarBadgeCarrito === 'function') actualizarBadgeCarrito();
+  const precio = formatPrecio(p.precio_publico);
+  const sinStock = !p.stock || p.stock <= 0;
+  const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
+  const mostrarPrecio = !sinStock || esMayoristaLogueado;
+  const miCantMerc = (esMayoristaLogueado && window._miMercaderia) ? Number(window._miMercaderia[p.codigo] || 0) : 0;
+  const badgeMercMobile  = miCantMerc > 0 ? `<div class="badge-merc badge-merc-mobile">📦 Tenés ${miCantMerc}</div>` : '';
+  const badgeMercDesktop = miCantMerc > 0 ? `<div class="badge-merc badge-merc-desktop">📦 Tenés ${miCantMerc}</div>` : '';
+
+  fotos = (p.foto || '').split(',').map(f => f.trim()).filter(Boolean);
+  if (!fotos.length) fotos = [''];
+  // Medios: video primero (si hay), después las fotos
+  medios = [];
+  if (p.video) medios.push({ tipo:'video', src:p.video });
+  fotos.forEach(f => { if (f) medios.push({ tipo:'img', src:f }); });
+  if (!medios.length) medios.push({ tipo:'img', src:'' });
+
+  document.title = `${p.nombre} — Blinky MDQ`;
+  document.getElementById('og-title').content = p.nombre;
+  document.getElementById('og-description').content = `${precio} · Blinky MDQ`;
+  if (fotos[0]) document.getElementById('og-image').content = getImgUrl(fotos[0]);
+  document.getElementById('og-url').content = window.location.href;
+
+  document.getElementById('breadcrumb').innerHTML = `
+    <a href="index.html">Home</a>
+    ${p.categoria ? `<span>›</span><a href="index.html?cat=${encodeURIComponent(p.categoria)}">${p.categoria}</a>` : ''}
+    ${p.marca ? `<span>›</span><a href="index.html?marca=${encodeURIComponent(p.marca)}">${p.marca}</a>` : ''}
+    <span>›</span><span class="actual">${p.nombre}</span>
+  `;
+
+  const mostrarNav = medios.length > 1;
+  const primero = medios[0];
+
+  document.getElementById('contenido').innerHTML = `
+    <div class="layout">
+      <div class="galeria-wrap">
+        <div class="galeria">
+          <video id="video-principal" src="${p.video || ''}" style="display:${primero.tipo==='video'?'block':'none'};width:100%;height:100%;object-fit:contain;background:#000;" muted loop playsinline autoplay preload="metadata"></video>
+          <img id="foto-principal" src="${primero.tipo==='img' ? (getImgUrl(primero.src, 1600) || 'https://blinkymdq.com/blinkysinfondo.png') : 'https://blinkymdq.com/blinkysinfondo.png'}" style="display:${primero.tipo==='img'?'block':'none'};" alt="${p.nombre}" onclick="abrirZoom()" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
+          <div class="galeria-iconos">
+            <button class="icono-flotante" onclick="compartir()" title="Compartir">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </button>
+          </div>
+          ${mostrarNav ? `
+            <button class="btn-nav btn-prev" onclick="fotoAnterior()">‹</button>
+            <button class="btn-nav btn-next" onclick="fotoSiguiente()">›</button>
+          ` : ''}
+        </div>
+        ${mostrarNav ? `
+          <div class="thumbs">
+            ${medios.map((m,i) => m.tipo==='video'
+              ? `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})" style="position:relative;background:#000;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.1rem;">▶</span></div>`
+              : `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})"><img src="${getImgUrl(m.src)}" onerror="this.style.opacity='0.2'"></div>`
+            ).join('')}
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="info-card">
+        ${badgeMercMobile}
+        ${p.marca ? `<div class="marca">${p.marca}</div>` : ''}
+        <h1 class="nombre">${p.nombre}</h1>
+        ${p.codigo ? `
+          <div class="codigo-row" onclick="copiarCodigo('${p.codigo}')" title="Copiar código">
+            Cód. ${p.codigo}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </div>
+        ` : ''}
+        <br>
+        ${mostrarPrecio ? `
+        <div class="precio">${precio}</div>
+        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
+        ` : ''}
+        ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
+          ${badgeMercDesktop}
+        </div>
+
+        <div class="btns">
+          <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            ${sinStock ? 'Sin stock' : 'Agregar al carrito'}
+          </button>
+          <button class="btn-wsp" onclick="consultarWsp()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.09.536 4.05 1.475 5.757L0 24l6.435-1.438A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.213-3.717.831.888-3.618-.234-.372A9.818 9.818 0 1112 21.818z"/></svg>
+            Consultar por WhatsApp
+          </button>
+        </div>
+        <div id="recibir-wrap"></div>
+        <div style="font-size:0.72rem;color:#64748b;font-family:Arial,sans-serif;margin-top:12px;">Los precios están sujetos a modificaciones sin previo aviso.</div>
+      </div>
+    </div>
+
+    ${p.descripcion ? `
+      <div class="descripcion-card">
+        <div class="descripcion-titulo">Descripción</div>
+        <div class="descripcion-texto">${p.descripcion}</div>
+      </div>
+    ` : ''}
+  `;
+  cargarPuntosRetiro(p.codigo, esMayoristaLogueado);
+}
+
+// ── Cómo recibirlo: envío + puntos de retiro por cercanía ──
+let _puntosRetiro = [];
+let _miUbic = null; // {lat,lng}
+async function cargarPuntosRetiro(codigo, esMayorista){
+  const wrap = document.getElementById('recibir-wrap');
+  if(!wrap) return;
+  _puntosRetiro = [];
+  if(!esMayorista && codigo){
+    try{
+      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/puntos_retiro_producto`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY },
+        body: JSON.stringify({ p_codigo: codigo })
+      });
+      const d = await r.json();
+      _puntosRetiro = Array.isArray(d) ? d.filter(p=>p.lat!=null && p.lng!=null) : [];
+    }catch(e){ _puntosRetiro = []; }
+  }
+  renderRecibir();
+}
+function distanciaKm(a, b){
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+function ordenarPuntosPorCercania(){
+  if(!navigator.geolocation){ toast('Tu navegador no permite ubicación'); return; }
+  toast('Buscando puntos cercanos...');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _miUbic = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    renderRecibir();
+  }, err=>{ toast('No pudimos obtener tu ubicación'); }, { enableHighAccuracy:true, timeout:10000 });
+}
+function renderRecibir(){
+  const wrap = document.getElementById('recibir-wrap');
+  if(!wrap) return;
+  let puntos = _puntosRetiro.slice();
+  if(_miUbic){
+    puntos.forEach(p=> p._dist = distanciaKm(_miUbic, {lat:Number(p.lat), lng:Number(p.lng)}));
+    puntos.sort((a,b)=> (a._dist||0)-(b._dist||0));
+  }
+  const envio = `<div class="recibir-opt"><span class="recibir-ico">🚚</span><div><div class="recibir-t">Envío a domicilio</div><div class="recibir-s">Coordinás la entrega en el checkout</div></div></div>`;
+  let retiro = '';
+  if(puntos.length){
+    const p0 = puntos[0];
+    const filas = puntos.map(p=>{
+      const dir = [p.direccion, p.localidad].filter(Boolean).join(', ');
+      const dist = (p._dist!=null) ? `<span class="recibir-km">a ${p._dist.toFixed(1)} km</span>` : '';
+      const links = [
+        p.link ? `<a href="${p.link}" target="_blank" rel="noopener">🌐 Web</a>` : '',
+        p.instagram ? `<a href="${p.instagram}" target="_blank" rel="noopener">📷 Instagram</a>` : '',
+        `<a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`
+      ].filter(Boolean).join('');
+      return `<div class="punto-item">
+        <div class="punto-top"><span class="punto-nom">🏪 ${p.nombre_comercio||'Punto de retiro'}</span>${dist}</div>
+        <div class="punto-dir">${dir||''}</div>
+        <div class="punto-links">${links}</div>
+      </div>`;
+    }).join('');
+    const dir0 = [p0.direccion, p0.localidad].filter(Boolean).join(', ');
+    retiro = `
+      <div class="recibir-opt destacado">
+        <span class="recibir-ico">🏪</span>
+        <div style="flex:1;min-width:0;">
+          <div class="recibir-t">Podés retirar hoy por <b>${p0.nombre_comercio||'un punto cercano'}</b></div>
+          <div class="recibir-s">${dir0||''}</div>
+        </div>
+      </div>
+      ${!_miUbic ? `<button class="btn-cercania" onclick="ordenarPuntosPorCercania()">📍 Ver puntos cerca tuyo</button>` : ''}
+      <div class="puntos-lista">${filas}</div>
+      <div class="recibir-nota">Elegís el punto en el checkout y vas a retirar con tu número de pedido.</div>`;
+  }
+  wrap.innerHTML = `<div class="recibir-card"><div class="recibir-title">Cómo recibirlo</div>${envio}${retiro}</div>`;
+}
+
+function leerCarrito() {
+  try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e) { return []; }
+}
+function actualizarBadgeCarrito() {
+  const carrito = leerCarrito();
+  const n = carrito.reduce((s,i)=>s + Number(i.cantidad||0), 0);
+  ['carritoContadorHeader','carritoContadorHeaderMobile'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = n;
+    el.classList.toggle('hidden', n === 0);
+  });
+}
+function agregarYVerCarrito(cod) {
+  const p = productoActual;
+  if (!p || !p.stock || p.stock <= 0) return;
+  const esMay = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
+  const precio = (esMay && Number(p.precio_mayorista) > 0) ? Number(p.precio_mayorista) : Number(p.precio_publico);
+  const img = getImgUrl((p.foto || '').split(',')[0].trim(), '200');
+  const stock = Number(p.stock || 0);
+  const carrito = leerCarrito();
+  const existente = carrito.find(i => i.codigo === p.codigo);
+  if (existente) {
+    if (existente.cantidad >= stock) { toast(`Solo hay ${stock} unidad${stock===1?'':'es'} disponible${stock===1?'':'s'}`); return; }
+    existente.cantidad++;
+  } else {
+    carrito.push({ id: p.codigo, codigo: p.codigo || '', nombre: p.nombre, precio: precio, img: img, stock: stock, cantidad: 1 });
+  }
+  try { localStorage.setItem('blinky_carrito', JSON.stringify(carrito)); } catch(e){}
+  actualizarBadgeCarrito();
+  toastAgregado();
+}
+function toastAgregado() {
+  const t = document.getElementById('ok-toast');
+  t.innerHTML = '🛒 ¡Agregado al carrito!<br><span style="font-weight:600;color:#86efac;">Seguí chusmeando tranqui 😉</span>';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 2500);
+}
+
+function consultarWsp() {
+  const p = productoActual;
+  const sinStock = !p.stock || p.stock <= 0;
+  const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
+  const precio = formatPrecio(p.precio_publico);
+  const msg = (sinStock && !esMayoristaLogueado)
+    ? `Hola! Me interesa el producto: *${p.nombre}*. ¿Está disponible?\n\n${window.location.href}`
+    : `Hola! Me interesa el producto: *${p.nombre}* (${precio}). ¿Está disponible?\n\n${window.location.href}`;
+  window.open(`https://wa.me/${NRO_WSP}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+async function compartir() {
+  const p = productoActual;
+  const url = window.location.href;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: p.nombre, text: p.nombre, url });
+    } catch(e) {}
+  } else {
+    navigator.clipboard.writeText(url);
+    toast('Link copiado ✓');
+  }
+}
+
+function copiarCodigo(cod) {
+  navigator.clipboard.writeText(cod);
+  toast('Código copiado ✓');
+}
+
+function mostrarError(msg) {
+  document.getElementById('contenido').innerHTML = `
+    <div class="estado">
+      <div class="estado-icon">😕</div>
+      <h2>Oops</h2>
+      <p>${msg}</p>
+      <br>
+      <a href="index.html" class="btn-tienda" style="display:inline-block;margin-top:8px;">Ver tienda</a>
+    </div>
+  `;
+}
+
+initAuth();
+cargarProducto();
+</script>
+</body>
+</html>
