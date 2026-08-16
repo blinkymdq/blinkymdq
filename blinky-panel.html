@@ -3454,7 +3454,7 @@ async function cargarVendedores() {
   if (cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
     const [uR, eR, mR] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion&order=nombre.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion,es_punto_retiro,nombre_comercio,direccion_retiro,link_comercio,punto_lat,punto_lng&order=nombre.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?select=*&order=producto.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?select=*&order=created_at.desc`, {headers:hdrs})
     ]);
@@ -3584,7 +3584,7 @@ function renderModalVendedor(id) {
   const tipoLbl = {entrega:'Entrega', venta:'Venta', devolucion:'Devolución'};
   const tipoCol = {entrega:'var(--cyan)', venta:'var(--green)', devolucion:'var(--yellow)'};
   const movsHtml = movs.length ? movs.map(m=>`<div class="pago-item">
-      <span style="min-width:0;"><span style="font-weight:700;color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</span> · ${m.producto||''}${m.numero_pedido?` <span style="color:var(--violet-light);">(${m.numero_pedido})</span>`:''}</span>
+      <span style="min-width:0;"><span style="font-weight:700;color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</span> · ${m.producto||''}${m.numero_pedido?` <a onclick="imprimirPedido('${m.numero_pedido}')" title="Ver comprobante del pedido" style="color:var(--violet-light);cursor:pointer;text-decoration:underline;">(${m.numero_pedido})</a>`:''}</span>
       <span class="pago-monto">${m.cantidad} u.</span>
       <span class="pago-fecha">${new Date(m.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
     </div>`).join('') : '<div style="color:var(--text3);font-size:0.82rem;padding:0.4rem 0;">Sin movimientos.</div>';
@@ -3610,6 +3610,29 @@ function renderModalVendedor(id) {
       <div class="fc-resumen-item"><div class="label">Unidades afuera</div><div class="val">${unidades}</div></div>
       <div class="fc-resumen-item"><div class="label">Valor mercadería</div><div class="val">$${valor.toLocaleString('es-AR')}</div></div>
       <div class="fc-resumen-item"><div class="label">Precio</div><div class="val">${v.rol==='mayorista'?'Mayorista':'Público'}</div></div>
+    </div>
+
+    <div class="fc-section-title">Punto de retiro</div>
+    <div style="background:var(--surface2);border-radius:10px;padding:0.85rem;margin-bottom:1rem;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:0.7rem;">
+        <input type="checkbox" id="pr-activo" ${v.es_punto_retiro?'checked':''} style="width:18px;height:18px;accent-color:var(--violet);">
+        Habilitar como punto de retiro (aparece en la web)
+      </label>
+      <div style="display:grid;grid-template-columns:1fr;gap:0.5rem;">
+        <input id="pr-nombre" type="text" value="${esc(v.nombre_comercio||'')}" placeholder="Nombre del comercio" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-dir" type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-link" type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web o Instagram (https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <div style="display:flex;gap:0.5rem;">
+          <input id="pr-lat" type="text" value="${v.punto_lat??''}" placeholder="Latitud" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
+          <input id="pr-lng" type="text" value="${v.punto_lng??''}" placeholder="Longitud" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button class="fc-btn" onclick="usarMiUbicacionPR()">📍 Usar mi ubicación</button>
+          <button class="fc-btn" onclick="verMapaPR()">🗺️ Ver en mapa</button>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text3);">Tip: estando en el local, tocá "Usar mi ubicación". O pegá lat/long de Google Maps.</div>
+        <button class="btn-finalizar" onclick="guardarPuntoRetiro('${id}')">Guardar punto de retiro</button>
+      </div>
     </div>
 
     <div class="fc-section-title" style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;">
@@ -3668,6 +3691,50 @@ async function cargarComprobantesDevolucion(id){
       return `<div class="pago-item"><span style="min-width:0;flex:1;"><b style="font-family:monospace;color:#fb923c;">${c.numero}</b> · ${c.total_unidades} u. <br><span style="font-size:0.72rem;color:var(--text3);">${f}</span></span><a class="fc-btn" href="https://blinkymdq.github.io/blinkymdq/devolucion-imprimir.html?t=${c.token}" target="_blank" style="padding:2px 10px;text-decoration:none;">📄 Comprobante</a></div>`;
     }).join('');
   }catch(e){ cont.innerHTML='<div style="color:var(--text3);font-size:0.82rem;">Error.</div>'; }
+}
+
+// ── Punto de retiro (vendedor) ──
+function usarMiUbicacionPR(){
+  if(!navigator.geolocation){ toast('Tu navegador no permite ubicación','err'); return; }
+  toast('Obteniendo ubicación...','ok');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('pr-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('pr-lng').value = pos.coords.longitude.toFixed(6);
+    toast('Ubicación cargada ✓','ok');
+  }, err=>{ toast('No se pudo obtener la ubicación','err'); }, {enableHighAccuracy:true, timeout:10000});
+}
+function verMapaPR(){
+  const la = (document.getElementById('pr-lat').value||'').trim();
+  const ln = (document.getElementById('pr-lng').value||'').trim();
+  if(!la||!ln){ toast('Cargá lat y long primero','err'); return; }
+  window.open(`https://www.google.com/maps?q=${encodeURIComponent(la+','+ln)}`, '_blank');
+}
+async function guardarPuntoRetiro(id){
+  const activo = document.getElementById('pr-activo').checked;
+  const nombre = (document.getElementById('pr-nombre').value||'').trim();
+  const dir = (document.getElementById('pr-dir').value||'').trim();
+  let link = (document.getElementById('pr-link').value||'').trim();
+  const lat = parseFloat(document.getElementById('pr-lat').value);
+  const lng = parseFloat(document.getElementById('pr-lng').value);
+  if(activo){
+    if(!nombre){ toast('Poné el nombre del comercio','err'); return; }
+    if(isNaN(lat)||isNaN(lng)){ toast('Cargá la ubicación (lat/long) para que aparezca por cercanía','err'); return; }
+  }
+  if(link && !/^https?:\/\//i.test(link)) link = 'https://'+link;
+  const body = {
+    es_punto_retiro: activo,
+    nombre_comercio: nombre||null,
+    direccion_retiro: dir||null,
+    link_comercio: link||null,
+    punto_lat: isNaN(lat)?null:lat,
+    punto_lng: isNaN(lng)?null:lng
+  };
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(await r.text().catch(()=> ''));
+    const v = vendUsuarios.find(u=>u.id===id); if(v) Object.assign(v, body);
+    toast(activo?'Punto de retiro guardado ✓':'Punto de retiro desactivado ✓','ok');
+  }catch(e){ console.error(e); toast('Error al guardar el punto de retiro','err'); }
 }
 
 async function logMov(rows){
