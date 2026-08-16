@@ -3615,31 +3615,32 @@ function renderModalVendedor(id) {
     </div>
 
     <div class="fc-section-title">Punto de retiro</div>
-    <div style="background:var(--surface2);border-radius:10px;padding:0.85rem;margin-bottom:1rem;">
+    <div id="pr-box" style="background:var(--surface2);border-radius:10px;padding:0.85rem;margin-bottom:1rem;">
       <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:0.7rem;">
-        <input type="checkbox" id="pr-activo" ${v.es_punto_retiro?'checked':''} style="width:18px;height:18px;accent-color:var(--violet);">
+        <input type="checkbox" class="pr-field" id="pr-activo" ${v.es_punto_retiro?'checked':''} disabled style="width:18px;height:18px;accent-color:var(--violet);">
         Habilitar como punto de retiro (aparece en la web)
       </label>
       <div style="display:grid;grid-template-columns:1fr;gap:0.5rem;">
-        <input id="pr-nombre" type="text" value="${esc(v.nombre_comercio||'')}" placeholder="Nombre del comercio" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
-        <input id="pr-dir" type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
-        <input id="pr-link" type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web (opcional, https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
-        <input id="pr-ig" type="text" value="${esc(v.instagram_comercio||'')}" placeholder="Instagram (ej: @marsarg o el link)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-nombre" class="pr-field" disabled type="text" value="${esc(v.nombre_comercio||'')}" placeholder="Nombre del comercio" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-dir" class="pr-field" disabled type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-link" class="pr-field" disabled type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web (opcional, https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-ig" class="pr-field" disabled type="text" value="${esc(v.instagram_comercio||'')}" placeholder="Instagram (ej: @marsarg o el link)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
 
         <div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin-top:0.3rem;">📍 Ubicación del local</div>
         <div style="display:flex;gap:0.5rem;">
-          <input id="pr-buscar-dir" type="text" placeholder="Buscar dirección (ej: San Martín 2300, Mar del Plata)" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccionPR();}" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
-          <button class="fc-btn" onclick="buscarDireccionPR()">🔎 Buscar</button>
+          <input id="pr-buscar-dir" class="pr-field" disabled type="text" placeholder="Buscar dirección (ej: San Martín 2300, Mar del Plata)" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccionPR();}" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;">
+          <button class="fc-btn pr-field" disabled onclick="buscarDireccionPR()">🔎 Buscar</button>
         </div>
         <div id="pr-map" style="height:220px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--surface);"></div>
-        <div style="font-size:0.68rem;color:var(--text3);">Buscá la dirección o tocá el mapa para marcar el local exacto. También podés usar "📍 Usar mi ubicación" estando ahí.</div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-          <button class="fc-btn" onclick="usarMiUbicacionPR()">📍 Usar mi ubicación</button>
+          <button class="fc-btn pr-field" disabled onclick="usarMiUbicacionPR()">📍 Usar mi ubicación</button>
           <span id="pr-coords-lbl" style="font-size:0.72rem;color:var(--text3);">${(v.punto_lat!=null&&v.punto_lng!=null)?`✓ Marcado (${Number(v.punto_lat).toFixed(4)}, ${Number(v.punto_lng).toFixed(4)})`:'Sin ubicación marcada'}</span>
         </div>
         <input id="pr-lat" type="hidden" value="${v.punto_lat??''}">
         <input id="pr-lng" type="hidden" value="${v.punto_lng??''}">
-        <button class="btn-finalizar" onclick="guardarPuntoRetiro('${id}')">Guardar punto de retiro</button>
+        <div id="pr-btns" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.2rem;">
+          <button class="fc-btn" style="background:var(--violet);color:#fff;font-weight:800;" onclick="prEditar('${id}')">✏️ Editar datos</button>
+        </div>
       </div>
     </div>
 
@@ -3703,10 +3704,18 @@ async function cargarComprobantesDevolucion(id){
 }
 
 // ── Punto de retiro (vendedor) ── con mini mapa (Leaflet + OpenStreetMap)
-let _prMap=null, _prMarker=null;
+let _prMap=null, _prMarker=null, _prMapEditable=false;
+function prEditar(id){
+  _prMapEditable = true;
+  document.querySelectorAll('#pr-box .pr-field').forEach(el=>{ el.disabled=false; });
+  const btns=document.getElementById('pr-btns');
+  if(btns) btns.innerHTML = `<button class="btn-finalizar" onclick="guardarPuntoRetiro('${id}')">✓ Guardar cambios</button><button class="fc-btn" onclick="prCancelar('${id}')">Cancelar</button>`;
+}
+function prCancelar(id){ renderModalVendedor(id); } // recarga bloqueado, descartando cambios
 function initMapaPR(){
   const el=document.getElementById('pr-map');
   if(!el || typeof L==='undefined') return;
+  _prMapEditable=false;
   if(_prMap){ try{_prMap.remove();}catch(e){} _prMap=null; _prMarker=null; }
   const lat=parseFloat(document.getElementById('pr-lat').value);
   const lng=parseFloat(document.getElementById('pr-lng').value);
@@ -3715,7 +3724,7 @@ function initMapaPR(){
   _prMap = L.map(el).setView(center, tiene?16:13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(_prMap);
   if(tiene) _prMarker = L.marker(center).addTo(_prMap);
-  _prMap.on('click', e=> setMarkerPR(e.latlng.lat, e.latlng.lng, false));
+  _prMap.on('click', e=>{ if(!_prMapEditable) return; setMarkerPR(e.latlng.lat, e.latlng.lng, false); });
   setTimeout(()=>{ try{_prMap.invalidateSize();}catch(e){} }, 250);
 }
 function setMarkerPR(lat,lng,recenter){
@@ -3780,6 +3789,7 @@ async function guardarPuntoRetiro(id){
     if(!r.ok) throw new Error(await r.text().catch(()=> ''));
     const v = vendUsuarios.find(u=>u.id===id); if(v) Object.assign(v, body);
     toast(activo?'Punto de retiro guardado ✓':'Punto de retiro desactivado ✓','ok');
+    renderModalVendedor(id); // vuelve a quedar bloqueado con los datos actualizados
   }catch(e){ console.error(e); toast('Error al guardar el punto de retiro','err'); }
 }
 
