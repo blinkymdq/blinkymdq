@@ -3456,7 +3456,7 @@ async function cargarVendedores() {
   if (cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
     const [uR, eR, mR] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion,es_punto_retiro,nombre_comercio,direccion_retiro,link_comercio,punto_lat,punto_lng&order=nombre.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion,es_punto_retiro,nombre_comercio,direccion_retiro,link_comercio,instagram_comercio,punto_lat,punto_lng&order=nombre.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?select=*&order=producto.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?select=*&order=created_at.desc`, {headers:hdrs})
     ]);
@@ -3623,7 +3623,8 @@ function renderModalVendedor(id) {
       <div style="display:grid;grid-template-columns:1fr;gap:0.5rem;">
         <input id="pr-nombre" type="text" value="${esc(v.nombre_comercio||'')}" placeholder="Nombre del comercio" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
         <input id="pr-dir" type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
-        <input id="pr-link" type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web o Instagram (https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-link" type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web (opcional, https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-ig" type="text" value="${esc(v.instagram_comercio||'')}" placeholder="Instagram (ej: @marsarg o el link)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
 
         <div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin-top:0.3rem;">📍 Ubicación del local</div>
         <div style="display:flex;gap:0.5rem;">
@@ -3752,6 +3753,7 @@ async function guardarPuntoRetiro(id){
   const nombre = (document.getElementById('pr-nombre').value||'').trim();
   const dir = (document.getElementById('pr-dir').value||'').trim();
   let link = (document.getElementById('pr-link').value||'').trim();
+  let ig = (document.getElementById('pr-ig').value||'').trim();
   const lat = parseFloat(document.getElementById('pr-lat').value);
   const lng = parseFloat(document.getElementById('pr-lng').value);
   if(activo){
@@ -3759,11 +3761,17 @@ async function guardarPuntoRetiro(id){
     if(isNaN(lat)||isNaN(lng)){ toast('Cargá la ubicación (lat/long) para que aparezca por cercanía','err'); return; }
   }
   if(link && !/^https?:\/\//i.test(link)) link = 'https://'+link;
+  // Instagram: acepta "@usuario", "usuario", "instagram.com/usuario" o link completo -> guardo link completo
+  if(ig){
+    ig = ig.replace(/^@+/,'').replace(/^https?:\/\/(www\.)?instagram\.com\//i,'').replace(/^instagram\.com\//i,'').replace(/\/+$/,'').trim();
+    ig = ig ? ('https://instagram.com/'+ig) : '';
+  }
   const body = {
     es_punto_retiro: activo,
     nombre_comercio: nombre||null,
     direccion_retiro: dir||null,
     link_comercio: link||null,
+    instagram_comercio: ig||null,
     punto_lat: isNaN(lat)?null:lat,
     punto_lng: isNaN(lng)?null:lng
   };
