@@ -41,6 +41,17 @@
   /* Cards */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.9rem;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+  .retiros{display:flex;flex-direction:column;gap:0.7rem;}
+  .retiro-card{background:var(--surface);border:1px solid var(--yellow);border-radius:14px;padding:0.9rem 1rem;}
+  .ret-top{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.35rem;}
+  .ret-num{font-family:monospace;font-weight:800;color:var(--violet-light);font-size:1rem;}
+  .ret-badge{font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;color:#7c2d12;background:#fef3c7;border:1px solid var(--yellow);border-radius:999px;padding:2px 9px;}
+  .ret-cli{font-size:0.8rem;color:var(--text2);margin-bottom:0.5rem;}
+  .ret-items{display:flex;flex-direction:column;gap:2px;background:var(--surface2);border-radius:10px;padding:0.55rem 0.7rem;margin-bottom:0.5rem;}
+  .ret-item{font-size:0.85rem;color:var(--text);}
+  .ret-total{font-size:0.85rem;color:var(--text2);margin-bottom:0.6rem;}
+  .ret-btn{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:0.7rem;font-size:0.9rem;font-weight:800;cursor:pointer;}
+  .ret-btn:active{transform:scale(0.98);}
   .card .img{height:150px;background:#fff;display:flex;align-items:center;justify-content:center;}
   .card .img img{width:100%;height:100%;object-fit:contain;}
   .card .body{padding:0.7rem 0.8rem;display:flex;flex-direction:column;gap:6px;flex:1;}
@@ -103,7 +114,7 @@ const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-let usuario = null, entregas = [], productos = {}, movimientos = [];
+let usuario = null, entregas = [], productos = {}, movimientos = [], pedidosRetiro = [], _uidActual = null;
 
 function toast(msg, tipo){
   const t = document.getElementById('toast');
@@ -144,6 +155,7 @@ async function init(){
 
 async function cargar(uid){
   try {
+    _uidActual = uid;
     const { data: u } = await supa.from('usuarios').select('nombre,numero_usuario,rol,es_vendedor').eq('id', uid).single();
     usuario = u || {};
     document.getElementById('user-nombre').textContent = (usuario.nombre ? usuario.nombre.split(' ')[0] : '') + (usuario.numero_usuario ? ` · #${usuario.numero_usuario}` : '');
@@ -159,6 +171,8 @@ async function cargar(uid){
     }
     const { data: movs } = await supa.from('movimientos_vendedor').select('*').eq('usuario_id', uid).order('created_at', { ascending:false }).limit(60);
     movimientos = movs || [];
+
+    try { const { data: pr } = await supa.rpc('pedidos_retiro_pendientes'); pedidosRetiro = Array.isArray(pr) ? pr : []; } catch(e){ pedidosRetiro = []; }
 
     render();
   } catch(err){
@@ -214,6 +228,11 @@ function render(){
       <div class="res-card"><div class="lbl">Vendidas (histórico)</div><div class="val" style="color:var(--green);">${vendidas}</div></div>
     </div>
 
+    ${pedidosRetiro.length ? `
+      <div class="section-title">🛍️ Pedidos web para retirar (${pedidosRetiro.length})</div>
+      <div class="retiros">${pedidosRetiro.map(pedidoRetiroCard).join('')}</div>
+    ` : ''}
+
     <div class="section-title">Productos que tenés (${conStock.length})</div>
     ${conStock.length ? `<div class="grid">${cards}</div>` : '<div class="hint">Ya no tenés unidades pendientes. ¡Todo vendido o devuelto!</div>'}
 
@@ -222,6 +241,27 @@ function render(){
 
     <p class="hint" style="margin-top:1.2rem;">¿Algún número no coincide con lo que tenés? Tocá <b>Reportar diferencia</b> en el producto y lo revisamos.</p>
   `;
+}
+
+function pedidoRetiroCard(p){
+  const items = (p.items||[]).map(it=>`<div class="ret-item">${it.producto||''} <b>x${it.cantidad}</b></div>`).join('');
+  const fecha = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return `<div class="retiro-card">
+    <div class="ret-top"><span class="ret-num">${p.numero_pedido}</span><span class="ret-badge">Pendiente de retiro</span></div>
+    <div class="ret-cli">${p.nombre||''}${p.telefono?` · 📱 ${p.telefono}`:''} · ${fecha}</div>
+    <div class="ret-items">${items}</div>
+    <div class="ret-total">Total: <b>${fmt(p.total)}</b>${p.forma_pago?` · ${p.forma_pago}`:''}</div>
+    <button class="ret-btn" onclick="confirmarRetiro('${p.numero_pedido}')">✓ Entregado</button>
+  </div>`;
+}
+async function confirmarRetiro(num){
+  if(!confirm(`¿Confirmás que ENTREGASTE el pedido ${num}?\nSe va a descontar de tu mercadería.`)) return;
+  try{
+    const { data, error } = await supa.rpc('confirmar_retiro_vendedor', { p_numero: num });
+    if(error || !data || !data.ok){ toast((data&&data.motivo)||'No se pudo confirmar la entrega', 'err'); return; }
+    toast('Entrega confirmada ✓', 'ok');
+    cargar(_uidActual);
+  }catch(e){ console.error(e); toast('Error al confirmar la entrega', 'err'); }
 }
 
 async function reportar(producto, codigo){
