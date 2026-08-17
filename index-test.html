@@ -499,6 +499,9 @@
             background: #7c3aed;
             color: white;
         }
+        .dato-fijo { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:9px 2px; border-bottom:1px solid #eef2f7; }
+        .dato-fijo .k { color:#64748b; font-weight:800; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.4px; white-space:nowrap; }
+        .dato-fijo .v { color:#1e293b; font-weight:800; font-size:0.92rem; text-align:right; word-break:break-word; }
         #retiro-punto-wrap { margin-top:10px; }
         .retiro-aviso { font-size:0.8rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:11px 13px; }
         .retiro-head { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c3aed; margin-bottom:8px; }
@@ -1070,28 +1073,39 @@
 
             <!-- PASO 2: Verificar datos del comprador -->
             <div id="checkout-step2" style="display:none;">
-                <div class="space-y-4">
-                    <div>
+                <div class="space-y-3">
+                    <div id="fx-nombre" class="dato-fijo" style="display:none;"><span class="k">Nombre de Usuario</span><span class="v" id="df-nombre"></span></div>
+                    <div id="in-nombre">
                         <label class="checkout-label" for="checkout-nombre">Nombre Completo</label>
                         <input id="checkout-nombre" type="text" class="checkout-input" autocomplete="name">
                     </div>
-                    <div>
+
+                    <div id="fx-email" class="dato-fijo" style="display:none;"><span class="k">Email</span><span class="v" id="df-email"></span></div>
+                    <div id="in-email">
                         <label class="checkout-label" for="checkout-email">Email</label>
                         <input id="checkout-email" type="email" class="checkout-input" autocomplete="email">
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-                        <div>
-                            <label class="checkout-label" for="checkout-provincia">Provincia</label>
-                            <input id="checkout-provincia" type="text" class="checkout-input" autocomplete="address-level1">
-                        </div>
-                        <div>
-                            <label class="checkout-label" for="checkout-localidad">Localidad</label>
-                            <input id="checkout-localidad" type="text" class="checkout-input" autocomplete="address-level2">
-                        </div>
+
+                    <div id="fx-provincia" class="dato-fijo" style="display:none;"><span class="k">Provincia</span><span class="v" id="df-provincia"></span></div>
+                    <div id="in-provincia">
+                        <label class="checkout-label" for="checkout-provincia">Provincia</label>
+                        <input id="checkout-provincia" type="text" class="checkout-input" autocomplete="address-level1">
                     </div>
+
+                    <div id="fx-localidad" class="dato-fijo" style="display:none;"><span class="k">Localidad</span><span class="v" id="df-localidad"></span></div>
+                    <div id="in-localidad">
+                        <label class="checkout-label" for="checkout-localidad">Localidad</label>
+                        <input id="checkout-localidad" type="text" class="checkout-input" autocomplete="address-level2">
+                    </div>
+
                     <div>
                         <label class="checkout-label" for="checkout-telefono">Teléfono / WhatsApp *</label>
                         <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
+                    </div>
+                    <div>
+                        <label class="checkout-label" for="checkout-cuit">CUIT para factura (opcional)</label>
+                        <input id="checkout-cuit" type="text" class="checkout-input" placeholder="Ej: 20-12345678-9" inputmode="numeric">
+                        <p class="text-[10px] text-slate-400 font-medium mt-1 leading-snug">Si necesitás la factura a un CUIT, aclaralo acá. Si lo dejás vacío, va como consumidor final.</p>
                     </div>
                 </div>
                 <div id="checkoutError2" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
@@ -2669,7 +2683,7 @@
             if (icon) icon.classList.add('hidden');
             if (label) { label.style.borderColor=''; label.classList.remove('border-violet-500'); }
 
-            // Autocompletar datos del usuario logueado
+            // Autocompletar datos del usuario logueado (los inputs guardan el valor aunque se muestre texto fijo)
             if (window._userData) {
                 document.getElementById('checkout-nombre').value    = window._userData.nombre    || '';
                 document.getElementById('checkout-telefono').value  = window._userData.telefono  || '';
@@ -2677,20 +2691,19 @@
                 document.getElementById('checkout-provincia').value = window._userData.provincia || '';
                 document.getElementById('checkout-localidad').value = window._userData.localidad || '';
             }
-            // Datos del cliente verificado: solo se bloquean si YA tienen dato de la cuenta.
-            // Si están vacíos (o es invitado), quedan editables para poder completarlos.
+            // Datos del comprador: si está logueado y el campo tiene valor -> texto FIJO (no editable).
+            // Si está vacío (o es invitado) -> input editable para poder completarlo.
             var _verificado = !!(logueado && window._userData);
-            ['checkout-nombre','checkout-email','checkout-provincia','checkout-localidad'].forEach(function(id){
-                var el = document.getElementById(id);
-                if(!el) return;
-                var bloquear = _verificado && el.value.trim() !== '';
-                el.readOnly = bloquear;
-                el.style.background = bloquear ? '#f1f5f9' : '';
-                el.style.color = bloquear ? '#475569' : '';
-                el.style.cursor = bloquear ? 'not-allowed' : '';
-                el.classList.remove('error');
+            ['nombre','email','provincia','localidad'].forEach(function(id){
+                var val = (document.getElementById('checkout-'+id).value || '').trim();
+                var fijo = _verificado && val !== '';
+                var fx = document.getElementById('fx-'+id), inw = document.getElementById('in-'+id);
+                if (fijo){ document.getElementById('df-'+id).textContent = val; if(fx) fx.style.display='flex'; if(inw) inw.style.display='none'; }
+                else { if(fx) fx.style.display='none'; if(inw) inw.style.display='block'; }
+                document.getElementById('checkout-'+id).classList.remove('error');
             });
             var _tel = document.getElementById('checkout-telefono'); if(_tel){ _tel.readOnly = false; _tel.style.background=''; _tel.style.color=''; _tel.style.cursor=''; }
+            var _cuit = document.getElementById('checkout-cuit'); if(_cuit) _cuit.value = '';
 
             // Tip de precios
             if (logueado) {
@@ -2937,6 +2950,14 @@
               + '<div class="retiro-foot">Vas a retirar con tu número de pedido. Precio público.</div>';
         }
 
+        // Nota del pedido + CUIT (si lo cargaron) para la factura
+        function notaConCuit(){
+            var n = ((document.getElementById('checkout-nota')||{}).value || '').trim();
+            var c = ((document.getElementById('checkout-cuit')||{}).value || '').trim();
+            if (c) n = (n ? n + ' · ' : '') + 'CUIT: ' + c;
+            return n;
+        }
+
         function toggleRegalo(el) {
             var box   = document.getElementById('checkboxRegalo');
             var icon  = document.getElementById('checkRegaloIcon');
@@ -2987,7 +3008,7 @@
                             direccion: direccion || null,
                             tipo: window._userRol === 'mayorista' ? 'mayorista' : 'minorista',
                             entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
-                            notas: document.getElementById('checkout-nota').value.trim(),
+                            notas: notaConCuit(),
                             total: total,
                             user_id: window._userId || null
                         }
@@ -3037,7 +3058,7 @@
                 var telefono2 = document.getElementById('checkout-telefono').value.trim();
                 var entrega2 = document.getElementById('checkout-entrega').value;
                 var direccion2 = document.getElementById('checkout-direccion') ? document.getElementById('checkout-direccion').value.trim() : '';
-                var nota2 = document.getElementById('checkout-nota').value.trim();
+                var nota2 = notaConCuit();
                 var logueado2 = document.body.classList.contains('is-logged-in');
                 var totalNum2 = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
                 var _descTarjeta = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
@@ -3125,7 +3146,7 @@
             var pago      = document.getElementById('checkout-pago').value;
             var entrega   = document.getElementById('checkout-entrega').value;
             var direccion = document.getElementById('checkout-direccion').value.trim();
-            var nota      = document.getElementById('checkout-nota').value.trim();
+            var nota      = notaConCuit();
             var errEl     = document.getElementById('checkoutError');
 
             // Validaciones
