@@ -492,6 +492,8 @@
             line-height: 1.4;
         }
         .checkout-opcion:hover { border-color: #7c3aed; color: #7c3aed; background: #f5f3ff; }
+        .checkout-opcion.bloqueado { opacity: 0.4; cursor: not-allowed; pointer-events: none; filter: grayscale(1); }
+        .checkout-opcion.bloqueado:hover { border-color: #e2e8f0; color: #64748b; background: #f8fafc; }
         .checkout-opcion.seleccionado {
             border-color: #7c3aed;
             background: #7c3aed;
@@ -1055,6 +1057,7 @@
                     <div id="stepdot-1" class="h-2 flex-1 rounded-full bg-teal-500 transition-colors"></div>
                     <div id="stepdot-2" class="h-2 flex-1 rounded-full bg-slate-200 transition-colors"></div>
                     <div id="stepdot-3" class="h-2 flex-1 rounded-full bg-slate-200 transition-colors"></div>
+                    <div id="stepdot-4" class="h-2 flex-1 rounded-full bg-slate-200 transition-colors"></div>
                 </div>
 
                 <!-- PASO 1: Revisar pedido -->
@@ -1065,7 +1068,7 @@
                     </button>
                 </div>
 
-            <!-- PASO 2: Verificar datos -->
+            <!-- PASO 2: Verificar datos del comprador -->
             <div id="checkout-step2" style="display:none;">
                 <div class="space-y-4">
                     <div>
@@ -1090,6 +1093,17 @@
                         <label class="checkout-label" for="checkout-telefono">Teléfono / WhatsApp *</label>
                         <input id="checkout-telefono" type="tel" class="checkout-input" placeholder="Ej: 2235123456" autocomplete="tel">
                     </div>
+                </div>
+                <div id="checkoutError2" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
+                <div class="flex gap-2 mt-5">
+                    <button onclick="checkoutIrPaso(1)" class="h-12 px-5 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all" style="font-size:12px;">← Volver</button>
+                    <button onclick="checkoutIrPaso3()" class="flex-1 h-12 rounded-2xl text-white font-black uppercase tracking-wider transition-all hover:opacity-90 active:scale-[0.98]" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 15px rgba(124,58,237,0.35);font-size:13px;">Continuar →</button>
+                </div>
+            </div>
+
+            <!-- PASO 3: Retiro y entrega -->
+            <div id="checkout-step3" style="display:none;">
+                <div class="space-y-4">
                     <div>
                         <label class="checkout-label">Método de Entrega *</label>
                         <div class="checkout-opciones">
@@ -1121,15 +1135,15 @@
                         <textarea id="checkout-nota" class="checkout-input" rows="2" placeholder="Horario de entrega, instrucciones, etc." style="resize:none;"></textarea>
                     </div>
                 </div>
-                <div id="checkoutError2" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
+                <div id="checkoutError3" class="hidden mt-3 text-[11px] text-red-500 font-bold text-center bg-red-50 rounded-xl py-2 px-3"></div>
                 <div class="flex gap-2 mt-5">
-                    <button onclick="checkoutIrPaso(1)" class="h-12 px-5 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all" style="font-size:12px;">← Volver</button>
-                    <button onclick="checkoutIrPaso3()" class="flex-1 h-12 rounded-2xl text-white font-black uppercase tracking-wider transition-all hover:opacity-90 active:scale-[0.98]" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 15px rgba(124,58,237,0.35);font-size:13px;">Continuar →</button>
+                    <button onclick="checkoutIrPaso(2)" class="h-12 px-5 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all" style="font-size:12px;">← Volver</button>
+                    <button onclick="checkoutIrPaso4()" class="flex-1 h-12 rounded-2xl text-white font-black uppercase tracking-wider transition-all hover:opacity-90 active:scale-[0.98]" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 15px rgba(124,58,237,0.35);font-size:13px;">Continuar →</button>
                 </div>
             </div>
 
-            <!-- PASO 3: Pago -->
-            <div id="checkout-step3" style="display:none;">
+            <!-- PASO 4: Pago -->
+            <div id="checkout-step4" style="display:none;">
                 <div>
                     <label class="checkout-label">Forma de Pago *</label>
                     <div id="co-pay-desc-head" class="text-[12px] font-black text-green-700 bg-green-100 border border-green-300 rounded-lg py-2 px-3 text-center mb-2">💸 5% de descuento pagando con...</div>
@@ -1163,7 +1177,7 @@
                         Enviar Pedido
                     </button>
                 </div>
-                <button onclick="checkoutIrPaso(2)" class="w-full h-11 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all mt-3" style="font-size:12px;">← Volver</button>
+                <button onclick="checkoutIrPaso(3)" class="w-full h-11 rounded-2xl font-black uppercase text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all mt-3" style="font-size:12px;">← Volver</button>
             </div>
               </div><!-- /co-main -->
 
@@ -2644,8 +2658,7 @@
             document.querySelectorAll('.checkout-opcion').forEach(function(el){ el.classList.remove('seleccionado'); });
             document.getElementById('checkout-direccion-wrap').classList.remove('visible');
             if (typeof ocultarPuntosRetiro === 'function') ocultarPuntosRetiro();
-            var _optR = document.getElementById('opt-retiro-punto');
-            if (_optR) _optR.style.display = (window._userRol === 'mayorista') ? 'none' : '';
+            if (typeof chequearRetiroDisponible === 'function') chequearRetiroDisponible();
             document.getElementById('checkoutError').classList.add('hidden');
             // Reset regalo
             document.getElementById('checkout-regalo').value = '';
@@ -2707,12 +2720,12 @@
             document.getElementById('checkout-step1').style.display = (n===1)?'block':'none';
             document.getElementById('checkout-step2').style.display = (n===2)?'block':'none';
             document.getElementById('checkout-step3').style.display = (n===3)?'block':'none';
-            document.getElementById('stepdot-1').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=1?'bg-teal-500':'bg-slate-200');
-            document.getElementById('stepdot-2').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=2?'bg-teal-500':'bg-slate-200');
-            document.getElementById('stepdot-3').className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=3?'bg-teal-500':'bg-slate-200');
-            var t = {1:['Ultimando detalles del pedido','Revisá los productos de tu pedido'],2:['Verificar datos','Confirmá tus datos de contacto y entrega'],3:['Forma de pago','Elegí cómo querés pagar']};
+            document.getElementById('checkout-step4').style.display = (n===4)?'block':'none';
+            ['1','2','3','4'].forEach(function(k){ document.getElementById('stepdot-'+k).className = 'h-2 flex-1 rounded-full transition-colors ' + (n>=(+k)?'bg-teal-500':'bg-slate-200'); });
+            var t = {1:['Ultimando detalles del pedido','Revisá los productos de tu pedido'],2:['Verificar tus datos','Confirmá tus datos de contacto'],3:['Retiro y entrega','Elegí cómo recibir tu pedido'],4:['Forma de pago','Elegí cómo querés pagar']};
             document.getElementById('checkout-titulo').textContent = t[n][0];
             document.getElementById('checkout-subtitulo').textContent = t[n][1];
+            if(n===3 && typeof chequearRetiroDisponible === 'function') chequearRetiroDisponible();
             var inner = document.getElementById('modalCheckoutInner'); if(inner) inner.scrollTop = 0;
         }
         function renderCheckoutItems(){
@@ -2784,13 +2797,21 @@
         }
         function checkoutIrPaso3(){
             var err = document.getElementById('checkoutError2');
-            var entrega = document.getElementById('checkout-entrega').value;
+            var nombre = document.getElementById('checkout-nombre').value.trim();
             var telefono = document.getElementById('checkout-telefono').value.trim();
+            if(!nombre){ err.textContent='Ingresá tu nombre completo.'; err.classList.remove('hidden'); document.getElementById('checkout-nombre').focus(); return; }
             if(!telefono){ err.textContent='Ingresá un teléfono de contacto.'; err.classList.remove('hidden'); document.getElementById('checkout-telefono').focus(); return; }
-            if(!entrega){ err.textContent='Elegí un método de entrega.'; err.classList.remove('hidden'); return; }
-            if(entrega==='Envío a domicilio' && !document.getElementById('checkout-direccion').value.trim()){ err.textContent='Ingresá la dirección de envío.'; err.classList.remove('hidden'); document.getElementById('checkout-direccion').focus(); return; }
             err.classList.add('hidden');
             checkoutIrPaso(3);
+        }
+        function checkoutIrPaso4(){
+            var err = document.getElementById('checkoutError3');
+            var entrega = document.getElementById('checkout-entrega').value;
+            if(!entrega){ err.textContent='Elegí un método de entrega.'; err.classList.remove('hidden'); return; }
+            if(entrega==='Envío a domicilio' && !document.getElementById('checkout-direccion').value.trim()){ err.textContent='Ingresá la dirección de envío.'; err.classList.remove('hidden'); document.getElementById('checkout-direccion').focus(); return; }
+            if(entrega==='Retiro en Punto Blinky' && !window._puntoRetiroSel){ err.textContent='Elegí un Punto Blinky para retirar.'; err.classList.remove('hidden'); return; }
+            err.classList.add('hidden');
+            checkoutIrPaso(4);
         }
 
         function cerrarCheckout(e) {
@@ -2852,7 +2873,28 @@
             var w = document.getElementById('retiro-punto-wrap');
             if (w){ w.style.display='none'; w.innerHTML=''; }
         }
-        async function mostrarPuntosRetiro(){
+        // Al abrir el checkout: ver si hay puntos que tengan todo el carrito; si no, bloquear la opción
+        async function chequearRetiroDisponible(){
+            var opt = document.getElementById('opt-retiro-punto');
+            if (!opt) return;
+            if (window._userRol === 'mayorista'){ opt.style.display='none'; return; }
+            opt.style.display='';
+            opt.classList.add('bloqueado');
+            opt.title = 'Buscando disponibilidad de retiro…';
+            window._puntosCheckout = [];
+            var codigos = [...new Set(carrito.map(function(i){ return i.codigo; }).filter(Boolean))];
+            if (!codigos.length){ opt.title='No disponible para retiro'; return; }
+            try{
+                var SUPA_URL='https://fcaytkwcypktvrmerexp.supabase.co';
+                var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
+                var r = await fetch(SUPA_URL+'/rest/v1/rpc/puntos_retiro_carrito', {method:'POST', headers:{'Content-Type':'application/json',apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}, body:JSON.stringify({p_codigos:codigos})});
+                var d = await r.json();
+                window._puntosCheckout = Array.isArray(d) ? d.filter(function(p){return p.lat!=null&&p.lng!=null;}) : [];
+                if (window._puntosCheckout.length){ opt.classList.remove('bloqueado'); opt.title='Retiralo hoy en un Punto Blinky'; }
+                else { opt.classList.add('bloqueado'); opt.title='Ningún Punto Blinky tiene todo tu pedido'; }
+            }catch(e){ opt.classList.add('bloqueado'); opt.title='No disponible por ahora'; }
+        }
+        function mostrarPuntosRetiro(){
             var w = document.getElementById('retiro-punto-wrap');
             if (!w) return;
             window._puntoRetiroSel = null;
@@ -2861,16 +2903,6 @@
                 w.innerHTML = '<div class="retiro-aviso">El retiro en Punto Blinky es solo para clientes minoristas.</div>';
                 return;
             }
-            w.innerHTML = '<div class="retiro-aviso">Buscando puntos que tengan todo tu pedido…</div>';
-            var codigos = [...new Set(carrito.map(function(i){ return i.codigo; }).filter(Boolean))];
-            if (!codigos.length){ w.innerHTML = '<div class="retiro-aviso">Tu carrito está vacío.</div>'; return; }
-            try{
-                var SUPA_URL='https://fcaytkwcypktvrmerexp.supabase.co';
-                var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
-                var r = await fetch(SUPA_URL+'/rest/v1/rpc/puntos_retiro_carrito', {method:'POST', headers:{'Content-Type':'application/json',apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}, body:JSON.stringify({p_codigos:codigos})});
-                var d = await r.json();
-                window._puntosCheckout = Array.isArray(d) ? d.filter(function(p){return p.lat!=null&&p.lng!=null;}) : [];
-            }catch(e){ window._puntosCheckout = []; }
             renderPuntosCheckout();
         }
         function distKmCheckout(a,b){ var R=6371,tR=function(x){return x*Math.PI/180;}; var dLat=tR(b.lat-a.lat),dLng=tR(b.lng-a.lng); var s=Math.sin(dLat/2)**2+Math.cos(tR(a.lat))*Math.cos(tR(b.lat))*Math.sin(dLng/2)**2; return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s)); }
