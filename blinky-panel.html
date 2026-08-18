@@ -3456,7 +3456,7 @@ async function cargarVendedores() {
   if (cont) cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
   try {
     const [uR, eR, mR] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion,es_punto_retiro,nombre_comercio,direccion_retiro,link_comercio,instagram_comercio,punto_lat,punto_lng&order=nombre.asc`, {headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=id,numero_usuario,nombre,email,telefono,rol,es_vendedor,dni,provincia,localidad,direccion,es_punto_retiro,nombre_comercio,direccion_retiro,link_comercio,instagram_comercio,horario_retiro,punto_lat,punto_lng&order=nombre.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?select=*&order=producto.asc`, {headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?select=*&order=created_at.desc`, {headers:hdrs})
     ]);
@@ -3625,6 +3625,7 @@ function renderModalVendedor(id) {
         <input id="pr-dir" class="pr-field" disabled type="text" value="${esc(v.direccion_retiro||v.direccion||'')}" placeholder="Dirección del local" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
         <input id="pr-link" class="pr-field" disabled type="text" value="${esc(v.link_comercio||'')}" placeholder="Link web (opcional, https://...)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
         <input id="pr-ig" class="pr-field" disabled type="text" value="${esc(v.instagram_comercio||'')}" placeholder="Instagram (ej: @marsarg o el link)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
+        <input id="pr-horario" class="pr-field" disabled type="text" value="${esc(v.horario_retiro||'')}" placeholder="Horarios de atención (ej: Lun a Vie 9-18, Sáb 9-13)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.55rem 0.7rem;font-size:0.85rem;width:100%;">
 
         <div style="font-size:0.72rem;color:var(--violet-light);font-weight:700;margin-top:0.3rem;">📍 Ubicación del local</div>
         <div style="display:flex;gap:0.5rem;">
@@ -3763,6 +3764,7 @@ async function guardarPuntoRetiro(id){
   const dir = (document.getElementById('pr-dir').value||'').trim();
   let link = (document.getElementById('pr-link').value||'').trim();
   let ig = (document.getElementById('pr-ig').value||'').trim();
+  const horario = (document.getElementById('pr-horario').value||'').trim();
   const lat = parseFloat(document.getElementById('pr-lat').value);
   const lng = parseFloat(document.getElementById('pr-lng').value);
   if(activo){
@@ -3781,6 +3783,7 @@ async function guardarPuntoRetiro(id){
     direccion_retiro: dir||null,
     link_comercio: link||null,
     instagram_comercio: ig||null,
+    horario_retiro: horario||null,
     punto_lat: isNaN(lat)?null:lat,
     punto_lng: isNaN(lng)?null:lng
   };

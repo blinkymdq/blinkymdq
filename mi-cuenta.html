@@ -241,6 +241,11 @@
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Mi mercadería
       </button>
+      <button class="navitem hidden" id="nav-punto" data-tab="punto" onclick="irTab('punto')" style="background:#111827;color:#fff;font-weight:800;position:relative;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 22V12h6v10"/></svg>
+        Mi Punto Blinky
+        <span id="badge-punto" class="hidden" style="position:absolute;top:6px;right:10px;background:#ef4444;color:#fff;font-size:10px;font-weight:900;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
+      </button>
     </div>
 
     <div class="panel" id="panel"><div class="empty"><div class="ic">⏳</div><p>Cargando…</p></div></div>
@@ -297,12 +302,17 @@ async function init(){
 
 async function cargar(){
   try {
-    const { data:u } = await supa.from('usuarios').select('nombre,email,telefono,direccion,localidad,provincia,dni,nacimiento,rol,numero_usuario,es_vendedor,saldo_favor').eq('id', uid).single();
+    const { data:u } = await supa.from('usuarios').select('nombre,email,telefono,direccion,localidad,provincia,dni,nacimiento,rol,numero_usuario,es_vendedor,es_punto_retiro,saldo_favor').eq('id', uid).single();
     usuario = u || {};
     document.getElementById('who-nombre').textContent = usuario.nombre || usuario.email || 'Mi cuenta';
     document.getElementById('who-meta').textContent = (usuario.numero_usuario?`#${usuario.numero_usuario} · `:'') + (usuario.rol==='mayorista'?'Mayorista':'Minorista');
     { const hn=document.getElementById('bk-header-name'); if(hn) hn.textContent = (usuario.nombre||usuario.email||'Mi cuenta').split(' ')[0]; }
     if(usuario.es_vendedor) document.getElementById('nav-mercaderia').classList.remove('hidden');
+    if(usuario.es_punto_retiro){
+      document.getElementById('nav-punto').classList.remove('hidden');
+      try { const { data:pr } = await supa.rpc('pedidos_retiro_pendientes'); pedidosRetiro = Array.isArray(pr) ? pr : []; } catch(e){ pedidosRetiro = []; }
+      actualizarBadgePunto();
+    }
 
     const { data:peds } = await supa.from('pedidos').select('*').eq('user_id', uid).order('created_at',{ascending:false});
     pedidos = peds || [];
@@ -327,7 +337,6 @@ async function cargar(){
       if(cods.length){ const { data:prods } = await supa.from('productos').select('codigo,nombre,foto,precio_publico,precio_mayorista').in('codigo', cods); (prods||[]).forEach(p=>productos[p.codigo]=p); }
       const { data:movs } = await supa.from('movimientos_vendedor').select('*').eq('usuario_id', uid).order('created_at',{ascending:false}).limit(60);
       movimientos = movs || [];
-      try { const { data:pr } = await supa.rpc('pedidos_retiro_pendientes'); pedidosRetiro = Array.isArray(pr) ? pr : []; } catch(e){ pedidosRetiro = []; }
     }
     irTab(tabActual);
   } catch(err){ console.error(err); document.getElementById('panel').innerHTML='<div class="empty"><div class="ic">⚠️</div><p>No pudimos cargar tus datos. Probá recargar.</p></div>'; }
@@ -342,6 +351,7 @@ function irTab(tab){
   else if(tab==='pagos') renderPagos();
   else if(tab==='cupones') renderCupones();
   else if(tab==='mercaderia') renderMercaderia();
+  else if(tab==='punto') renderPunto();
 }
 
 function renderDatos(){
@@ -495,26 +505,51 @@ function renderCupones(){
   cont.innerHTML = `<h2>Mis cupones</h2><p class="sub">Usá el código en el checkout al finalizar tu compra.</p>${html}`;
 }
 function copiarCupon(cod){ navigator.clipboard?.writeText(cod).then(()=>toast('Código copiado ✓')).catch(()=>toast('Código: '+cod)); }
-function puntoBlinkyHtml(){
+function actualizarBadgePunto(){
+  const b = document.getElementById('badge-punto');
+  if(!b) return;
+  const n = (pedidosRetiro||[]).length;
+  b.textContent = n;
+  b.classList.toggle('hidden', n === 0);
+}
+function renderPunto(){
+  const cont = document.getElementById('panel');
   const cards = (pedidosRetiro||[]).map(pedidoRetiroCard).join('');
-  return `<div class="section-punto">🏪 Mi Punto Blinky</div>
+  cont.innerHTML = `<h2>🏪 Mi Punto Blinky</h2>
+    <p class="sub">Pedidos web que eligieron tu local como punto de retiro.</p>
     ${pedidosRetiro && pedidosRetiro.length
       ? `<div class="retiros">${cards}</div>`
-      : `<div class="hint" style="background:var(--surface2);border:1px dashed var(--border);border-radius:12px;padding:0.9rem;">No tenés pedidos web para retirar por ahora. Cuando un cliente elija tu punto, van a aparecer acá para que confirmes la entrega.</div>`}`;
+      : `<div class="hint" style="background:var(--surface2);border:1px dashed var(--border);border-radius:12px;padding:1rem;">No tenés pedidos para retirar por ahora. Cuando un cliente elija tu punto, aparecen acá y te avisamos por mail.</div>`}`;
 }
 function pedidoRetiroCard(p){
   const items = (p.items||[]).map(it=>`<div class="ret-item">${esc(it.producto||'')} <b>x${it.cantidad}</b></div>`).join('');
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const listo = p.estado === 'listo_retiro';
+  const badge = listo
+    ? '<span class="ret-badge" style="color:#065f46;background:#d1fae5;border-color:#22c55e;">Listo para retirar</span>'
+    : '<span class="ret-badge">Pendiente de confirmar</span>';
+  const boton = listo
+    ? `<button class="ret-btn" onclick="confirmarRetiro('${esc(p.numero_pedido)}')">✓ El cliente retiró (entregado)</button>`
+    : `<button class="ret-btn" style="background:#111827;" onclick="confirmarDisponibilidad('${esc(p.numero_pedido)}')">📦 Sí, tengo el producto</button>`;
   return `<div class="retiro-card">
-    <div class="ret-top"><span class="ret-num">${esc(p.numero_pedido)}</span><span class="ret-badge">Pendiente de retiro</span></div>
+    <div class="ret-top"><span class="ret-num">${esc(p.numero_pedido)}</span>${badge}</div>
     <div class="ret-cli">${esc(p.nombre||'')}${p.telefono?` · 📱 ${esc(p.telefono)}`:''} · ${fecha}</div>
     <div class="ret-items">${items}</div>
     <div class="ret-total">Total: <b>${fmt(p.total)}</b>${p.forma_pago?` · ${esc(p.forma_pago)}`:''}</div>
-    <button class="ret-btn" onclick="confirmarRetiro('${esc(p.numero_pedido)}')">✓ Entregado</button>
+    ${boton}
   </div>`;
 }
+async function confirmarDisponibilidad(num){
+  if(!confirm(`¿Confirmás que TENÉS el producto del pedido ${num}?\nLe vamos a avisar al cliente que puede pasar a retirarlo.`)) return;
+  try{
+    const { data, error } = await supa.rpc('confirmar_disponibilidad_retiro', { p_numero: num });
+    if(error || !data || !data.ok){ toast((data&&data.motivo)||'No se pudo confirmar','err'); return; }
+    toast('¡Listo! Le avisamos al cliente ✓');
+    cargar();
+  }catch(e){ console.error(e); toast('Error al confirmar','err'); }
+}
 async function confirmarRetiro(num){
-  if(!confirm(`¿Confirmás que ENTREGASTE el pedido ${num}?\nSe va a descontar de tu mercadería.`)) return;
+  if(!confirm(`¿Confirmás que el cliente RETIRÓ el pedido ${num}?\nSe va a descontar de tu mercadería.`)) return;
   try{
     const { data, error } = await supa.rpc('confirmar_retiro_vendedor', { p_numero: num });
     if(error || !data || !data.ok){ toast((data&&data.motivo)||'No se pudo confirmar la entrega','err'); return; }
@@ -525,7 +560,7 @@ async function confirmarRetiro(num){
 function renderMercaderia(){
   const cont = document.getElementById('panel');
   const conStock = entregas.filter(e=>pend(e)>0);
-  if(!entregas.length){ cont.innerHTML = `<h2>Mi mercadería</h2>${puntoBlinkyHtml()}<div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p></div>`; return; }
+  if(!entregas.length){ cont.innerHTML = `<h2>Mi mercadería</h2><div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p></div>`; return; }
   const unidades = conStock.reduce((s,e)=>s+pend(e),0);
   const valor = conStock.reduce((s,e)=>s+pend(e)*precioDe(e.codigo),0);
   const vendidas = entregas.reduce((s,e)=>s+Number(e.vendido||0),0);
@@ -545,7 +580,6 @@ function renderMercaderia(){
   const tipoLbl={entrega:'Recibido',venta:'Vendido',devolucion:'Devuelto'}, tipoCol={entrega:'var(--cyan)',venta:'var(--green)',devolucion:'var(--yellow)'};
   const movsHtml = movimientos.length ? movimientos.map(m=>`<div class="item-prods" style="border:none;padding:0.3rem 0;display:flex;justify-content:space-between;"><span><b style="color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</b> · ${esc(m.producto)} (${m.cantidad} u.)</span><span class="item-fecha">${fechaHora(m.created_at)}</span></div>`).join('') : '<div class="hint">Sin movimientos.</div>';
   cont.innerHTML = `<h2>Mi mercadería</h2>
-    ${puntoBlinkyHtml()}
     <div class="resumen">
       <div class="res-card"><div class="lbl">Unidades en tu poder</div><div class="val">${unidades}</div></div>
       <div class="res-card"><div class="lbl">Valor</div><div class="val">${fmt(valor)}</div></div>
