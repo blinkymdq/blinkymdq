@@ -71,6 +71,19 @@
   .item-money{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:0.5rem;font-size:0.85rem;}
   .item-money b{color:var(--text);}
 
+  /* Mi Punto Blinky (retiros) */
+  .section-punto{font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--violet);margin:0.4rem 0 0.7rem;}
+  .retiros{display:flex;flex-direction:column;gap:0.7rem;margin-bottom:1.3rem;}
+  .retiro-card{background:#fff;border:1px solid var(--yellow,#f59e0b);border-radius:14px;padding:0.9rem 1rem;}
+  .ret-top{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.35rem;}
+  .ret-num{font-family:monospace;font-weight:800;color:var(--violet);font-size:1rem;}
+  .ret-badge{font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;color:#92400e;background:#fef3c7;border:1px solid var(--yellow,#f59e0b);border-radius:999px;padding:2px 9px;}
+  .ret-cli{font-size:0.8rem;color:var(--text2);margin-bottom:0.5rem;}
+  .ret-items{display:flex;flex-direction:column;gap:2px;background:var(--surface2,#f8fafc);border-radius:10px;padding:0.55rem 0.7rem;margin-bottom:0.5rem;}
+  .ret-item{font-size:0.85rem;}
+  .ret-total{font-size:0.85rem;color:var(--text2);margin-bottom:0.6rem;}
+  .ret-btn{width:100%;background:#22c55e;color:#fff;border:none;border-radius:10px;padding:0.7rem;font-size:0.9rem;font-weight:800;cursor:pointer;}
+  .ret-btn:active{transform:scale(0.98);}
   /* Cards mercadería */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.8rem;}
   .card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
@@ -240,7 +253,7 @@ const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [], cupones = [], editandoDatos = false;
+let uid = null, usuario = null, pedidos = [], itemsPorPedido = {}, pagos = [], entregas = [], productos = {}, movimientos = [], cupones = [], pedidosRetiro = [], editandoDatos = false;
 let tabActual = 'datos';
 
 function toast(msg, tipo){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+(tipo||''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
@@ -314,6 +327,7 @@ async function cargar(){
       if(cods.length){ const { data:prods } = await supa.from('productos').select('codigo,nombre,foto,precio_publico,precio_mayorista').in('codigo', cods); (prods||[]).forEach(p=>productos[p.codigo]=p); }
       const { data:movs } = await supa.from('movimientos_vendedor').select('*').eq('usuario_id', uid).order('created_at',{ascending:false}).limit(60);
       movimientos = movs || [];
+      try { const { data:pr } = await supa.rpc('pedidos_retiro_pendientes'); pedidosRetiro = Array.isArray(pr) ? pr : []; } catch(e){ pedidosRetiro = []; }
     }
     irTab(tabActual);
   } catch(err){ console.error(err); document.getElementById('panel').innerHTML='<div class="empty"><div class="ic">⚠️</div><p>No pudimos cargar tus datos. Probá recargar.</p></div>'; }
@@ -481,10 +495,37 @@ function renderCupones(){
   cont.innerHTML = `<h2>Mis cupones</h2><p class="sub">Usá el código en el checkout al finalizar tu compra.</p>${html}`;
 }
 function copiarCupon(cod){ navigator.clipboard?.writeText(cod).then(()=>toast('Código copiado ✓')).catch(()=>toast('Código: '+cod)); }
+function puntoBlinkyHtml(){
+  const cards = (pedidosRetiro||[]).map(pedidoRetiroCard).join('');
+  return `<div class="section-punto">🏪 Mi Punto Blinky</div>
+    ${pedidosRetiro && pedidosRetiro.length
+      ? `<div class="retiros">${cards}</div>`
+      : `<div class="hint" style="background:var(--surface2);border:1px dashed var(--border);border-radius:12px;padding:0.9rem;">No tenés pedidos web para retirar por ahora. Cuando un cliente elija tu punto, van a aparecer acá para que confirmes la entrega.</div>`}`;
+}
+function pedidoRetiroCard(p){
+  const items = (p.items||[]).map(it=>`<div class="ret-item">${esc(it.producto||'')} <b>x${it.cantidad}</b></div>`).join('');
+  const fecha = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return `<div class="retiro-card">
+    <div class="ret-top"><span class="ret-num">${esc(p.numero_pedido)}</span><span class="ret-badge">Pendiente de retiro</span></div>
+    <div class="ret-cli">${esc(p.nombre||'')}${p.telefono?` · 📱 ${esc(p.telefono)}`:''} · ${fecha}</div>
+    <div class="ret-items">${items}</div>
+    <div class="ret-total">Total: <b>${fmt(p.total)}</b>${p.forma_pago?` · ${esc(p.forma_pago)}`:''}</div>
+    <button class="ret-btn" onclick="confirmarRetiro('${esc(p.numero_pedido)}')">✓ Entregado</button>
+  </div>`;
+}
+async function confirmarRetiro(num){
+  if(!confirm(`¿Confirmás que ENTREGASTE el pedido ${num}?\nSe va a descontar de tu mercadería.`)) return;
+  try{
+    const { data, error } = await supa.rpc('confirmar_retiro_vendedor', { p_numero: num });
+    if(error || !data || !data.ok){ toast((data&&data.motivo)||'No se pudo confirmar la entrega','err'); return; }
+    toast('Entrega confirmada ✓');
+    cargar();
+  }catch(e){ console.error(e); toast('Error al confirmar la entrega','err'); }
+}
 function renderMercaderia(){
   const cont = document.getElementById('panel');
   const conStock = entregas.filter(e=>pend(e)>0);
-  if(!entregas.length){ cont.innerHTML = `<h2>Mi mercadería</h2><div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p></div>`; return; }
+  if(!entregas.length){ cont.innerHTML = `<h2>Mi mercadería</h2>${puntoBlinkyHtml()}<div class="empty"><div class="ic">📦</div><p>No tenés mercadería registrada a tu nombre.</p></div>`; return; }
   const unidades = conStock.reduce((s,e)=>s+pend(e),0);
   const valor = conStock.reduce((s,e)=>s+pend(e)*precioDe(e.codigo),0);
   const vendidas = entregas.reduce((s,e)=>s+Number(e.vendido||0),0);
@@ -504,6 +545,7 @@ function renderMercaderia(){
   const tipoLbl={entrega:'Recibido',venta:'Vendido',devolucion:'Devuelto'}, tipoCol={entrega:'var(--cyan)',venta:'var(--green)',devolucion:'var(--yellow)'};
   const movsHtml = movimientos.length ? movimientos.map(m=>`<div class="item-prods" style="border:none;padding:0.3rem 0;display:flex;justify-content:space-between;"><span><b style="color:${tipoCol[m.tipo]||'var(--text2)'};">${tipoLbl[m.tipo]||m.tipo}</b> · ${esc(m.producto)} (${m.cantidad} u.)</span><span class="item-fecha">${fechaHora(m.created_at)}</span></div>`).join('') : '<div class="hint">Sin movimientos.</div>';
   cont.innerHTML = `<h2>Mi mercadería</h2>
+    ${puntoBlinkyHtml()}
     <div class="resumen">
       <div class="res-card"><div class="lbl">Unidades en tu poder</div><div class="val">${unidades}</div></div>
       <div class="res-card"><div class="lbl">Valor</div><div class="val">${fmt(valor)}</div></div>
