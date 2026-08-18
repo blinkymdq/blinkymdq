@@ -1162,7 +1162,7 @@
                     <label class="checkout-label">Forma de Pago *</label>
                     <div id="co-pay-desc-head" class="text-[12px] font-black text-green-700 bg-green-100 border border-green-300 rounded-lg py-2 px-3 text-center mb-2">💸 5% de descuento pagando con...</div>
                     <div class="checkout-opciones">
-                        <div class="checkout-opcion pay-disc" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
+                        <div class="checkout-opcion pay-disc" id="opt-pago-efectivo" onclick="seleccionarOpcion('pago', 'Efectivo', this); actualizarBotonesPago()">💵 Efectivo</div>
                         <div class="checkout-opcion pay-disc" onclick="seleccionarOpcion('pago', 'Transferencia', this); actualizarBotonesPago()">💳 Transferencia</div>
                     </div>
                     <div id="co-pay-tarjetas">
@@ -2739,6 +2739,7 @@
             document.getElementById('checkout-titulo').textContent = t[n][0];
             document.getElementById('checkout-subtitulo').textContent = t[n][1];
             if(n===3 && typeof chequearRetiroDisponible === 'function') chequearRetiroDisponible();
+            if(n===4 && typeof configurarPagosSegunEntrega === 'function') configurarPagosSegunEntrega();
             var inner = document.getElementById('modalCheckoutInner'); if(inner) inner.scrollTop = 0;
         }
         function renderCheckoutItems(){
@@ -2864,6 +2865,20 @@
             if (noteEl) noteEl.classList.toggle('hidden', !aplicaDescTransf);
             var btnEnv = document.getElementById('btn-enviar');
             if (btnEnv) btnEnv.textContent = (pago === 'Efectivo' || pago === 'Transferencia') ? ('Enviar Pedido · ' + totalTxt) : 'Enviar Pedido';
+        }
+
+        // Retiro en Punto Blinky: no se puede pagar en efectivo (se paga sí o sí). Tarjeta queda deshabilitada por ahora.
+        function configurarPagosSegunEntrega(){
+            var esRetiro = document.getElementById('checkout-entrega').value === 'Retiro en Punto Blinky';
+            var ef = document.getElementById('opt-pago-efectivo');
+            var head = document.getElementById('co-pay-desc-head');
+            if(ef) ef.style.display = esRetiro ? 'none' : '';
+            if(head) head.style.display = esRetiro ? 'none' : '';
+            if(esRetiro && document.getElementById('checkout-pago').value === 'Efectivo'){
+                document.getElementById('checkout-pago').value = '';
+                document.querySelectorAll('#checkout-step4 .checkout-opcion').forEach(function(el){ el.classList.remove('seleccionado'); });
+                actualizarBotonesPago();
+            }
         }
 
         function mostrarDireccion(mostrar) {
@@ -3010,7 +3025,10 @@
                             entrega: entrega === 'Envío a domicilio' ? 'envio' : 'retiro',
                             notas: notaConCuit(),
                             total: total,
-                            user_id: window._userId || null
+                            user_id: window._userId || null,
+                            es_retiro: (entrega === 'Retiro en Punto Blinky'),
+                            punto_retiro_id: (entrega === 'Retiro en Punto Blinky' && window._puntoRetiroSel) ? window._puntoRetiroSel.id : null,
+                            punto_retiro_nombre: (entrega === 'Retiro en Punto Blinky' && window._puntoRetiroSel) ? window._puntoRetiroSel.nombre : null
                         }
                     })
                 });
@@ -3076,10 +3094,14 @@
                         pedidoData: {
                             nombre: nombre2,
                             telefono: telefono2,
-                            tipo: logueado2 ? 'mayorista' : 'minorista',
+                            email: document.getElementById('checkout-email').value.trim() || null,
+                            tipo: (entrega2 === 'Retiro en Punto Blinky') ? 'minorista' : (logueado2 ? 'mayorista' : 'minorista'),
                             entrega: entrega2 === 'Envío a domicilio' ? 'envio' : 'retiro',
                             notas: (direccion2 ? 'Dir: ' + direccion2 + ' ' : '') + (nota2 || ''),
-                            total: totalNum2
+                            total: totalNum2,
+                            es_retiro: (entrega2 === 'Retiro en Punto Blinky'),
+                            punto_retiro_id: (entrega2 === 'Retiro en Punto Blinky' && window._puntoRetiroSel) ? window._puntoRetiroSel.id : null,
+                            punto_retiro_nombre: (entrega2 === 'Retiro en Punto Blinky' && window._puntoRetiroSel) ? window._puntoRetiroSel.nombre : null
                         }
                     })
                 });
