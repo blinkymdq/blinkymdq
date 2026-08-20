@@ -29,29 +29,29 @@ function toast(msg) {
 function irABuscar() {
   const val = document.getElementById('headerBusqueda').value.trim();
   window.location.href = val
-    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
-    : 'index.html';
+    ? `/index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : '/index.html';
 }
 
 // ── Funciones del header completo (igual a index.html) ──
 function irABuscarHeader() {
   const val = (document.getElementById('inputBusqueda').value || '').trim();
   window.location.href = val
-    ? `index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
-    : 'index.html';
+    ? `/index.html?q=${encodeURIComponent(val.toLowerCase().replace(/\s+/g,'-'))}`
+    : '/index.html';
 }
 
 function irAFiltrarHeader(valor, tipo) {
   if (!valor) return;
-  window.location.href = `index.html?${tipo}=${encodeURIComponent(valor)}`;
+  window.location.href = `/index.html?${tipo}=${encodeURIComponent(valor)}`;
 }
 
 function mostrarLogin() {
-  window.location.href = 'index.html';
+  window.location.href = '/index.html';
 }
 
 function abrirCarrito() {
-  window.location.href = 'index.html';
+  window.location.href = '/index.html';
 }
 
 function toggleUserMenu() {
