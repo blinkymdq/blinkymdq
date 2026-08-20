@@ -45,11 +45,11 @@ def fmt_precio(v):
     try: return '$' + format(int(round(float(v))), ',d').replace(',', '.')
     except Exception: return ''
 
-# Shim: si la pagina define window.__COD__, aseguramos que ?cod= exista para que
-# la logica original de producto.html cargue ese producto (sin depender de su codigo exacto).
-SHIM = ("(function(){try{if(window.__COD__){var u=new URL(location.href);"
-        "if(!u.searchParams.get('cod')&&!u.searchParams.get('codigo')){"
-        "u.searchParams.set('cod',window.__COD__);history.replaceState(null,'',u);}}}catch(e){}})();\n")
+# Shim: si la pagina define window.__COD__, hacemos que cualquier lectura de
+# ?cod= / ?codigo= devuelva ese codigo, SIN modificar la URL (queda limpia).
+SHIM = ("(function(){try{if(!window.__COD__)return;var g=URLSearchParams.prototype.get;"
+        "URLSearchParams.prototype.get=function(k){var v=g.call(this,k);"
+        "if((v==null||v==='')&&(k==='cod'||k==='codigo'))return window.__COD__;return v;};}catch(e){}})();\n")
 
 def main():
     if not os.path.exists(TEMPLATE):
