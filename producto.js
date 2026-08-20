@@ -1,4 +1,4 @@
-(function(){try{if(window.__COD__){var u=new URL(location.href);if(!u.searchParams.get('cod')&&!u.searchParams.get('codigo')){u.searchParams.set('cod',window.__COD__);history.replaceState(null,'',u);}}}catch(e){}})();
+(function(){try{if(!window.__COD__)return;var g=URLSearchParams.prototype.get;URLSearchParams.prototype.get=function(k){var v=g.call(this,k);if((v==null||v==='')&&(k==='cod'||k==='codigo'))return window.__COD__;return v;};}catch(e){}})();
 
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
