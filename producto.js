@@ -228,9 +228,9 @@ function renderProducto(p) {
   document.getElementById('og-url').content = window.location.href;
 
   document.getElementById('breadcrumb').innerHTML = `
-    <a href="index.html">Home</a>
-    ${p.categoria ? `<span>›</span><a href="index.html?cat=${encodeURIComponent(p.categoria)}">${p.categoria}</a>` : ''}
-    ${p.marca ? `<span>›</span><a href="index.html?marca=${encodeURIComponent(p.marca)}">${p.marca}</a>` : ''}
+    <a href="/index.html">Home</a>
+    ${p.categoria ? `<span>›</span><a href="/index.html?cat=${encodeURIComponent(p.categoria)}">${p.categoria}</a>` : ''}
+    ${p.marca ? `<span>›</span><a href="/index.html?marca=${encodeURIComponent(p.marca)}">${p.marca}</a>` : ''}
     <span>›</span><span class="actual">${p.nombre}</span>
   `;
 
@@ -470,7 +470,7 @@ function mostrarError(msg) {
       <h2>Oops</h2>
       <p>${msg}</p>
       <br>
-      <a href="index.html" class="btn-tienda" style="display:inline-block;margin-top:8px;">Ver tienda</a>
+      <a href="/index.html" class="btn-tienda" style="display:inline-block;margin-top:8px;">Ver tienda</a>
     </div>
   `;
 }
