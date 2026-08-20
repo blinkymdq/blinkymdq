@@ -617,7 +617,7 @@
             <!-- Desktop: categorías + marcas + badges -->
             <div class="hidden md:flex max-w-7xl mx-auto px-6 items-center gap-1" style="height:46px;">
                 <div class="relative flex-shrink-0 nav-link">
-                    <select id="selectCat" onchange="ejecutarFiltros()" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2.25rem 0 2.5rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                    <select id="selectCat" onchange="irACategoria(this.value)" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2.25rem 0 2.5rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
                         <option value="" style="color:#1e293b;">Categorías</option>
                     </select>
                     <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -625,7 +625,7 @@
                 </div>
                 <span style="color:rgba(255,255,255,0.25);font-weight:300;font-size:18px;line-height:1;user-select:none;">|</span>
                 <div class="relative flex-shrink-0 nav-link">
-                    <select id="selectMarca" onchange="ejecutarFiltros()" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
+                    <select id="selectMarca" onchange="irAMarca(this.value)" style="appearance:none;-webkit-appearance:none;height:36px;background:transparent;color:#fff;border:none;border-radius:9px;padding:0 2rem 0 2.25rem;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;outline:none;cursor:pointer;">
                         <option value="" style="color:#1e293b;">Marcas</option>
                     </select>
                     <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
@@ -717,14 +717,14 @@
         <!-- Fila 3: desplegables -->
         <div class="flex gap-2 pr-3 pl-1">
             <div class="relative flex-1">
-                <select id="selectCatMobile" onchange="document.getElementById('selectCat').value=this.value;ejecutarFiltros()" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                <select id="selectCatMobile" onchange="irACategoria(this.value)" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.5rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
                     <option value="" style="color:#1e293b;">Categorías</option>
                 </select>
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="relative flex-1">
-                <select id="selectMarcaMobile" onchange="document.getElementById('selectMarca').value=this.value;ejecutarFiltros()" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
+                <select id="selectMarcaMobile" onchange="irAMarca(this.value)" style="appearance:none;-webkit-appearance:none;width:100%;height:36px;background:rgba(255,255,255,0.06);color:#fff;border:1.5px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 2rem 0 2.25rem;font-size:10px;font-weight:900;text-transform:uppercase;outline:none;cursor:pointer;">
                     <option value="" style="color:#1e293b;">Marcas</option>
                 </select>
                 <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#ffffff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
@@ -1646,6 +1646,8 @@
         // ════════════════════════════════════════
         // LINK COMPARTIBLE
         // ════════════════════════════════════════
+        function irACategoria(v){ if(!v){ window.location.href='/'; return; } window.location.href='/categoria/'+_slugSeo(v)+'/'; }
+        function irAMarca(v){ if(!v){ window.location.href='/'; return; } window.location.href='/marca/'+_slugSeo(v)+'/'; }
         function _slugSeo(s){
             s = (s || '').normalize('NFKD').replace(/[^\x00-\x7F]/g, '');
             s = s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
@@ -1653,7 +1655,7 @@
             return s || 'producto';
         }
         function generarLink(codigo) {
-            const base = `${location.protocol}//${location.host}${location.pathname.replace(/index\.html$/, '')}`;
+            const base = `${location.protocol}//${location.host}/`;
             let nombre = '';
             try {
                 const prod = (productos || []).find(x => String(x.codigo) === String(codigo));
