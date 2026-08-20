@@ -1776,6 +1776,17 @@
                 }, 1000);
             }
 
+            // Reflejar el filtro activo en la direccion (para poder compartir/marcar)
+            try {
+                const _qs = new URLSearchParams();
+                if (val) _qs.set('q', val.replace(/\s+/g, '-'));
+                if (c)   _qs.set('cat', c);
+                if (m)   _qs.set('marca', m);
+                const _bp = location.pathname.replace(/index\.html$/, '');
+                const _s  = _qs.toString();
+                history.replaceState(null, '', _s ? `${_bp}index.html?${_s}` : _bp);
+            } catch (e) {}
+
             paginaActual = 1;
             render(res);
         }
