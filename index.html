@@ -1646,9 +1646,21 @@
         // ════════════════════════════════════════
         // LINK COMPARTIBLE
         // ════════════════════════════════════════
+        function _slugSeo(s){
+            s = (s || '').normalize('NFKD').replace(/[^\x00-\x7F]/g, '');
+            s = s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
+            s = s.replace(/-+/g, '-').slice(0, 60).replace(/^-+|-+$/g, '');
+            return s || 'producto';
+        }
         function generarLink(codigo) {
             const base = `${location.protocol}//${location.host}${location.pathname.replace(/index\.html$/, '')}`;
-            return `${base}producto.html?cod=${encodeURIComponent(codigo)}`;
+            let nombre = '';
+            try {
+                const prod = (productos || []).find(x => String(x.codigo) === String(codigo));
+                if (prod) nombre = prod.nombre || '';
+            } catch(e) {}
+            if (!nombre) return `${base}producto.html?cod=${encodeURIComponent(codigo)}`;
+            return `${base}p/${_slugSeo(nombre)}-${encodeURIComponent(codigo)}.html`;
         }
 
         async function compartirProducto(codigo, nombre) {

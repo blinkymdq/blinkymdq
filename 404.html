@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Blinky MDQ</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8f8fc;color:#1e293b;
+       min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  .card{background:#fff;border-radius:20px;padding:32px 28px;box-shadow:0 8px 30px rgba(0,0,0,.08);max-width:420px;}
+  h1{font-size:1.2rem;margin:0 0 8px;} p{color:#64748b;font-size:.92rem;margin:0 0 18px;}
+  a{display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:.9rem;}
+</style>
+<script>
+  // Si es una pagina de producto que todavia no se genero (/p/loquesea-CODIGO.html),
+  // llevamos al visitante a la pagina de producto que carga los datos en vivo.
+  (function(){
+    try{
+      var m = location.pathname.match(/\/p\/.*-(\d{3,})\.html$/i);
+      if(m){ location.replace('/producto.html?cod=' + m[1]); }
+    }catch(e){}
+  })();
+</script>
+</head>
+<body>
+  <div class="card">
+    <h1>No encontramos esa página</h1>
+    <p>Puede que el enlace sea viejo o esté mal escrito.</p>
+    <a href="/">Volver a la tienda</a>
+  </div>
+</body>
+</html>
