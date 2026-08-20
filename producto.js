@@ -1,3 +1,4 @@
+(function(){try{if(window.__COD__){var u=new URL(location.href);if(!u.searchParams.get('cod')&&!u.searchParams.get('codigo')){u.searchParams.set('cod',window.__COD__);history.replaceState(null,'',u);}}}catch(e){}})();
 
 const SUPA_URL = 'https://fcaytkwcypktvrmerexp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
@@ -186,7 +187,7 @@ document.addEventListener('keydown', function(e) {
 
 async function cargarProducto() {
   const params = new URLSearchParams(window.location.search);
-  const cod = (window.__COD__) || params.get('cod') || (function(){var p=params.get('p')||'';var mm=p.match(/(\d{3,})$/);return mm?mm[1]:'';})();
+  const cod = params.get('cod');
   if (!cod) { mostrarError('No se especificó un producto.'); return; }
 
   try {
