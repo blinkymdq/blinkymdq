@@ -60,6 +60,8 @@ def main():
     css = '\n'.join(re.findall(r'<style[^>]*>(.*?)</style>', h, re.S))
     inline = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', h, re.S)
     js = SHIM + '\n;\n'.join(inline)
+    # los enlaces internos relativos (breadcrumb) deben apuntar a la raiz, no a /p/
+    js = js.replace('href="index.html', 'href="/index.html').replace("href='index.html", "href='/index.html")
 
     open(os.path.join(ROOT, 'producto.css'), 'w', encoding='utf-8').write(css)
     open(os.path.join(ROOT, 'producto.js'), 'w', encoding='utf-8').write(js)
@@ -73,6 +75,13 @@ def main():
         shell = shell.replace('<div id="contenido">', '<div id="contenido">__PREVIEW__', 1)
     # insertar los scripts compartidos antes de </body>
     shell = shell.replace('</body>', '__INLINE_JS__\n</body>', 1)
+    # Como las paginas viven en /p/, todo lo relativo (logo, back.webp, favicon, menu
+    # de marcas/categorias, etc.) debe resolver desde la raiz. <base href="/"> lo hace
+    # de forma universal, incluidas las navegaciones por JS.
+    if re.search(r'<meta charset', shell, re.I):
+        shell = re.sub(r'(<meta charset[^>]*>)', r'\1\n<base href="/">', shell, count=1, flags=re.I)
+    else:
+        shell = re.sub(r'(<head[^>]*>)', r'\1\n<base href="/">', shell, count=1, flags=re.I)
 
     pdir = os.path.join(ROOT, 'p')
     os.makedirs(pdir, exist_ok=True)
