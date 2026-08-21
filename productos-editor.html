@@ -161,6 +161,7 @@
         <button id="btn-dolar-editar" onclick="editarDolar()" style="background:none;border:1px solid var(--violet);border-radius:5px;color:var(--violet-light);font-size:0.7rem;font-weight:700;padding:2px 7px;cursor:pointer;">Editar</button>
         <button id="btn-dolar-guardar" onclick="guardarDolar()" style="background:var(--green);border:none;border-radius:5px;color:white;font-size:0.7rem;font-weight:700;padding:2px 7px;cursor:pointer;display:none;">Guardar</button>
       </div>
+      <button id="btn-aplicar-dolar" onclick="aplicarDolarAWeb()" title="Recalcula y GUARDA todos los precios con el dólar actual (deja la web igual al editor)" style="background:#f59e0b;border:none;border-radius:8px;color:#1a1a1a;font-size:0.78rem;font-weight:800;padding:0.5rem 0.9rem;cursor:pointer;white-space:nowrap;">💲 Pasar precios a la web</button>
       <button class="btn-refresh" onclick="cargarProductos()">↻ Actualizar</button>
 
     </div>
@@ -909,6 +910,25 @@ function cerrarModalImg() {
 
 function cerrarConEsc(e) { if(e.key==='Escape') cerrarModalImg(); }
 
+
+async function aplicarDolarAWeb(){
+  const dolar = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
+  if(!dolar){ toast('Cargá un valor de dólar válido', 'err'); return; }
+  const afectados = (todosLosProductos||[]).filter(p => p.costo_usd!=null && p.costo_usd!=='' && p.ganancia!=null && p.ganancia!=='').length;
+  if(!afectados){ toast('No hay productos con costo en dólar para actualizar', 'err'); return; }
+  const ok = confirm('Vas a recalcular y GUARDAR los precios de ' + afectados + ' productos con el dólar a $' + dolar.toLocaleString('es-AR') + '.\n\nLa web va a quedar igual al editor. Esto cambia los precios de golpe.\n\n¿Confirmás?');
+  if(!ok) return;
+  const btn = document.getElementById('btn-aplicar-dolar');
+  const prev = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Aplicando...'; }
+  try{
+    const { data, error } = await supa.rpc('actualizar_precios_dolar', { p_dolar: dolar });
+    if(error) throw error;
+    toast('✓ ' + data + ' precios actualizados en la web', 'ok');
+    await cargarProductos();
+  }catch(e){ console.error(e); toast('Error: ' + (e.message||e), 'err'); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=prev; } }
+}
 
 function recalcularTodo() {
   todosLosProductos.forEach(p => actualizarCalc(p.codigo));
