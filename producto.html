@@ -888,11 +888,10 @@ function consultarWsp() {
 }
 
 async function compartir() {
-  const p = productoActual;
   const url = window.location.href;
   if (navigator.share) {
     try {
-      await navigator.share({ title: p.nombre, text: p.nombre, url });
+      await navigator.share({ url });
     } catch(e) {}
   } else {
     navigator.clipboard.writeText(url);
