@@ -2037,7 +2037,7 @@ async function verPedido(num, esEliminado) {
       <table class="items-table">
         <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th>${!esEliminado?'<th style="width:30px;"></th>':''}</tr></thead>
         <tbody>${items.map(i=>`<tr>
-          <td>${i.producto}${vendMap[i.codigo]?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}${descontadoSet.has(i.codigo)?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;">⚠️ Producto descontado de su mercadería</div>`:''}</td>
+          <td>${i.producto}${(vendMap[i.codigo] && !['entregado','cancelado'].includes(p.estado))?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}${descontadoSet.has(i.codigo)?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;">⚠️ Producto descontado de su mercadería</div>`:''}</td>
           <td style="text-align:right;">${i.cantidad}</td>
           <td style="text-align:right;">$${Number(i.precio_unitario).toLocaleString('es-AR')}</td>
           <td style="text-align:right;font-weight:700;">$${Number(i.subtotal).toLocaleString('es-AR')}</td>
@@ -2108,10 +2108,12 @@ async function verPedido(num, esEliminado) {
             <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
           </div>`}
 
+        ${stepperHTML(num, p.estado)}
         <div class="estado-field">
           <label>Estado del pedido</label>
           <select onchange="cambiarEstado('${num}',this.value)">
             <option value="pendiente" ${p.estado==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="preparando" ${p.estado==='preparando'?'selected':''}>Preparando</option>
             <option value="confirmado" ${p.estado==='confirmado'?'selected':''}>Confirmado</option>
             <option value="en_camino" ${p.estado==='en_camino'?'selected':''}>En camino</option>
             <option value="entregado" ${p.estado==='entregado'?'selected':''}>Entregado</option>
@@ -2558,10 +2560,28 @@ async function eliminarPago(pagoId, num, monto) {
   } catch(e){toast('Error al eliminar el pago','err');}
 }
 
+function stepperHTML(num, estado) {
+  const pasos=[['pendiente','Pendiente'],['preparando','Preparando'],['confirmado','Confirmado'],['en_camino','En camino'],['entregado','Entregado']];
+  const cur=pasos.findIndex(x=>x[0]===estado);
+  let h='';
+  if(estado==='cancelado') h+='<div style="margin:0.6rem 0 0.2rem;color:var(--red);font-weight:800;font-size:0.85rem;">✕ Pedido CANCELADO</div>';
+  h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin:0.6rem 0 0.3rem;">';
+  pasos.forEach(function(pp,i){
+    const done = cur>=0 && i<=cur;
+    const bg = done ? '#7c3aed' : 'var(--surface2,#2a2a3a)';
+    const col = done ? '#fff' : 'var(--text3,#94a3b8)';
+    h+='<button onclick="cambiarEstado(\''+num+'\',\''+pp[0]+'\')" style="flex:1;min-width:80px;border:none;border-radius:8px;padding:8px 4px;font-size:0.7rem;font-weight:800;cursor:pointer;background:'+bg+';color:'+col+';">'+(i+1)+'. '+pp[1]+'</button>';
+  });
+  h+='</div>';
+  return h;
+}
+
 async function cambiarEstado(num,estado) {
   try {
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({estado})});
     toast('Estado actualizado ✓','ok');
+    verPedido(num, false);
+    cargarPedidos();
   } catch{toast('Error al actualizar','err');}
 }
 

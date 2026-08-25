@@ -62,6 +62,9 @@
   .b-pendiente{background:#fef9c3;color:#a16207;}
   .b-confirmado{background:#dbeafe;color:#1d4ed8;}
   .b-en_camino{background:#e0e7ff;color:#4338ca;}
+  .b-preparando{background:#ffedd5;color:#c2410c;}
+  .b-pendiente_retiro{background:#fef9c3;color:#a16207;}
+  .b-listo_retiro{background:#e0e7ff;color:#4338ca;}
   .b-entregado{background:#dcfce7;color:#15803d;}
   .b-cancelado{background:#fee2e2;color:#b91c1c;}
   .b-pago{background:#dcfce7;color:#15803d;}
@@ -267,7 +270,7 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function fechaCorta(d){ return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function fechaHora(d){ return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function getImgUrl(foto){ if(!foto||!foto.trim()) return ''; if(foto.startsWith('http')) return foto; if(foto.includes('id=')) return `https://drive.google.com/thumbnail?id=${foto.split('id=')[1].split('&')[0]}&sz=400`; return `https://blinkymdq.com/Productos/${foto}.jpg`; }
-function estadoLabel(e){ return {pendiente:'Pendiente',confirmado:'Confirmado',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'}[e]||e||'—'; }
+function estadoLabel(e){ return {pendiente:'🕒 Pendiente',preparando:'📦 Preparando',confirmado:'✅ Confirmado',en_camino:'🚚 En camino',entregado:'🎉 Entregado',cancelado:'✕ Cancelado',pendiente_retiro:'🏪 Pendiente de retiro',listo_retiro:'🏪 Listo para retirar'}[e]||e||'—'; }
 function pend(e){ return Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0); }
 function precioDe(cod){ const p=productos[cod]; if(!p) return 0; return Number((usuario&&usuario.rol==='mayorista'?p.precio_mayorista:p.precio_publico)||0); }
 
