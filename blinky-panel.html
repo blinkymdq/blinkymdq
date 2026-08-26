@@ -2045,6 +2045,23 @@ async function verPedido(num, esEliminado) {
         </tr>`).join('')}</tbody>
       </table>
 
+      ${(function(){
+        const _sub = items.reduce((a,i)=>a+Number(i.subtotal||0),0);
+        const _desc = Math.round(_sub - total);
+        if (_desc > 0) {
+          const _fp = (p.forma_pago||'').toLowerCase();
+          const _mot = (_fp.includes('fectivo')||_fp.includes('ransfer')) ? 'Descuento 5% (efectivo/transf.)' : 'Descuento aplicado';
+          return `<div class="total-row" style="border:none;padding-bottom:2px;">
+              <span class="total-lbl" style="font-weight:600;color:var(--text2);">Subtotal</span>
+              <span style="color:var(--text2);">$${_sub.toLocaleString('es-AR')}</span>
+            </div>
+            <div class="total-row" style="border:none;padding:2px 0;">
+              <span class="total-lbl" style="font-weight:600;color:var(--green);">${_mot}</span>
+              <span style="color:var(--green);font-weight:700;">- $${_desc.toLocaleString('es-AR')}</span>
+            </div>`;
+        }
+        return '';
+      })()}
       <div class="total-row">
         <span class="total-lbl">Total</span>
         <span class="total-big">$${total.toLocaleString('es-AR')}</span>
@@ -2252,7 +2269,7 @@ async function abrirModalNuevoPedido() {
   try {
     npProductosCache = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,precio_publico,precio_mayorista,estado,stock&estado=neq.inactivo&order=nombre.asc`, {headers:hdrs})).json();
     document.getElementById('np-productos-list').innerHTML = npProductosCache.map(p=>
-      `<option value="${p.nombre} ${Number(p.stock||0)>0 ? `(stock: ${p.stock})` : '(Sin stock)'}">`
+      `<option value="${esc(p.nombre)} ${Number(p.stock||0)>0 ? `(stock: ${p.stock})` : '(Sin stock)'}">`
     ).join('');
   } catch(e){}
 
@@ -2299,7 +2316,8 @@ async function seleccionarClienteNP(valor) {
 
 function autocompletarPrecioNP(valor) {
   const nombre = valor.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
-  const prod = npProductosCache.find(p => p.nombre === nombre);
+  let prod = npProductosCache.find(p => p.nombre === nombre);
+  if (!prod && nombre) { const nl=nombre.toLowerCase(); let c=npProductosCache.filter(p=>p.nombre.toLowerCase().startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>p.nombre.toLowerCase().includes(nl)); if(c.length===1) prod=c[0]; }
   const tipoLabel = document.getElementById('np-tipo-precio');
   if (!prod) { if (tipoLabel) tipoLabel.textContent = ''; return; }
 
@@ -2337,8 +2355,9 @@ function agregarItemNP() {
   if (!nombre) { toast('Elegí un producto', 'err'); return; }
   if (!precio || precio <= 0) { toast('Ingresá un precio válido', 'err'); return; }
 
-  const prod = npProductosCache.find(p => p.nombre === nombre);
-  if (!prod) { toast('Ese producto no existe en el catálogo', 'err'); return; }
+  let prod = npProductosCache.find(p => p.nombre === nombre);
+  if (!prod && nombre) { const nl=nombre.toLowerCase(); let c=npProductosCache.filter(p=>p.nombre.toLowerCase().startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>p.nombre.toLowerCase().includes(nl)); if(c.length===1) prod=c[0]; }
+  if (!prod) { toast('Ese producto no existe en el catálogo. Elegilo de la lista.', 'err'); return; }
 
   const stock = Number(prod.stock || 0);
   const enPoder = (npClienteMercaderia[prod.codigo] && npClienteMercaderia[prod.codigo].pending) || 0;
