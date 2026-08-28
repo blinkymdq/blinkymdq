@@ -2828,8 +2828,21 @@ function _setBadgePendiente(total){
   if(total>0){ b.style.display='block'; document.getElementById('fc-pendiente-val').textContent = '$'+total.toLocaleString('es-AR'); }
   else b.style.display='none';
 }
+async function _fetchPagosCuentaCliente(){
+  if(!clienteActual) return [];
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/pagos?user_id=eq.${clienteActual.id}&numero_pedido=is.null&select=monto,exceso_acreditado,forma_pago,descripcion,created_at,token,numero_recibo&order=created_at.desc`, {headers:hdrs});
+    return (await r.json())||[];
+  } catch(e){ return []; }
+}
 async function actualizarBadgePendienteFicha(){
-  try { const p = await _fetchPendientesCliente(); const t = p.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0); _setBadgePendiente(t); } catch(e){}
+  try {
+    const p = await _fetchPendientesCliente();
+    const deuda = p.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    const pc = await _fetchPagosCuentaCliente();
+    const acred = pc.reduce((s,x)=>s+(Number(x.monto||0)-Number(x.exceso_acreditado||0)),0);
+    _setBadgePendiente(Math.max(0, deuda - acred));
+  } catch(e){}
 }
 
 async function cargarPendienteCliente(){
@@ -2839,20 +2852,45 @@ async function cargarPendienteCliente(){
   const fEl = document.getElementById('fc-pg-fecha'); if(fEl && !fEl.value) fEl.value = hoyStr();
   try {
     const pend = await _fetchPendientesCliente();
-    let totalPend = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
-    _setBadgePendiente(totalPend);
-    const mEl = document.getElementById('fc-pg-monto'); if(mEl && !mEl.value && totalPend>0) mEl.value = totalPend;
-    if(!pend.length){ cont.innerHTML = '<div style="color:var(--green);font-size:0.9rem;font-weight:700;">✓ Sin saldo pendiente. El cliente está al día.</div>'; return; }
-    const disp = pend.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
-    cont.innerHTML = disp.map(p=>{
-      const total = Number(p.total||0), pagado = Number(p.monto_pagado||0), pen = total - pagado;
-      const f = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-      return `<div class="pago-item">
-        <span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${p.numero_pedido}</b> · Total $${total.toLocaleString('es-AR')} · Pagado $${pagado.toLocaleString('es-AR')}
-        <br><span style="font-size:0.72rem;color:var(--text3);">${f} · ${estadoLabel(p.estado)}</span></span>
-        <span class="pago-monto" style="color:var(--red);font-weight:900;">-$${pen.toLocaleString('es-AR')}</span>
-      </div>`;
-    }).join('') + `<div style="text-align:right;font-weight:900;margin-top:0.7rem;font-size:1.05rem;">Saldo pendiente total: <span style="color:var(--red);">$${totalPend.toLocaleString('es-AR')}</span></div>`;
+    const deuda = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    const pagosCuenta = await _fetchPagosCuentaCliente();
+    const acred = pagosCuenta.reduce((s,x)=>s+(Number(x.monto||0)-Number(x.exceso_acreditado||0)),0);
+    const saldo = Math.max(0, deuda - acred);
+    _setBadgePendiente(saldo);
+    const mEl = document.getElementById('fc-pg-monto'); if(mEl && !mEl.value && saldo>0) mEl.value = saldo;
+    if(!pend.length && !pagosCuenta.length){ cont.innerHTML = '<div style="color:var(--green);font-size:0.9rem;font-weight:700;">✓ Sin movimientos. El cliente está al día.</div>'; return; }
+    let html = '';
+    if(pend.length){
+      const disp = pend.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+      html += '<div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin-bottom:.35rem;">Pedidos (suman a la deuda)</div>';
+      html += disp.map(p=>{
+        const total = Number(p.total||0), pagado = Number(p.monto_pagado||0), pen = total - pagado;
+        const f = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+        return `<div class="pago-item">
+          <span style="min-width:0;flex:1;"><b style="font-family:monospace;color:var(--violet-light);">${p.numero_pedido}</b> · Total $${total.toLocaleString('es-AR')}${pagado>0?` · Pagado $${pagado.toLocaleString('es-AR')}`:''}
+          <br><span style="font-size:0.72rem;color:var(--text3);">${f} · ${estadoLabel(p.estado)}</span></span>
+          <span class="pago-monto" style="color:var(--red);font-weight:900;">+$${pen.toLocaleString('es-AR')}</span>
+        </div>`;
+      }).join('');
+    }
+    if(pagosCuenta.length){
+      html += '<div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin:.7rem 0 .35rem;">Pagos a cuenta (restan del total)</div>';
+      html += pagosCuenta.map(pg=>{
+        const f = new Date(pg.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+        const exc = Number(pg.exceso_acreditado||0);
+        const recibo = pg.token ? `<a href="recibo-pago.html?t=${pg.token}" target="_blank" style="color:var(--violet-light);text-decoration:none;font-weight:700;">🧾 ${pg.numero_recibo||'Recibo'}</a>` : (pg.numero_recibo||'Pago');
+        return `<div class="pago-item">
+          <span style="min-width:0;flex:1;">${recibo} · ${formaLabel(pg.forma_pago)}
+          <br><span style="font-size:0.72rem;color:var(--text3);">${f}${exc>0?` · $${exc.toLocaleString('es-AR')} a saldo a favor`:''}</span></span>
+          <span class="pago-monto" style="color:var(--green);font-weight:900;">-$${Number(pg.monto||0).toLocaleString('es-AR')}</span>
+        </div>`;
+      }).join('');
+    }
+    const saldoTxt = saldo>0
+      ? `Saldo pendiente total: <span style="color:var(--red);">$${saldo.toLocaleString('es-AR')}</span>`
+      : `<span style="color:var(--green);">✓ Cuenta al día</span>`;
+    html += `<div style="text-align:right;font-weight:900;margin-top:0.7rem;font-size:1.05rem;">${saldoTxt}</div>`;
+    cont.innerHTML = html;
   } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar el saldo pendiente.</div>'; }
 }
 
@@ -2861,38 +2899,36 @@ async function registrarPagoGeneral(){
   const monto = parseFloat(document.getElementById('fc-pg-monto').value);
   const caja = document.getElementById('fc-pg-caja').value;
   const fecha = document.getElementById('fc-pg-fecha').value || hoyStr();
-  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja];
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja] || caja;
   if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
   try {
-    const pend = await _fetchPendientesCliente(); // más viejo primero
-    const totalPend = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
-    if(totalPend<=0){ toast('El cliente no tiene saldo pendiente','err'); return; }
-    if(!confirm(`Registrar pago de $${monto.toLocaleString('es-AR')} en ${cajaLbl}?\nSe aplica a los pedidos impagos (del más viejo al más nuevo).`)) return;
+    const pend = await _fetchPendientesCliente();
+    const deuda = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    const pc = await _fetchPagosCuentaCliente();
+    const acredPrev = pc.reduce((s,x)=>s+(Number(x.monto||0)-Number(x.exceso_acreditado||0)),0);
+    const netPendiente = Math.max(0, deuda - acredPrev);
+    const aCuenta = Math.min(monto, netPendiente);
+    const excedente = +(monto - aCuenta).toFixed(2);
+    const nuevoSaldo = Math.max(0, netPendiente - aCuenta);
+    let msg = `Registrar pago de $${monto.toLocaleString('es-AR')} en ${cajaLbl}?\nSe acredita a la cuenta del cliente y baja su saldo.`;
+    if(excedente>0) msg += `\n$${excedente.toLocaleString('es-AR')} pasan a saldo a favor.`;
+    if(!confirm(msg)) return;
     const createdAt = fecha + 'T12:00:00-03:00';
-    let restante = monto;
-    for(const p of pend){
-      if(restante<=0) break;
-      const pen = Number(p.total||0) - Number(p.monto_pagado||0);
-      const aplicar = Math.min(restante, pen);
-      if(aplicar<=0) continue;
-      await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido:p.numero_pedido, monto:aplicar, forma_pago:caja, exceso_acreditado:0, descripcion:'Pago a cuenta', created_at:createdAt })});
-      await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(p.numero_pedido)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ monto_pagado: Number(p.monto_pagado||0) + aplicar })});
-      restante -= aplicar;
-    }
-    // Excedente: queda como saldo a favor (y se registra en el último pedido para que la caja refleje el total)
-    if(restante>0 && pend.length){
-      const last = pend[pend.length-1];
-      await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido:last.numero_pedido, monto:restante, forma_pago:caja, exceso_acreditado:restante, descripcion:'Pago a cuenta (excedente a saldo a favor)', created_at:createdAt })});
+    const insHdrs = {...hdrs, 'Prefer':'return=representation'};
+    const insR = await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:insHdrs, body:JSON.stringify({ numero_pedido:null, user_id:clienteActual.id, monto:monto, forma_pago:caja, exceso_acreditado:excedente, descripcion:'Pago a cuenta', created_at:createdAt })});
+    const insData = await insR.json().catch(()=>[]);
+    const row = Array.isArray(insData)?insData[0]:insData;
+    const token = row && row.token; const recibo = row && row.numero_recibo;
+    if(excedente>0){
       const saldoActual = Number(clienteActual.saldo_favor||0);
-      await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ saldo_favor: saldoActual + restante })});
-      clienteActual.saldo_favor = saldoActual + restante;
-      const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+(saldoActual+restante).toLocaleString('es-AR'); }
+      await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ saldo_favor: saldoActual + excedente })});
+      clienteActual.saldo_favor = saldoActual + excedente;
+      const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+(saldoActual+excedente).toLocaleString('es-AR'); }
     }
-    // Mail al cliente (opcional, si tiene email)
     if(clienteActual.email){
-      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: caja })}).catch(()=>{});
+      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: cajaLbl, recibo: recibo||'', token: token||'', saldo: nuevoSaldo })}).catch(()=>{});
     }
-    toast('Pago a cuenta registrado ✓','ok');
+    toast('Pago a cuenta registrado ✓' + (recibo?` (${recibo})`:''),'ok');
     document.getElementById('fc-pg-monto').value='';
     cargarPendienteCliente();
     cargarPagosCliente();
