@@ -3386,7 +3386,8 @@ async function eliminarPedidoDirecto(num) {
     ]);
     const ps=await pR.json(); const items=await iR.json();
     const p={...ps[0]}; delete p.id;
-    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    const arch = await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:{...hdrs,'Prefer':'return=minimal'},body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    if(!arch.ok){ const err = await arch.text().catch(()=>''); toast('No se pudo archivar, el pedido NO se borró: '+err.slice(0,120),'err'); return; }
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
     await ajustarStock(items, +1); // devolver stock
     toast('Pedido eliminado','ok'); cargarPedidos(); cargarStats();
@@ -3457,7 +3458,8 @@ async function eliminarPedido(num) {
     ]);
     const ps=await pR.json(); const items=await iR.json();
     const p={...ps[0]}; delete p.id;
-    await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:hdrs,body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    const arch = await fetch(`${SUPA_URL}/rest/v1/pedidos_eliminados`,{method:'POST',headers:{...hdrs,'Prefer':'return=minimal'},body:JSON.stringify({...p,eliminado_at:new Date().toISOString()})});
+    if(!arch.ok){ const err = await arch.text().catch(()=>''); toast('No se pudo archivar, el pedido NO se borró: '+err.slice(0,120),'err'); return; }
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
     await ajustarStock(items, +1); // devolver stock
     toast('Pedido eliminado','ok'); cerrarModal(); cargarPedidos(); cargarStats();
@@ -3953,6 +3955,9 @@ function renderEntregaCarrito(uid){
 async function confirmarEntrega(uid, btn){
   const v = vendUsuarios.find(u=>u.id===uid); if(!v) return;
   if(!entregaCarrito.length){ toast('Agregá al menos un producto','err'); return; }
+  const _totU = entregaCarrito.reduce((s,c)=>s+Number(c.cant||0),0);
+  const _mailTxt = v.email ? `Se le enviará un mail de aviso a ${v.email}.` : '⚠️ El vendedor no tiene email cargado: NO se le va a avisar.';
+  if(!confirm(`¿Confirmás la entrega de ${_totU} u. a ${v.nombre}?\n\n${_mailTxt}\n\nEsto queda registrado en la cuenta del vendedor.`)) return;
   if(btn){ btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Entregando...'; }
   const _restaurarBtn = () => { if(btn && btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } };
   try {
