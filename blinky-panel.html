@@ -642,13 +642,14 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
               <option value="transferencia">📲 Transferencia</option>
               <option value="transferencia_rm">🏦 Transferencia RM</option>
               <option value="tarjeta">💳 Tarjeta</option>
+              <option value="descuento">🏷️ Descuento</option>
             </select>
             <input id="fc-pg-fecha" type="date" title="Fecha" style="max-width:150px;">
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:0.5rem;">
             <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="registrarPagoGeneral()">Registrar pago</button>
           </div>
-          <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se aplica a los pedidos impagos, del más viejo al más nuevo. Si sobra, queda como saldo a favor.</div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se acredita a la cuenta del cliente y baja su saldo total (no se aplica a pedidos puntuales). Si sobra, queda como saldo a favor. "Descuento" no suma a las cajas de plata: se registra aparte.</div>
           <div class="fc-section-title">Saldo pendiente de pago</div>
           <div id="fc-pendiente-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
@@ -1636,7 +1637,7 @@ async function cargarCajas() {
       tarjeta: Number(saldosRaw.tarjeta||0)
     };
 
-    const ing = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
+    const ing = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0, descuento:0 };
     const gas = { efectivo:0, transferencia:0, transferencia_rm:0, tarjeta:0 };
     pagos.forEach(p=>{ if(ing[p.forma_pago]!==undefined) ing[p.forma_pago]+=Number(p.monto); });
     if(Array.isArray(gastos)) gastos.forEach(g=>{ if(gas[g.forma_pago]!==undefined) gas[g.forma_pago]+=Number(g.monto); });
@@ -1681,7 +1682,14 @@ async function cargarCajas() {
         <div class="caja-icon">📊</div>
         <div class="caja-label">Total al día</div>
         <div class="caja-val ${netoClass(totalNeto)}" style="${totalNeto>=0?'color:var(--yellow)':''}">${fmt(totalNeto)}</div>
-        <div class="caja-sub" style="opacity:0.9;">Suma de todas las cajas</div>
+        <div class="caja-sub" style="opacity:0.9;">Suma de todas las cajas (sin descuentos)</div>
+      </div>
+      <div class="caja-card" style="border-color:rgba(234,88,12,0.35);">
+        <div class="caja-icon">🏷️</div>
+        <div class="caja-label">Descuentos</div>
+        <div class="caja-val" style="color:#f59e0b;">${fmt(ing.descuento)}</div>
+        <div class="caja-sub" style="opacity:0.9;">Otorgados en el período</div>
+        <div class="caja-sub">No es plata real — control aparte</div>
       </div>
     `;
 
@@ -2093,37 +2101,11 @@ async function verPedido(num, esEliminado) {
             </div>
           </div>`:''}
 
-        <!-- FORM AGREGAR PAGO -->
-        ${!esPagado?`
-          ${saldoFavorCliente>0?`
-            <div style="background:rgba(16,185,129,0.1);border:1px solid var(--green);border-radius:10px;padding:0.7rem;margin-top:0.9rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-              <div style="font-size:0.78rem;color:var(--green);">💰 Este cliente tiene <strong>$${saldoFavorCliente.toLocaleString('es-AR')}</strong> a favor</div>
-              <button onclick="usarSaldoFavor('${num}', ${total}, '${p.email}')" style="background:var(--green);color:white;border:none;border-radius:8px;font-size:0.78rem;font-weight:700;padding:0.45rem 0.8rem;cursor:pointer;white-space:nowrap;">Usar saldo</button>
-            </div>
-          `:''}
-          <div class="pago-form">
-            <div class="pago-form-title">Agregar pago</div>
-            <div class="pago-form-row">
-              <input type="number" class="pago-input" id="pago-monto" placeholder="$0" min="0">
-              <select class="pago-select" id="pago-forma">
-                <option value="efectivo">💵 Efectivo</option>
-                <option value="transferencia">📲 Transferencia</option>
-                <option value="transferencia_rm">🏦 Transferencia RM</option>
-                <option value="tarjeta">💳 Tarjeta</option>
-                <option value="descuento">🏷️ Descuento</option>
-              </select>
-            </div>
-            <input type="text" class="pago-input" id="pago-descripcion" placeholder="Descripción (opcional)" style="width:100%;margin-bottom:0.5rem;">
-            <button class="btn-agregar-pago" onclick="agregarPago('${num}', ${total})">Agregar pago</button>
-            <div class="post-pago-btns">
-              <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
-              <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
-            </div>
-          </div>`:`
-          <div class="post-pago-btns" style="margin-top:1rem;">
-            <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
-            <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
-          </div>`}
+        <!-- Los pagos se gestionan desde la ficha del cliente → Cuenta corriente -->
+        <div class="post-pago-btns" style="margin-top:1rem;">
+          <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
+          <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
+        </div>
 
         ${stepperHTML(num, p.estado)}
         <div class="estado-field">
@@ -2899,7 +2881,7 @@ async function registrarPagoGeneral(){
   const monto = parseFloat(document.getElementById('fc-pg-monto').value);
   const caja = document.getElementById('fc-pg-caja').value;
   const fecha = document.getElementById('fc-pg-fecha').value || hoyStr();
-  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja] || caja;
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta',descuento:'Descuento'})[caja] || caja;
   if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
   try {
     const pend = await _fetchPendientesCliente();
@@ -2926,9 +2908,9 @@ async function registrarPagoGeneral(){
       const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+(saldoActual+excedente).toLocaleString('es-AR'); }
     }
     if(clienteActual.email){
-      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: cajaLbl, recibo: recibo||'', token: token||'', saldo: nuevoSaldo })}).catch(()=>{});
+      fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: (caja==='descuento'?'descuento':cajaLbl), recibo: (caja==='descuento'?'':(recibo||'')), token: (caja==='descuento'?'':(token||'')), saldo: nuevoSaldo })}).catch(()=>{});
     }
-    toast('Pago a cuenta registrado ✓' + (recibo?` (${recibo})`:''),'ok');
+    toast((caja==='descuento'?'Descuento registrado ✓':'Pago a cuenta registrado ✓') + (recibo?` (${recibo})`:''),'ok');
     document.getElementById('fc-pg-monto').value='';
     cargarPendienteCliente();
     cargarPagosCliente();
