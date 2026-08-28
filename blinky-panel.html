@@ -2872,6 +2872,11 @@ async function cargarPendienteCliente(){
       ? `Saldo pendiente total: <span style="color:var(--red);">$${saldo.toLocaleString('es-AR')}</span>`
       : `<span style="color:var(--green);">✓ Cuenta al día</span>`;
     html += `<div style="text-align:right;font-weight:900;margin-top:0.7rem;font-size:1.05rem;">${saldoTxt}</div>`;
+    const _sf = Number(clienteActual.saldo_favor||0);
+    if(_sf>0 && saldo>0){
+      const _usar = Math.min(_sf, saldo);
+      html += `<div style="text-align:right;margin-top:0.5rem;"><button class="fc-btn" style="background:var(--green);color:#fff;" onclick="aplicarSaldoFavorCuenta()">💰 Usar saldo a favor ($${_usar.toLocaleString('es-AR')})</button></div>`;
+    }
     cont.innerHTML = html;
   } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar el saldo pendiente.</div>'; }
 }
@@ -2915,6 +2920,32 @@ async function registrarPagoGeneral(){
     cargarPendienteCliente();
     cargarPagosCliente();
   } catch(e){ toast('Error al registrar el pago','err'); }
+}
+
+async function aplicarSaldoFavorCuenta(){
+  if(!clienteActual) return;
+  try {
+    const saldoFavor = Number(clienteActual.saldo_favor||0);
+    if(saldoFavor<=0){ toast('El cliente no tiene saldo a favor','err'); return; }
+    const pend = await _fetchPendientesCliente();
+    const deuda = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    const pc = await _fetchPagosCuentaCliente();
+    const acredPrev = pc.reduce((s,x)=>s+(Number(x.monto||0)-Number(x.exceso_acreditado||0)),0);
+    const netPendiente = Math.max(0, deuda - acredPrev);
+    if(netPendiente<=0){ toast('El cliente no tiene saldo pendiente','err'); return; }
+    const aplicar = Math.min(saldoFavor, netPendiente);
+    if(!confirm(`Usar $${aplicar.toLocaleString('es-AR')} del saldo a favor para bajar la deuda?\nSaldo a favor: $${saldoFavor.toLocaleString('es-AR')} → $${(saldoFavor-aplicar).toLocaleString('es-AR')}`)) return;
+    const createdAt = hoyStr() + 'T12:00:00-03:00';
+    await fetch(`${SUPA_URL}/rest/v1/pagos`, {method:'POST', headers:hdrs, body:JSON.stringify({ numero_pedido:null, user_id:clienteActual.id, monto:aplicar, forma_pago:'saldo_favor', exceso_acreditado:0, descripcion:'Aplicado desde saldo a favor', created_at:createdAt })});
+    const nuevoSF = saldoFavor - aplicar;
+    await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ saldo_favor: nuevoSF })});
+    clienteActual.saldo_favor = nuevoSF;
+    const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ if(nuevoSF>0){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+nuevoSF.toLocaleString('es-AR'); } else sb.style.display='none'; }
+    const sa = document.getElementById('fc-saldo-actual'); if(sa) sa.textContent = '$'+nuevoSF.toLocaleString('es-AR');
+    toast('Saldo a favor aplicado ✓','ok');
+    cargarPendienteCliente();
+    cargarPagosCliente();
+  } catch(e){ toast('Error al aplicar el saldo a favor','err'); }
 }
 
 async function cargarPagosCliente(){
