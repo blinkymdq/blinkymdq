@@ -2101,6 +2101,17 @@ async function verPedido(num, esEliminado) {
             </div>
           </div>`:''}
 
+        ${!esPagado?`
+        <div class="pago-form" style="margin-top:1rem;">
+          <div class="pago-form-title">🏷️ Aplicar descuento al pedido</div>
+          <div class="pago-form-row">
+            <input type="number" class="pago-input" id="desc-monto" placeholder="$ Monto" min="0">
+            <input type="number" class="pago-input" id="desc-pct" placeholder="% opc." min="0" max="100" style="max-width:110px;" oninput="if(this.value)document.getElementById('desc-monto').value=Math.round(${saldo}*this.value/100)">
+            <button class="btn-agregar-pago" style="width:auto;background:#f59e0b;color:#111;margin-top:0;" onclick="aplicarDescuentoPedido('${num}')">Aplicar</button>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Baja el saldo del pedido, queda guardado y le llega el mail de descuento al cliente.</div>
+        </div>`:''}
+
         <!-- Los pagos se gestionan desde la ficha del cliente → Cuenta corriente -->
         <div class="post-pago-btns" style="margin-top:1rem;">
           <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
@@ -2129,6 +2140,25 @@ async function verPedido(num, esEliminado) {
       `:`<button class="btn-restaurar" onclick="restaurarPedido('${num}')">↩ Restaurar pedido</button>`}
     `;
   } catch(e){document.getElementById('modal-body').innerHTML='<p style="color:var(--red);padding:1rem;">Error al cargar.</p>';}
+}
+
+async function aplicarDescuentoPedido(num){
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}&select=total,monto_pagado,email,nombre`,{headers:hdrs});
+    const p = (await r.json())[0]; if(!p){ toast('Pedido no encontrado','err'); return; }
+    const total=Number(p.total||0), pagado=Number(p.monto_pagado||0), saldo=Math.max(0,total-pagado);
+    let monto=parseFloat(document.getElementById('desc-monto').value);
+    const pct=parseFloat(document.getElementById('desc-pct').value);
+    if((!monto||monto<=0) && pct>0) monto=Math.round(saldo*pct/100);
+    if(!monto||monto<=0){ toast('Poné un monto o % de descuento','err'); return; }
+    if(monto>saldo) monto=saldo;
+    if(!confirm(`Aplicar descuento de $${monto.toLocaleString('es-AR')} al pedido ${num}?\nSaldo: $${saldo.toLocaleString('es-AR')} → $${(saldo-monto).toLocaleString('es-AR')}\nSe le avisa al cliente por mail.`)) return;
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num, monto, forma_pago:'descuento', exceso_acreditado:0, descripcion:'Descuento en el pedido'})});
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado: pagado+monto})});
+    if(p.email){ fetch(`${SUPA_URL}/functions/v1/notificar-pago`,{method:'POST',headers:hdrs,body:JSON.stringify({ email:p.email, nombre:p.nombre||'', monto, forma_pago:'descuento' })}).catch(()=>{}); }
+    toast('Descuento aplicado ✓','ok');
+    verPedido(num,false); cargarPedidos(); cargarStats();
+  } catch(e){ toast('Error al aplicar el descuento','err'); }
 }
 
 async function agregarPago(num, totalPedido) {
