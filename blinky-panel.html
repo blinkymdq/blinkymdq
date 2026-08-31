@@ -1909,7 +1909,7 @@ async function cargarPedidos() {
       const total=Number(p.total);
       const saldo=total-pagado;
       const esPagado=saldo<=0;
-      return `<div class="pedido-card ${esPagado?'pagado':'debe'}" onclick="verPedido('${p.numero_pedido}',false)">
+      return `<div class="pedido-card" onclick="verPedido('${p.numero_pedido}',false)">
         <div class="pedido-top">
           <div>
             <span class="pedido-num">${p.numero_pedido}</span>
@@ -1926,10 +1926,7 @@ async function cargarPedidos() {
           <span class="badge badge-${p.estado}">${estadoLabel(p.estado)}</span>
           <span class="badge badge-neutral">${p.forma_pago}</span>
           <span class="badge badge-neutral">${p.entrega==='envio'?'🚚 Envío':'🏪 Retiro'}</span>
-          <span class="pago-status ${esPagado?'pagado':'debe'}" style="margin-left:auto;">
-            ${esPagado?'✓ PAGADO':'Debe $'+saldo.toLocaleString('es-AR')}
-          </span>
-          <button class="btn-trash-card" title="Imprimir / PDF" onclick="event.stopPropagation();imprimirPedido('${p.numero_pedido}')">🖨️</button>
+          <button class="btn-trash-card" title="Imprimir / PDF" style="margin-left:auto;" onclick="event.stopPropagation();imprimirPedido('${p.numero_pedido}')">🖨️</button>
           <button class="btn-trash-card" title="Eliminar pedido" onclick="event.stopPropagation();eliminarPedidoDirecto('${p.numero_pedido}')">🗑</button>
         </div>
       </div>`;
