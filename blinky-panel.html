@@ -1627,6 +1627,9 @@ async function cargarCajas() {
     const pagos = await pagosR.json();
     const gastos = await gastosR.json();
     if(!Array.isArray(pagos)){document.getElementById('cajas-cards').innerHTML='<div class="loading-txt">Error</div>';return;}
+    let nombresCta = {};
+    const uidsC = [...new Set(pagos.filter(p=>!p.numero_pedido && p.user_id).map(p=>p.user_id))];
+    if(uidsC.length){ try { const us = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?id=in.(${uidsC.join(',')})&select=id,nombre`,{headers:hdrs})).json(); (us||[]).forEach(u=>{ nombresCta[u.id]=u.nombre; }); } catch(e){} }
 
     // Saldo REAL acumulado (al día) por caja
     let saldosRaw = {}; try { saldosRaw = await saldosR.json() || {}; } catch(e){ saldosRaw = {}; }
@@ -1703,7 +1706,7 @@ async function cargarCajas() {
           <th style="padding:7px 10px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Fecha</th>
         </tr></thead>
         <tbody>${pagos.map(p=>`<tr>
-          <td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:700;">${p.numero_pedido}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid var(--border);font-weight:700;">${p.numero_pedido?`<span style="color:var(--violet-light);">${p.numero_pedido}</span>`:`<span style="color:var(--text2);">A cuenta</span>${nombresCta[p.user_id]?` · <span style="color:var(--text3);font-weight:400;">${esc(nombresCta[p.user_id])}</span>`:''}`}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${formaLabel(p.forma_pago)}</span></td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;">$${Number(p.monto).toLocaleString('es-AR')}</td>
           <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
@@ -1799,6 +1802,15 @@ async function cargarPagos() {
       cont.innerHTML='<div class="empty"><div class="empty-icon">💳</div><p>No hay pagos</p></div>';return;
     }
     const total=pagos.reduce((s,p)=>s+Number(p.monto),0);
+    // Nombres de clientes para los pagos a cuenta (sin pedido)
+    let nombresCta = {};
+    const uids = [...new Set(pagos.filter(p=>!p.numero_pedido && p.user_id).map(p=>p.user_id))];
+    if(uids.length){
+      try {
+        const us = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?id=in.(${uids.join(',')})&select=id,nombre`,{headers:hdrs})).json();
+        (us||[]).forEach(u=>{ nombresCta[u.id]=u.nombre; });
+      } catch(e){}
+    }
     cont.innerHTML=`
       <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;align-items:center;gap:1rem;">
         <span style="font-size:0.8rem;color:var(--text2);">${pagos.length} registro${pagos.length===1?'':'s'}</span>
@@ -1807,16 +1819,20 @@ async function cargarPagos() {
       <div class="chart-card" style="padding:0;">
         <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
           <thead><tr>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Recibo</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Pedido</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Forma</th>
             <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Monto</th>
             <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Fecha</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);"></th>
           </tr></thead>
-          <tbody>${pagos.map(p=>`<tr style="cursor:pointer;" onclick="verPedido('${p.numero_pedido}',false)">
-            <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--violet-light);font-weight:700;">${p.numero_pedido}</td>
+          <tbody>${pagos.map(p=>`<tr${p.numero_pedido?` style="cursor:pointer;" onclick="verPedido('${p.numero_pedido}',false)"`:''}>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:0.78rem;white-space:nowrap;">${p.token?`<a href="https://blinkymdq.github.io/blinkymdq/recibo-pago.html?t=${p.token}" target="_blank" onclick="event.stopPropagation()" style="color:var(--violet-light);text-decoration:none;font-weight:700;">🧾 ${p.numero_recibo||'Recibo'}</a>`:(p.numero_recibo||'—')}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);">${p.numero_pedido?`<span style="color:var(--violet-light);font-weight:700;">${p.numero_pedido}</span>`:`<span style="color:var(--text2);font-weight:700;">A cuenta</span>${nombresCta[p.user_id]?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${esc(nombresCta[p.user_id])}</div>`:''}`}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${formaLabel(p.forma_pago)}</span>${p.descripcion?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${p.descripcion}</div>`:''}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--green);">$${Number(p.monto).toLocaleString('es-AR')}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;"><button onclick="event.stopPropagation(); ${p.numero_pedido?`eliminarPago(${p.id},'${p.numero_pedido}',${p.monto})`:`eliminarPagoCuenta(${p.id})`}" title="Eliminar pago" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.9rem;">🗑️</button></td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
@@ -2591,6 +2607,38 @@ async function eliminarPago(pagoId, num, monto) {
   } catch(e){toast('Error al eliminar el pago','err');}
 }
 
+async function eliminarPagoCuenta(pagoId){
+  try {
+    const rows = await (await fetch(`${SUPA_URL}/rest/v1/pagos?id=eq.${pagoId}&select=monto,forma_pago,exceso_acreditado,user_id,numero_recibo`,{headers:hdrs})).json();
+    const pago = rows && rows[0]; if(!pago){ toast('Pago no encontrado','err'); return; }
+    if(!confirm(`¿Eliminar el pago ${pago.numero_recibo||''} de $${Number(pago.monto).toLocaleString('es-AR')}?`)) return;
+    await fetch(`${SUPA_URL}/rest/v1/pagos?id=eq.${pagoId}`,{method:'DELETE',headers:hdrs});
+    const uid = pago.user_id;
+    if(uid){
+      const exceso = Number(pago.exceso_acreditado||0);
+      let delta = 0;
+      if(pago.forma_pago==='saldo_favor') delta = Number(pago.monto||0);   // se había usado saldo a favor → devolver
+      else if(exceso>0) delta = -exceso;                                   // había generado saldo a favor → quitarlo
+      if(delta!==0){
+        const us = await (await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${uid}&select=saldo_favor`,{headers:hdrs})).json();
+        if(us && us[0]){
+          const nuevo = Math.max(0, Number(us[0].saldo_favor||0) + delta);
+          await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${uid}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({saldo_favor:nuevo})});
+          if(clienteActual && clienteActual.id===uid){
+            clienteActual.saldo_favor = nuevo;
+            const sb=document.getElementById('fc-saldo-favor-badge'); if(sb){ if(nuevo>0){sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent='$'+nuevo.toLocaleString('es-AR');} else sb.style.display='none'; }
+            const sa=document.getElementById('fc-saldo-actual'); if(sa) sa.textContent='$'+nuevo.toLocaleString('es-AR');
+          }
+        }
+      }
+    }
+    toast('Pago eliminado ✓','ok');
+    if(clienteActual && clienteActual.id===uid){ cargarPendienteCliente(); cargarPagosCliente(); }
+    if(typeof cargarPagos==='function') cargarPagos();
+    if(typeof cargarCajas==='function') cargarCajas();
+  } catch(e){ toast('Error al eliminar el pago','err'); }
+}
+
 function stepperHTML(num, estado) {
   const pasos=[['pendiente','Pendiente'],['preparando','Preparando'],['confirmado','Confirmado'],['en_camino','En camino'],['entregado','Entregado']];
   const cur=pasos.findIndex(x=>x[0]===estado);
@@ -2843,7 +2891,7 @@ function _setBadgePendiente(total){
 async function _fetchPagosCuentaCliente(){
   if(!clienteActual) return [];
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/pagos?user_id=eq.${clienteActual.id}&numero_pedido=is.null&select=monto,exceso_acreditado,forma_pago,descripcion,created_at,token,numero_recibo&order=created_at.desc`, {headers:hdrs});
+    const r = await fetch(`${SUPA_URL}/rest/v1/pagos?user_id=eq.${clienteActual.id}&numero_pedido=is.null&select=id,monto,exceso_acreditado,forma_pago,descripcion,created_at,token,numero_recibo&order=created_at.desc`, {headers:hdrs});
     return (await r.json())||[];
   } catch(e){ return []; }
 }
@@ -2895,6 +2943,7 @@ async function cargarPendienteCliente(){
           <span style="min-width:0;flex:1;">${recibo} · ${formaLabel(pg.forma_pago)}
           <br><span style="font-size:0.72rem;color:var(--text3);">${f}${exc>0?` · $${exc.toLocaleString('es-AR')} a saldo a favor`:''}</span></span>
           <span class="pago-monto" style="color:var(--green);font-weight:900;">-$${Number(pg.monto||0).toLocaleString('es-AR')}</span>
+          <button onclick="eliminarPagoCuenta(${pg.id})" title="Eliminar pago" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0 0 8px;">🗑️</button>
         </div>`;
       }).join('');
     }
