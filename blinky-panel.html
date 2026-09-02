@@ -1311,12 +1311,11 @@ function coPreview(){
       const pub = (costoPesos>0 && gan>0) ? Math.round(costoPesos*(1+gan/100)) : 0;
       const may = (costoPesos>0 && ganMay>0) ? Math.round(costoPesos*(1+ganMay/100)) : 0;
       precioEl.value = pub ? _coMoney(pub) : '—';
-      const antes = Number(coProdSel.precio_publico||0);
-      let h = [];
-      if(antes>0) h.push(`Antes: ${_coMoney(antes)}`);
-      if(may>0) h.push(`Mayorista nuevo: ${_coMoney(may)}`);
-      if(gan>0) h.push(`Ganancia ${gan}%`);
-      hintEl.innerHTML = h.join(' · ');
+      const antesPub = Number(coProdSel.precio_publico||0);
+      const antesMay = Number(coProdSel.precio_mayorista||0);
+      const l1 = `Antes minorista: ${_coMoney(antesPub)} · Nuevo minorista: ${pub?_coMoney(pub):'—'} · Ganancia ${gan}%`;
+      const l2 = `Antes mayorista: ${_coMoney(antesMay)} · Nuevo mayorista: ${may?_coMoney(may):'—'} · Ganancia ${ganMay}%`;
+      hintEl.innerHTML = l1 + '<br>' + l2;
     } else {
       precioEl.value = '';
       if(hintEl) hintEl.innerHTML = esNuevo ? 'Producto nuevo: cargá el precio desde el editor de productos.' : '';
