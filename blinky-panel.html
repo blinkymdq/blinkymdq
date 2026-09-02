@@ -494,7 +494,9 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <input class="gasto-input" id="co-costo" type="number" min="0" step="0.01" placeholder="Costo x unidad" oninput="coPreview()">
           <input class="gasto-input" id="co-final" type="text" readonly placeholder="Costo final $" style="background:var(--surface2);">
           <input class="gasto-input" id="co-tot" type="text" readonly placeholder="Costo total" style="background:var(--surface2);">
+          <input class="gasto-input" id="co-precio-nuevo" type="text" readonly placeholder="Precio venta nuevo" title="Precio de venta calculado con este costo" style="background:rgba(16,185,129,0.10);border-color:var(--green);color:var(--green);font-weight:800;">
         </div>
+        <div id="co-precio-hint" style="font-size:0.72rem;color:var(--text3);margin-top:4px;min-height:14px;"></div>
         <button class="fc-btn" style="background:var(--violet);color:#fff;margin-top:0.6rem;" onclick="coAgregarItem()">➕ Agregar al listado</button>
       </div>
 
@@ -1231,6 +1233,7 @@ function switchTab(tab, btn) {
 const CO_MARKUP = 0.15; // 15% sobre el costo USD
 let coItems = [];
 let coProds = []; // {codigo, nombre, costo_usd, moneda}
+let coProdSel = null; // producto existente elegido (para previsualizar precio de venta)
 
 function _coMoney(n){ return '$' + Math.round(Number(n)||0).toLocaleString('es-AR'); }
 
@@ -1243,7 +1246,7 @@ async function cargarCompras(){
   } catch(e){}
   // Productos para el buscador
   try {
-    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda,categoria,marca&order=nombre.asc`, {headers:hdrs})).json();
+    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda,categoria,marca,ganancia,ganancia_mayorista,imp_e,precio_publico,precio_mayorista&order=nombre.asc`, {headers:hdrs})).json();
     const dl = document.getElementById('co-prods');
     if(dl) dl.innerHTML = (coProds||[]).map(p=>`<option value="${(p.nombre||'').replace(/"/g,'&quot;')} — ${p.codigo}">`).join('');
     // Datalists de categoría y marca (para producto nuevo)
@@ -1259,20 +1262,22 @@ async function cargarCompras(){
 function coToggleNuevo(){
   const on = document.getElementById('co-nuevo').checked;
   document.getElementById('co-nuevo-campos').style.display = on ? 'block' : 'none';
-  const s = document.getElementById('co-prod-search'); s.disabled = on; if(on) s.value='';
+  const s = document.getElementById('co-prod-search'); s.disabled = on; if(on){ s.value=''; coProdSel=null; }
+  coPreview();
 }
 
 function coProdElegido(val){
   // val = "Nombre — CODIGO"; si matchea un producto existente en USD, precarga su costo_usd
   const cod = (val.split('—').pop()||'').trim();
   const p = coProds.find(x=>String(x.codigo)===cod) || coProds.find(x=>`${x.nombre} — ${x.codigo}`===val);
+  coProdSel = p || null;
   if(p){
     const moneda = document.getElementById('co-moneda').value;
     const costoEl = document.getElementById('co-costo');
     if(moneda==='usd' && p.costo_usd) costoEl.value = p.costo_usd;
     else if(moneda==='pesos' && p.costo_final) costoEl.value = p.costo_final;
-    coPreview();
   }
+  coPreview();
 }
 
 function coCostoFinal(costoUnit){
@@ -1289,6 +1294,34 @@ function coPreview(){
   const final = coCostoFinal(costo);
   document.getElementById('co-final').value = _coMoney(final);
   document.getElementById('co-tot').value = _coMoney(final*cant);
+
+  // Precio de venta nuevo (misma fórmula que la web: costoPesos × (1+ganancia%))
+  const precioEl = document.getElementById('co-precio-nuevo');
+  const hintEl = document.getElementById('co-precio-hint');
+  if(precioEl){
+    const esNuevo = document.getElementById('co-nuevo').checked;
+    if(coProdSel && !esNuevo && costo>0){
+      const moneda = document.getElementById('co-moneda').value;
+      const dolar = parseFloat(document.getElementById('co-dolar').value)||0;
+      let costoPesos = (moneda==='usd')
+        ? Math.round(costo * (1 + Number(coProdSel.imp_e||0)/100) * dolar)
+        : Math.round(costo);
+      const gan = Number(coProdSel.ganancia||0);
+      const ganMay = Number(coProdSel.ganancia_mayorista||0);
+      const pub = (costoPesos>0 && gan>0) ? Math.round(costoPesos*(1+gan/100)) : 0;
+      const may = (costoPesos>0 && ganMay>0) ? Math.round(costoPesos*(1+ganMay/100)) : 0;
+      precioEl.value = pub ? _coMoney(pub) : '—';
+      const antes = Number(coProdSel.precio_publico||0);
+      let h = [];
+      if(antes>0) h.push(`Antes: ${_coMoney(antes)}`);
+      if(may>0) h.push(`Mayorista nuevo: ${_coMoney(may)}`);
+      if(gan>0) h.push(`Ganancia ${gan}%`);
+      hintEl.innerHTML = h.join(' · ');
+    } else {
+      precioEl.value = '';
+      if(hintEl) hintEl.innerHTML = esNuevo ? 'Producto nuevo: cargá el precio desde el editor de productos.' : '';
+    }
+  }
 }
 
 function coRecalc(){
@@ -1403,9 +1436,10 @@ async function confirmarCompra(){
 
     // 4) Existentes: sumar stock + COSTO PROMEDIO PONDERADO (mezcla stock viejo + compra nueva)
     const coDolar = parseFloat(document.getElementById('co-dolar').value)||0;
+    const cambiosPrecio = []; // productos cuyo precio de venta cambia por el nuevo costo
     for(const it of coItems){
       if(it.esNuevo) continue;
-      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,costo_usd,costo_final,moneda`, {headers:hdrs});
+      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,costo_usd,costo_final,moneda,imp_e,ganancia,ganancia_mayorista,precio_publico`, {headers:hdrs});
       const ps = await pR.json();
       const cur = ps[0] || {};
       const stockActual = Number(cur.stock)||0;
@@ -1426,6 +1460,29 @@ async function confirmarCompra(){
         patch = { stock: total, costo_usd: moneda==='usd'?it.costo_unitario:null, costo_final: it.costo_final, moneda };
       }
       await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(patch)});
+
+      // Calcular nuevo precio de venta con el costo actualizado (misma fórmula que la web)
+      const costoPesosVenta = (moneda==='usd')
+        ? Math.round(Number(patch.costo_usd||0) * (1 + Number(cur.imp_e||0)/100) * coDolar)
+        : Math.round(Number(patch.costo_final||0));
+      const gan = Number(cur.ganancia||0), ganMay = Number(cur.ganancia_mayorista||0);
+      const pub = (costoPesosVenta>0 && gan>0) ? Math.round(costoPesosVenta*(1+gan/100)) : 0;
+      const may = (costoPesosVenta>0 && ganMay>0) ? Math.round(costoPesosVenta*(1+ganMay/100)) : 0;
+      const antes = Number(cur.precio_publico||0);
+      if(pub>0 && pub!==antes){
+        cambiosPrecio.push({ codigo: it.codigo, nombre: it.nombre, antes, ahora: pub, patchPrecio: (may>0 ? { precio_publico: pub, precio_mayorista: may } : { precio_publico: pub }) });
+      }
+    }
+
+    // 4b) Segunda confirmación: actualizar precios de venta de los productos afectados
+    if(cambiosPrecio.length){
+      const lista = cambiosPrecio.map(c=>`• ${c.nombre}: $${c.antes.toLocaleString('es-AR')} → $${c.ahora.toLocaleString('es-AR')}`).join('\n');
+      if(confirm(`El nuevo costo cambia el precio de venta de ${cambiosPrecio.length} producto(s):\n\n${lista}\n\n¿Actualizar los precios de venta ahora?`)){
+        for(const c of cambiosPrecio){
+          await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(c.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(c.patchPrecio)});
+        }
+        toast(`Precios actualizados (${cambiosPrecio.length}) ✓`,'ok');
+      }
     }
 
     // 5) Descontar de la caja: registrar gasto y guardar su id en la compra
