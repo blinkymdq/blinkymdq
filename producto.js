@@ -205,7 +205,9 @@ async function cargarProducto() {
 function renderProducto(p) {
   productoActual = p;
   if (typeof actualizarBadgeCarrito === 'function') actualizarBadgeCarrito();
-  const precio = formatPrecio(p.precio_publico);
+  const _dPct = Number(p.descuento || 0);
+  const _pubCon = _dPct > 0 ? Math.round(Number(p.precio_publico||0) * (1 - _dPct/100)) : Number(p.precio_publico||0);
+  const precio = formatPrecio(_pubCon);
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const mostrarPrecio = !sinStock || esMayoristaLogueado;
@@ -241,6 +243,7 @@ function renderProducto(p) {
     <div class="layout">
       <div class="galeria-wrap">
         <div class="galeria">
+          ${_dPct>0 ? `<div style="position:absolute;top:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:13px;font-weight:900;padding:5px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25);">🔥 -${_dPct}% OFF</div>` : ''}
           <video id="video-principal" src="${p.video || ''}" style="display:${primero.tipo==='video'?'block':'none'};width:100%;height:100%;object-fit:contain;background:#000;" muted loop playsinline autoplay preload="metadata"></video>
           <img id="foto-principal" src="${primero.tipo==='img' ? (getImgUrl(primero.src, 1600) || 'https://blinkymdq.com/blinkysinfondo.png') : 'https://blinkymdq.com/blinkysinfondo.png'}" style="display:${primero.tipo==='img'?'block':'none'};" alt="${p.nombre}" onclick="abrirZoom()" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'">
           <div class="galeria-iconos">
@@ -275,7 +278,7 @@ function renderProducto(p) {
         ` : ''}
         <br>
         ${mostrarPrecio ? `
-        <div class="precio">${precio}</div>
+        <div class="precio">${precio}${_dPct>0 ? ` <span style="text-decoration:line-through;color:#94a3b8;font-size:0.55em;font-weight:700;">${formatPrecio(p.precio_publico)}</span> <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.42em;font-weight:900;padding:3px 9px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${_dPct}%</span>` : ''}</div>
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
         ` : ''}
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
@@ -294,7 +297,6 @@ function renderProducto(p) {
             Consultar por WhatsApp
           </button>
         </div>
-        <div id="recibir-wrap"></div>
         <div style="font-size:0.72rem;color:#64748b;font-family:Arial,sans-serif;margin-top:12px;">Los precios están sujetos a modificaciones sin previo aviso.</div>
       </div>
     </div>
@@ -306,91 +308,6 @@ function renderProducto(p) {
       </div>
     ` : ''}
   `;
-  cargarPuntosRetiro(p.codigo, esMayoristaLogueado);
-}
-
-// ── Cómo recibirlo: envío + puntos de retiro por cercanía ──
-let _puntosRetiro = [];
-let _miUbic = null; // {lat,lng}
-async function cargarPuntosRetiro(codigo, esMayorista){
-  const wrap = document.getElementById('recibir-wrap');
-  if(!wrap) return;
-  _puntosRetiro = [];
-  if(!esMayorista && codigo){
-    try{
-      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/puntos_retiro_producto`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY },
-        body: JSON.stringify({ p_codigo: codigo })
-      });
-      const d = await r.json();
-      _puntosRetiro = Array.isArray(d) ? d.filter(p=>p.lat!=null && p.lng!=null) : [];
-    }catch(e){ _puntosRetiro = []; }
-  }
-  renderRecibir();
-}
-function distanciaKm(a, b){
-  const R=6371, toR=x=>x*Math.PI/180;
-  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
-  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
-  return R*2*Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
-}
-function ordenarPuntosPorCercania(){
-  if(!navigator.geolocation){ toast('Tu navegador no permite ubicación'); return; }
-  if(!window.isSecureContext){ toast('La ubicación necesita abrir la página con https://'); return; }
-  toast('Buscando tu ubicación...');
-  navigator.geolocation.getCurrentPosition(pos=>{
-    _miUbic = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    renderRecibir();
-    toast('Puntos ordenados por cercanía ✓');
-  }, err=>{
-    let m = 'No pudimos obtener tu ubicación';
-    if(err.code===1) m='Activá el permiso de ubicación del navegador para ordenar por cercanía';
-    else if(err.code===2) m='Tu ubicación no está disponible por ahora';
-    else if(err.code===3) m='La ubicación tardó demasiado. Probá de nuevo';
-    toast(m);
-  }, { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
-}
-function renderRecibir(){
-  const wrap = document.getElementById('recibir-wrap');
-  if(!wrap) return;
-  let puntos = _puntosRetiro.slice();
-  if(_miUbic){
-    puntos.forEach(p=> p._dist = distanciaKm(_miUbic, {lat:Number(p.lat), lng:Number(p.lng)}));
-    puntos.sort((a,b)=> (a._dist||0)-(b._dist||0));
-  }
-  const envio = `<div class="recibir-opt"><span class="recibir-ico">🚚</span><div><div class="recibir-t">Envío a domicilio</div><div class="recibir-s">Coordinás la entrega en el checkout</div></div></div>`;
-  let retiro = '';
-  if(puntos.length){
-    const p0 = puntos[0];
-    const filas = puntos.map(p=>{
-      const dir = [p.direccion, p.localidad].filter(Boolean).join(', ');
-      const dist = (p._dist!=null) ? `<span class="recibir-km">a ${p._dist.toFixed(1)} km</span>` : '';
-      const links = [
-        p.link ? `<a href="${p.link}" target="_blank" rel="noopener">🌐 Web</a>` : '',
-        p.instagram ? `<a href="${p.instagram}" target="_blank" rel="noopener">📷 Instagram</a>` : '',
-        `<a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`
-      ].filter(Boolean).join('');
-      return `<div class="punto-item">
-        <div class="punto-top"><span class="punto-nom">🏪 ${p.nombre_comercio||'Punto de retiro'}</span>${dist}</div>
-        <div class="punto-dir">${dir||''}</div>
-        <div class="punto-links">${links}</div>
-      </div>`;
-    }).join('');
-    const dir0 = [p0.direccion, p0.localidad].filter(Boolean).join(', ');
-    retiro = `
-      <div class="recibir-opt destacado">
-        <span class="recibir-ico">🏪</span>
-        <div style="flex:1;min-width:0;">
-          <div class="recibir-t">Podés retirar hoy por <b>${p0.nombre_comercio||'un punto cercano'}</b></div>
-          <div class="recibir-s">${dir0||''}</div>
-        </div>
-      </div>
-      ${!_miUbic ? `<button class="btn-cercania" onclick="ordenarPuntosPorCercania()">📍 Ver puntos cerca tuyo</button>` : ''}
-      <div class="puntos-lista">${filas}</div>
-      <div class="recibir-nota">Elegís el punto en el checkout y vas a retirar con tu número de pedido.</div>`;
-  }
-  wrap.innerHTML = `<div class="recibir-card"><div class="recibir-title">Cómo recibirlo</div>${envio}${retiro}</div>`;
 }
 
 function leerCarrito() {
@@ -410,7 +327,9 @@ function agregarYVerCarrito(cod) {
   const p = productoActual;
   if (!p || !p.stock || p.stock <= 0) return;
   const esMay = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
-  const precio = (esMay && Number(p.precio_mayorista) > 0) ? Number(p.precio_mayorista) : Number(p.precio_publico);
+  const _d = Number(p.descuento||0);
+  const _pubCon = _d>0 ? Math.round(Number(p.precio_publico||0)*(1-_d/100)) : Number(p.precio_publico||0);
+  const precio = (esMay && Number(p.precio_mayorista) > 0) ? Number(p.precio_mayorista) : _pubCon;
   const img = getImgUrl((p.foto || '').split(',')[0].trim(), '200');
   const stock = Number(p.stock || 0);
   const carrito = leerCarrito();
@@ -438,7 +357,9 @@ function consultarWsp() {
   const p = productoActual;
   const sinStock = !p.stock || p.stock <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
-  const precio = formatPrecio(p.precio_publico);
+  const _d = Number(p.descuento||0);
+  const _pubCon = _d>0 ? Math.round(Number(p.precio_publico||0)*(1-_d/100)) : Number(p.precio_publico||0);
+  const precio = formatPrecio(esMayoristaLogueado ? p.precio_publico : _pubCon);
   const msg = (sinStock && !esMayoristaLogueado)
     ? `Hola! Me interesa el producto: *${p.nombre}*. ¿Está disponible?\n\n${window.location.href}`
     : `Hola! Me interesa el producto: *${p.nombre}* (${precio}). ¿Está disponible?\n\n${window.location.href}`;
@@ -446,10 +367,11 @@ function consultarWsp() {
 }
 
 async function compartir() {
+  const p = productoActual;
   const url = window.location.href;
   if (navigator.share) {
     try {
-      await navigator.share({ url });
+      await navigator.share({ title: p.nombre, text: p.nombre, url });
     } catch(e) {}
   } else {
     navigator.clipboard.writeText(url);

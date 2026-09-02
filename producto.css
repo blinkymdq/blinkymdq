@@ -96,25 +96,6 @@
 
   #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e293b; color:white; border-radius:10px; padding:10px 20px; font-size:0.85rem; font-weight:700; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; }
 
-  /* Cómo recibirlo */
-  .recibir-card { margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; }
-  .recibir-title { font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c3aed; margin-bottom:12px; }
-  .recibir-opt { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
-  .recibir-opt.destacado { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:6px; }
-  .recibir-ico { font-size:1.4rem; line-height:1; flex-shrink:0; }
-  .recibir-t { font-size:0.92rem; font-weight:800; color:#1e293b; }
-  .recibir-s { font-size:0.8rem; color:#64748b; margin-top:2px; }
-  .btn-cercania { width:100%; margin-top:10px; background:#7c3aed; color:#fff; border:none; border-radius:12px; padding:12px; font-size:0.88rem; font-weight:800; cursor:pointer; }
-  .puntos-lista { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
-  .punto-item { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:11px 13px; }
-  .punto-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .punto-nom { font-size:0.9rem; font-weight:800; color:#1e293b; }
-  .punto-km { font-size:0.78rem; font-weight:800; color:#7c3aed; background:#f3e8ff; border-radius:999px; padding:2px 9px; white-space:nowrap; }
-  .punto-dir { font-size:0.82rem; color:#64748b; margin-top:3px; }
-  .punto-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-  .punto-links a { font-size:0.8rem; font-weight:700; color:#7c3aed; text-decoration:none; }
-  .recibir-nota { font-size:0.74rem; color:#94a3b8; margin-top:10px; }
-
 
     .nav-link { position:relative; overflow:hidden; border-radius:9px; }
     .nav-link select { background:transparent !important; color:#fff !important; }
