@@ -945,6 +945,7 @@ async function aplicarDolarAWeb(){
   try{
     const { data, error } = await supa.rpc('actualizar_precios_dolar', { p_dolar: dolar });
     if(error) throw error;
+    logAct('precio', `Se pasaron los precios a la web con dólar $${dolar} — ${data} producto(s) actualizados`, '');
     toast('✓ ' + data + ' precios actualizados en la web', 'ok');
     await cargarProductos();
   }catch(e){ console.error(e); toast('Error: ' + (e.message||e), 'err'); }
@@ -1009,7 +1010,12 @@ function editarProducto(codigo) {
   ta?.focus();
 }
 
+async function logAct(tipo, descripcion, ref){
+  try { await fetch(`${SUPA_URL}/rest/v1/actividad`, {method:'POST', headers:hdrs, body:JSON.stringify({ tipo: tipo||null, descripcion: descripcion, ref: ref||null })}); } catch(e){}
+}
+
 async function guardarProducto(codigo) {
+  const _prev = {...(todosLosProductos.find(x=>x.codigo===codigo)||{})};
   const moneda   = document.getElementById(`moneda-${codigo}`)?.value || 'USD';
   const dolarReal = parseFloat(document.getElementById('dolar-valor')?.value) || 0;
   const dolar    = moneda === 'ARS' ? 1 : dolarReal;
@@ -1052,12 +1058,19 @@ async function guardarProducto(codigo) {
     await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
+    // Registro de actividad: stock manual y cambios de precio/descuento
+    if(Number(_prev.stock||0) !== stock) logAct('stock', `Stock manual del producto ${codigo} (${nombre}): ${Number(_prev.stock||0)} → ${stock}`, codigo);
+    const _cp = [];
+    if(precioPublico && Number(_prev.precio_publico||0) !== Number(precioPublico)) _cp.push(`público ${fmt(Number(_prev.precio_publico||0))} → ${fmt(precioPublico)}`);
+    if(precioMayor && Number(_prev.precio_mayorista||0) !== Number(precioMayor)) _cp.push(`mayorista ${fmt(Number(_prev.precio_mayorista||0))} → ${fmt(precioMayor)}`);
+    if(Number(_prev.descuento||0) !== Number(desc)) _cp.push(`descuento ${Number(_prev.descuento||0)}% → ${desc}%`);
+    if(_cp.length) logAct('precio', `Precio del producto ${codigo} (${nombre}): ${_cp.join(', ')}`, codigo);
     const p = todosLosProductos.find(x=>x.codigo===codigo);
     if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.descuento=desc; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`genero-${codigo}`].forEach(id => {
+    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`desc-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`genero-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     const _lnk = document.getElementById(`nombre-link-${codigo}`);

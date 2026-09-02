@@ -320,6 +320,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     <button class="nav-tab" onclick="switchTab('cupones',this)">Cupones</button>
     <button class="nav-tab" id="tab-reportes" onclick="switchTab('reportes',this)">Reportes</button>
     <button class="nav-tab" onclick="switchTab('eliminados',this)">Eliminados</button>
+    <button class="nav-tab" onclick="switchTab('registro',this)">📋 Registro</button>
   </div>
 
   <div class="container">
@@ -501,6 +502,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
       </div>
 
       <div id="co-lista" style="margin-bottom:0.8rem;"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text2);margin-bottom:0.8rem;cursor:pointer;">
+        <input type="checkbox" id="co-actualizar-costo">
+        Actualizar el costo del producto (promedio ponderado). Si lo dejás destildado, solo suma stock y deja el costo como estaba.
+      </label>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
         <div style="font-size:1.1rem;font-weight:900;">Total compra: <span id="co-total" style="color:var(--violet-light);">$0</span></div>
         <button class="fc-btn" style="background:var(--green);color:#fff;padding:0.6rem 1.4rem;" onclick="confirmarCompra()">✓ Confirmar compra</button>
@@ -815,6 +820,26 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
     </div>
 
     <!-- CUPONES -->
+    <!-- REGISTRO / MOVIMIENTOS -->
+    <div id="panel-registro" class="panel">
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+        <input id="reg-buscar" class="filter-input" type="text" placeholder="Buscar (producto, cliente, nº, tipo...)" oninput="renderRegistro()" style="min-width:280px;flex:1;">
+        <select id="reg-tipo" class="filter-input" onchange="renderRegistro()" style="min-width:150px;">
+          <option value="">Todos los tipos</option>
+          <option value="compra">📦 Compras</option>
+          <option value="entrega">🚚 Entregas</option>
+          <option value="venta">🛒 Ventas</option>
+          <option value="pago">💵 Pagos</option>
+          <option value="descuento">🏷️ Descuentos</option>
+          <option value="stock">📊 Stock</option>
+          <option value="precio">💲 Precios</option>
+          <option value="pedido">🧾 Pedidos</option>
+        </select>
+        <button class="btn-refresh" onclick="cargarRegistro()">↻ Actualizar</button>
+      </div>
+      <div id="lista-registro"><div class="loading-txt">Cargando...</div></div>
+    </div>
+
     <div id="panel-cupones" class="panel">
       <div class="fc-section-title">Crear y regalar cupón</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.7rem;margin-bottom:0.8rem;">
@@ -1227,6 +1252,37 @@ function switchTab(tab, btn) {
   if(tab==='reportes') cargarReportes();
   if(tab==='stock') cargarProductos();
   if(tab==='compras') cargarCompras();
+  if(tab==='registro') cargarRegistro();
+}
+
+// ── REGISTRO DE ACTIVIDAD ──────────────────────
+async function logAct(tipo, descripcion, ref){
+  try { await fetch(`${SUPA_URL}/rest/v1/actividad`, {method:'POST', headers:hdrs, body:JSON.stringify({ tipo: tipo||null, descripcion: descripcion, ref: ref||null })}); } catch(e){}
+}
+let _regCache = [];
+async function cargarRegistro(){
+  const cont = document.getElementById('lista-registro'); if(!cont) return;
+  cont.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  try {
+    _regCache = await (await fetch(`${SUPA_URL}/rest/v1/actividad?select=*&order=created_at.desc&limit=800`, {headers:hdrs})).json();
+    if(!Array.isArray(_regCache)) _regCache = [];
+    renderRegistro();
+  } catch(e){ cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
+}
+function renderRegistro(){
+  const cont = document.getElementById('lista-registro'); if(!cont) return;
+  const q = (document.getElementById('reg-buscar').value||'').trim().toLowerCase();
+  const tipo = document.getElementById('reg-tipo').value;
+  let rows = _regCache.slice();
+  if(tipo) rows = rows.filter(r=>(r.tipo||'')===tipo);
+  if(q) rows = rows.filter(r=> (`${r.descripcion||''} ${r.tipo||''} ${r.ref||''}`).toLowerCase().includes(q));
+  if(!rows.length){ cont.innerHTML = '<div class="empty"><div class="empty-icon">🗒️</div><p>Sin movimientos</p></div>'; return; }
+  const ico = {compra:'📦',entrega:'🚚',venta:'🛒',pago:'💵',descuento:'🏷️',stock:'📊',precio:'💲',pedido:'🧾'};
+  cont.innerHTML = `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem;">${rows.length} movimiento${rows.length===1?'':'s'}</div>` + rows.map(r=>{
+    const f = new Date(r.created_at);
+    const fecha = f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' · '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'hs';
+    return `<div class="pago-item"><span style="min-width:0;flex:1;"><b style="color:var(--text3);font-family:monospace;font-size:0.72rem;white-space:nowrap;">${fecha}</b> &nbsp;${ico[r.tipo]||'•'} ${esc(r.descripcion||'')}</span></div>`;
+  }).join('');
 }
 
 // ── COMPRAS ────────────────────────────────────
@@ -1433,8 +1489,9 @@ async function confirmarCompra(){
       coItems.map(it=>({ compra_id: compra.id, codigo: it.codigo||null, producto: it.nombre, cantidad: it.cantidad, costo_unitario: it.costo_unitario, costo_final: it.costo_final, costo_total: it.costo_total }))
     )});
 
-    // 4) Existentes: sumar stock + COSTO PROMEDIO PONDERADO (mezcla stock viejo + compra nueva)
+    // 4) Existentes: sumar stock + (opcional) COSTO PROMEDIO PONDERADO
     const coDolar = parseFloat(document.getElementById('co-dolar').value)||0;
+    const actualizarCosto = document.getElementById('co-actualizar-costo') ? document.getElementById('co-actualizar-costo').checked : true;
     const cambiosPrecio = []; // productos cuyo precio de venta cambia por el nuevo costo
     for(const it of coItems){
       if(it.esNuevo) continue;
@@ -1443,6 +1500,13 @@ async function confirmarCompra(){
       const cur = ps[0] || {};
       const stockActual = Number(cur.stock)||0;
       const total = stockActual + it.cantidad;
+
+      // Si NO se actualiza el costo: solo sumar stock y seguir (no toca costo ni precio)
+      if(!actualizarCosto){
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ stock: total })});
+        continue;
+      }
+
       let patch;
       // Solo promedia si hay stock viejo Y la moneda coincide; si no, queda el costo de esta compra
       if(stockActual>0 && total>0 && (cur.moneda||moneda)===moneda){
@@ -1490,6 +1554,7 @@ async function confirmarCompra(){
     })});
     try { const g = (await gR.json())[0]; if(g && g.id) await fetch(`${SUPA_URL}/rest/v1/compras?id=eq.${compra.id}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({gasto_id:g.id})}); } catch(e){}
 
+    logAct('compra', `Se agregó la compra ${compra.numero_compra} — ${coItems.length} ítem(s), total $${total.toLocaleString('es-AR')}`, compra.numero_compra);
     toast(`Compra ${compra.numero_compra} registrada ✓`,'ok');
     coItems = [];
     document.getElementById('co-proveedor').value=''; document.getElementById('co-notas').value=''; document.getElementById('co-caja').value='';
@@ -2239,6 +2304,7 @@ async function aplicarDescuentoPedido(num){
     await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num, monto, forma_pago:'descuento', exceso_acreditado:0, descripcion:'Descuento en el pedido'})});
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado: pagado+monto})});
     if(p.email){ fetch(`${SUPA_URL}/functions/v1/notificar-pago`,{method:'POST',headers:hdrs,body:JSON.stringify({ email:p.email, nombre:p.nombre||'', monto, forma_pago:'descuento' })}).catch(()=>{}); }
+    logAct('descuento', `Descuento de $${monto.toLocaleString('es-AR')} aplicado al pedido ${num}${p.nombre?` (${p.nombre})`:''}`, num);
     toast('Descuento aplicado ✓','ok');
     verPedido(num,false); cargarPedidos(); cargarStats();
   } catch(e){ toast('Error al aplicar el descuento','err'); }
@@ -2608,6 +2674,7 @@ async function confirmarNuevoPedido() {
     if (movs.length) { try { await logMov(movs); } catch(_){} }
 
     const totMerc = movs.reduce((s,m)=>s+Number(m.cantidad||0),0);
+    logAct('venta', `Se creó el pedido ${numeroPedido} (manual) — total $${Number(total||0).toLocaleString('es-AR')}`, numeroPedido);
     toast(`Pedido ${numeroPedido} creado ✓${totMerc>0?` — ${totMerc} u. descontadas de la mercadería del vendedor`:''}`, 'ok');
     cerrarModalNuevoPedido();
     cargarPedidos();
@@ -2667,6 +2734,7 @@ async function eliminarPago(pagoId, num, monto) {
       }
     }
 
+    logAct('pago', `Se eliminó un pago de $${Number(monto).toLocaleString('es-AR')} del pedido ${num}`, num);
     toast('Pago eliminado ✓','ok');
     verPedido(num,false);
     cargarPedidos();
@@ -2699,6 +2767,7 @@ async function eliminarPagoCuenta(pagoId){
         }
       }
     }
+    logAct('pago', `Se eliminó un pago a cuenta${pago.numero_recibo?` (${pago.numero_recibo})`:''} de $${Number(pago.monto).toLocaleString('es-AR')}`, pago.numero_recibo||'');
     toast('Pago eliminado ✓','ok');
     if(clienteActual && clienteActual.id===uid){ cargarPendienteCliente(); cargarPagosCliente(); }
     if(typeof cargarPagos==='function') cargarPagos();
@@ -2725,6 +2794,7 @@ function stepperHTML(num, estado) {
 async function cambiarEstado(num,estado) {
   try {
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({estado})});
+    logAct('pedido', `Pedido ${num} → estado "${estadoLabel(estado)}"`, num);
     toast('Estado actualizado ✓','ok');
     verPedido(num, false);
     cargarPedidos();
@@ -3061,6 +3131,7 @@ async function registrarPagoGeneral(){
     if(clienteActual.email){
       fetch(`${SUPA_URL}/functions/v1/notificar-pago`, {method:'POST', headers:hdrs, body:JSON.stringify({ email: clienteActual.email, nombre: clienteActual.nombre||'', monto, forma_pago: (caja==='descuento'?'descuento':cajaLbl), recibo: (caja==='descuento'?'':(recibo||'')), token: (caja==='descuento'?'':(token||'')), saldo: nuevoSaldo })}).catch(()=>{});
     }
+    logAct(caja==='descuento'?'descuento':'pago', `${caja==='descuento'?'Descuento a cuenta':'Pago a cuenta'} de ${clienteActual.nombre||''}${clienteActual.numero_usuario?` (#${clienteActual.numero_usuario})`:''} por $${monto.toLocaleString('es-AR')} (${cajaLbl})${recibo?` — Recibo ${recibo}`:''}`, recibo||'');
     toast((caja==='descuento'?'Descuento registrado ✓':'Pago a cuenta registrado ✓') + (recibo?` (${recibo})`:''),'ok');
     document.getElementById('fc-pg-monto').value='';
     cargarPendienteCliente();
@@ -3088,6 +3159,7 @@ async function aplicarSaldoFavorCuenta(){
     clienteActual.saldo_favor = nuevoSF;
     const sb = document.getElementById('fc-saldo-favor-badge'); if(sb){ if(nuevoSF>0){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+nuevoSF.toLocaleString('es-AR'); } else sb.style.display='none'; }
     const sa = document.getElementById('fc-saldo-actual'); if(sa) sa.textContent = '$'+nuevoSF.toLocaleString('es-AR');
+    logAct('pago', `Se aplicó saldo a favor de ${clienteActual.nombre||''}${clienteActual.numero_usuario?` (#${clienteActual.numero_usuario})`:''} por $${aplicar.toLocaleString('es-AR')} a la deuda`, '');
     toast('Saldo a favor aplicado ✓','ok');
     cargarPendienteCliente();
     cargarPagosCliente();
@@ -3549,6 +3621,7 @@ async function eliminarPedidoDirecto(num) {
     if(!arch.ok){ const err = await arch.text().catch(()=>''); toast('No se pudo archivar, el pedido NO se borró: '+err.slice(0,120),'err'); return; }
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
     await ajustarStock(items, +1); // devolver stock
+    logAct('pedido', `Se eliminó el pedido ${num}`, num);
     toast('Pedido eliminado','ok'); cargarPedidos(); cargarStats();
   } catch(e){toast('Error al eliminar','err');}
 }
@@ -3582,6 +3655,7 @@ async function eliminarItem(itemId, numPedido) {
 
     toast('Producto quitado ✓','ok');
     await ajustarStock(items, +1); // devolver stock del ítem quitado
+    logAct('pedido', `Se quitó un producto del pedido ${numPedido}`, numPedido);
 
     // Avisar al cliente del cambio y reenviar el comprobante actualizado
     if (ps[0] && ps[0].email && confirm('¿Avisar al cliente que se editó el pedido y reenviarle el comprobante actualizado?')) {
@@ -3621,6 +3695,7 @@ async function eliminarPedido(num) {
     if(!arch.ok){ const err = await arch.text().catch(()=>''); toast('No se pudo archivar, el pedido NO se borró: '+err.slice(0,120),'err'); return; }
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'DELETE',headers:hdrs});
     await ajustarStock(items, +1); // devolver stock
+    logAct('pedido', `Se eliminó el pedido ${num}`, num);
     toast('Pedido eliminado','ok'); cerrarModal(); cargarPedidos(); cargarStats();
   } catch(e){toast('Error al eliminar','err');}
 }
@@ -4152,6 +4227,7 @@ async function confirmarEntrega(uid, btn){
         avisoMail = (jr && jr.ok) ? ' — mail enviado al vendedor' : ' — (no se pudo enviar el mail)';
       } catch(_) { avisoMail = ' — (no se pudo enviar el mail)'; }
     } else { avisoMail = ' — sin email cargado, no se envió aviso'; }
+    logAct('entrega', `Entrega de mercadería a ${v.nombre||''}${v.numero_usuario?` (#${v.numero_usuario})`:''} — ${_totU} u.`, (_compEnt&&_compEnt.token)?_compEnt.token:'');
     entregaCarrito = [];
     toast('Mercadería entregada ✓'+avisoMail,'ok');
     if(_compEnt && _compEnt.token) window.open('https://blinkymdq.github.io/blinkymdq/entrega-imprimir.html?t='+_compEnt.token,'_blank');
