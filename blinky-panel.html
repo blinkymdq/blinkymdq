@@ -1401,17 +1401,31 @@ async function confirmarCompra(){
       coItems.map(it=>({ compra_id: compra.id, codigo: it.codigo||null, producto: it.nombre, cantidad: it.cantidad, costo_unitario: it.costo_unitario, costo_final: it.costo_final, costo_total: it.costo_total }))
     )});
 
-    // 4) Existentes: sumar stock + actualizar costo
+    // 4) Existentes: sumar stock + COSTO PROMEDIO PONDERADO (mezcla stock viejo + compra nueva)
+    const coDolar = parseFloat(document.getElementById('co-dolar').value)||0;
     for(const it of coItems){
       if(it.esNuevo) continue;
-      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs});
+      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,costo_usd,costo_final,moneda`, {headers:hdrs});
       const ps = await pR.json();
-      const stockActual = (ps[0] && Number(ps[0].stock)) || 0;
-      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({
-        stock: stockActual + it.cantidad,
-        costo_usd: moneda==='usd'?it.costo_unitario:null,
-        costo_final: it.costo_final, moneda
-      })});
+      const cur = ps[0] || {};
+      const stockActual = Number(cur.stock)||0;
+      const total = stockActual + it.cantidad;
+      let patch;
+      // Solo promedia si hay stock viejo Y la moneda coincide; si no, queda el costo de esta compra
+      if(stockActual>0 && total>0 && (cur.moneda||moneda)===moneda){
+        if(moneda==='usd'){
+          const prevUsd = Number(cur.costo_usd)||0;
+          const avgUsd = +(((stockActual*prevUsd)+(it.cantidad*it.costo_unitario))/total).toFixed(4);
+          patch = { stock: total, costo_usd: avgUsd, costo_final: Math.round(avgUsd*(1+CO_MARKUP)*coDolar), moneda };
+        } else {
+          const prevFinal = Number(cur.costo_final)||0;
+          const avgFinal = Math.round(((stockActual*prevFinal)+(it.cantidad*it.costo_final))/total);
+          patch = { stock: total, costo_usd: null, costo_final: avgFinal, moneda };
+        }
+      } else {
+        patch = { stock: total, costo_usd: moneda==='usd'?it.costo_unitario:null, costo_final: it.costo_final, moneda };
+      }
+      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(patch)});
     }
 
     // 5) Descontar de la caja: registrar gasto y guardar su id en la compra
