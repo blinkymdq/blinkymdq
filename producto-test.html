@@ -110,6 +110,25 @@
   .estado p { font-size:0.85rem; }
 
   #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e293b; color:white; border-radius:10px; padding:10px 20px; font-size:0.85rem; font-weight:700; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; }
+
+  /* Cómo recibirlo */
+  .recibir-card { margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; }
+  .recibir-title { font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c3aed; margin-bottom:12px; }
+  .recibir-opt { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
+  .recibir-opt.destacado { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:6px; }
+  .recibir-ico { font-size:1.4rem; line-height:1; flex-shrink:0; }
+  .recibir-t { font-size:0.92rem; font-weight:800; color:#1e293b; }
+  .recibir-s { font-size:0.8rem; color:#64748b; margin-top:2px; }
+  .btn-cercania { width:100%; margin-top:10px; background:#7c3aed; color:#fff; border:none; border-radius:12px; padding:12px; font-size:0.88rem; font-weight:800; cursor:pointer; }
+  .puntos-lista { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .punto-item { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:11px 13px; }
+  .punto-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .punto-nom { font-size:0.9rem; font-weight:800; color:#1e293b; }
+  .punto-km { font-size:0.78rem; font-weight:800; color:#7c3aed; background:#f3e8ff; border-radius:999px; padding:2px 9px; white-space:nowrap; }
+  .punto-dir { font-size:0.82rem; color:#64748b; margin-top:3px; }
+  .punto-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .punto-links a { font-size:0.8rem; font-weight:700; color:#7c3aed; text-decoration:none; }
+  .recibir-nota { font-size:0.74rem; color:#94a3b8; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -720,6 +739,7 @@ function renderProducto(p) {
             Consultar por WhatsApp
           </button>
         </div>
+        <div id="recibir-wrap"></div>
         <div style="font-size:0.72rem;color:#64748b;font-family:Arial,sans-serif;margin-top:12px;">Los precios están sujetos a modificaciones sin previo aviso.</div>
       </div>
     </div>
@@ -731,6 +751,91 @@ function renderProducto(p) {
       </div>
     ` : ''}
   `;
+  cargarPuntosRetiro(p.codigo, esMayoristaLogueado);
+}
+
+// ── Cómo recibirlo: envío + puntos de retiro por cercanía ──
+let _puntosRetiro = [];
+let _miUbic = null; // {lat,lng}
+async function cargarPuntosRetiro(codigo, esMayorista){
+  const wrap = document.getElementById('recibir-wrap');
+  if(!wrap) return;
+  _puntosRetiro = [];
+  if(!esMayorista && codigo){
+    try{
+      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/puntos_retiro_producto`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY },
+        body: JSON.stringify({ p_codigo: codigo })
+      });
+      const d = await r.json();
+      _puntosRetiro = Array.isArray(d) ? d.filter(p=>p.lat!=null && p.lng!=null) : [];
+    }catch(e){ _puntosRetiro = []; }
+  }
+  renderRecibir();
+}
+function distanciaKm(a, b){
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+function ordenarPuntosPorCercania(){
+  if(!navigator.geolocation){ toast('Tu navegador no permite ubicación'); return; }
+  if(!window.isSecureContext){ toast('La ubicación necesita abrir la página con https://'); return; }
+  toast('Buscando tu ubicación...');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _miUbic = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    renderRecibir();
+    toast('Puntos ordenados por cercanía ✓');
+  }, err=>{
+    let m = 'No pudimos obtener tu ubicación';
+    if(err.code===1) m='Activá el permiso de ubicación del navegador para ordenar por cercanía';
+    else if(err.code===2) m='Tu ubicación no está disponible por ahora';
+    else if(err.code===3) m='La ubicación tardó demasiado. Probá de nuevo';
+    toast(m);
+  }, { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
+}
+function renderRecibir(){
+  const wrap = document.getElementById('recibir-wrap');
+  if(!wrap) return;
+  let puntos = _puntosRetiro.slice();
+  if(_miUbic){
+    puntos.forEach(p=> p._dist = distanciaKm(_miUbic, {lat:Number(p.lat), lng:Number(p.lng)}));
+    puntos.sort((a,b)=> (a._dist||0)-(b._dist||0));
+  }
+  const envio = `<div class="recibir-opt"><span class="recibir-ico">🚚</span><div><div class="recibir-t">Envío a domicilio</div><div class="recibir-s">Coordinás la entrega en el checkout</div></div></div>`;
+  let retiro = '';
+  if(puntos.length){
+    const p0 = puntos[0];
+    const filas = puntos.map(p=>{
+      const dir = [p.direccion, p.localidad].filter(Boolean).join(', ');
+      const dist = (p._dist!=null) ? `<span class="recibir-km">a ${p._dist.toFixed(1)} km</span>` : '';
+      const links = [
+        p.link ? `<a href="${p.link}" target="_blank" rel="noopener">🌐 Web</a>` : '',
+        p.instagram ? `<a href="${p.instagram}" target="_blank" rel="noopener">📷 Instagram</a>` : '',
+        `<a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`
+      ].filter(Boolean).join('');
+      return `<div class="punto-item">
+        <div class="punto-top"><span class="punto-nom">🏪 ${p.nombre_comercio||'Punto de retiro'}</span>${dist}</div>
+        <div class="punto-dir">${dir||''}</div>
+        <div class="punto-links">${links}</div>
+      </div>`;
+    }).join('');
+    const dir0 = [p0.direccion, p0.localidad].filter(Boolean).join(', ');
+    retiro = `
+      <div class="recibir-opt destacado">
+        <span class="recibir-ico">🏪</span>
+        <div style="flex:1;min-width:0;">
+          <div class="recibir-t">Podés retirar hoy por <b>${p0.nombre_comercio||'un punto cercano'}</b></div>
+          <div class="recibir-s">${dir0||''}</div>
+        </div>
+      </div>
+      ${!_miUbic ? `<button class="btn-cercania" onclick="ordenarPuntosPorCercania()">📍 Ver puntos cerca tuyo</button>` : ''}
+      <div class="puntos-lista">${filas}</div>
+      <div class="recibir-nota">Elegís el punto en el checkout y vas a retirar con tu número de pedido.</div>`;
+  }
+  wrap.innerHTML = `<div class="recibir-card"><div class="recibir-title">Cómo recibirlo</div>${envio}${retiro}</div>`;
 }
 
 function leerCarrito() {
@@ -790,11 +895,10 @@ function consultarWsp() {
 }
 
 async function compartir() {
-  const p = productoActual;
-  const url = window.location.href;
+  const url = window.location.href;   // link limpio (/p/...) con la foto para WhatsApp
   if (navigator.share) {
     try {
-      await navigator.share({ title: p.nombre, text: p.nombre, url });
+      await navigator.share({ url });  // SOLO la URL: asi WhatsApp muestra la miniatura
     } catch(e) {}
   } else {
     navigator.clipboard.writeText(url);

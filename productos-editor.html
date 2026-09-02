@@ -991,7 +991,7 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `genero-${codigo}`];
+  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `desc-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `genero-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -1017,6 +1017,7 @@ async function guardarProducto(codigo) {
   const impE     = parseFloat(document.getElementById(`envioUsd-${codigo}`)?.value) || null;
   const gan      = parseFloat(document.getElementById(`gan-${codigo}`)?.value) || null;
   const ganM     = parseFloat(document.getElementById(`ganmay-${codigo}`)?.value) || null;
+  const desc     = parseFloat(document.getElementById(`desc-${codigo}`)?.value) || 0;
   const stock    = parseInt(document.getElementById(`stock-${codigo}`)?.value) || 0;
   const estado   = document.getElementById(`estado-${codigo}`)?.value || 'activo';
   const nombre   = document.getElementById(`nombre-${codigo}`)?.value.trim();
@@ -1040,6 +1041,7 @@ async function guardarProducto(codigo) {
     costo_final: costoTotal,
     ganancia: gan,
     ganancia_mayorista: ganM,
+    descuento: desc,
     stock: stock,
     estado: estado
   };
@@ -1051,7 +1053,7 @@ async function guardarProducto(codigo) {
       method:'PATCH', headers:hdrs, body:JSON.stringify(body)
     });
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.descuento=desc; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
@@ -1173,6 +1175,7 @@ function renderTabla(prods) {
         <th style="text-align:right;">P. Público</th>
         <th style="text-align:right;">Gan. May. %</th>
         <th style="text-align:right;">P. Mayor.</th>
+        <th style="text-align:right;color:#f97316;">🔥 Desc %</th>
         <th>Descripción</th>
         <th>Estado</th>
         <th></th>
@@ -1211,6 +1214,7 @@ function renderTabla(prods) {
             <td style="text-align:right;"><span class="precio-calc" id="calc-pub-${p.codigo}">${precioPublico ? fmt(precioPublico) : (p.precio_publico ? fmt(p.precio_publico) : '-')}</span></td>
             <td style="text-align:right;"><input class="td-input" id="ganmay-${p.codigo}" type="number" min="0" value="${p.ganancia_mayorista||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" disabled></td>
             <td style="text-align:right;"><span class="precio-mayo" id="calc-may-${p.codigo}">${precioMayor ? fmt(precioMayor) : (p.precio_mayorista ? fmt(p.precio_mayorista) : '-')}</span></td>
+            <td style="text-align:right;"><input class="td-input" id="desc-${p.codigo}" type="number" min="0" max="90" value="${p.descuento||''}" placeholder="0" style="width:50px;border-color:rgba(249,115,22,0.45);" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;white-space:nowrap;">
               <button type="button" class="btn-desc-edit" onclick="abrirEditorDesc('${p.codigo}')">✏️ Editar descripción</button>
             </td>
