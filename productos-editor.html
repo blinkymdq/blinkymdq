@@ -337,6 +337,8 @@
       <button type="button" title="Subrayado" onmousedown="fmtDesc(event,'underline')"><u>U</u></button>
       <span class="sep"></span>
       <button type="button" title="Lista con viñetas" onmousedown="fmtDesc(event,'insertUnorderedList')">• Lista</button>
+      <button type="button" title="Insertar link" onmousedown="insertarLinkDesc(event)">🔗 Link</button>
+      <button type="button" title="Quitar link" onmousedown="fmtDesc(event,'unlink')">⛔ Quitar link</button>
       <button type="button" title="Quitar formato" onmousedown="fmtDesc(event,'removeFormat')">✕ Formato</button>
       <span class="sep"></span>
       <button type="button" onmousedown="insertarEmoji(event,'✨')">✨</button>
@@ -1262,6 +1264,21 @@ function insertarEmoji(e, emoji) {
   document.getElementById('desc-editor').focus();
   document.execCommand('insertText', false, emoji);
 }
+function insertarLinkDesc(e){
+  e.preventDefault();
+  const ed = document.getElementById('desc-editor'); ed.focus();
+  let url = prompt('Pegá el link (URL):', 'https://');
+  if(!url) return;
+  url = url.trim();
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const sel = window.getSelection();
+  const texto = sel ? sel.toString().trim() : '';
+  if(texto){
+    document.execCommand('createLink', false, url);
+  } else {
+    document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+  }
+}
 // Limpia HTML pegado/guardado: deja solo formato básico, saca clases/atributos/junk de otras webs
 function limpiarHtmlDesc(html){
   if(!html) return '';
@@ -1272,7 +1289,8 @@ function limpiarHtmlDesc(html){
   (function walk(node){
     Array.from(node.children).forEach(el=>{
       walk(el);
-      Array.from(el.attributes).forEach(a=>{ if(!(el.tagName==='A' && a.name==='href')) el.removeAttribute(a.name); });
+      Array.from(el.attributes).forEach(a=>{ if(!(el.tagName==='A' && ['href','target','rel'].includes(a.name))) el.removeAttribute(a.name); });
+      if(el.tagName==='A' && el.getAttribute('href')){ el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); }
       if(!permitidos.has(el.tagName)){
         const parent = el.parentNode;
         while(el.firstChild) parent.insertBefore(el.firstChild, el);
