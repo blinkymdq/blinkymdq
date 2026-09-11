@@ -191,6 +191,12 @@
           <option value="sin">Sin stock</option>
           <option value="con">Con stock</option>
         </select>
+        <select class="filter-input" id="filtro-estado" onchange="filtrarTabla()">
+          <option value="">Todos los estados</option>
+          <option value="activo">🟢 Activos</option>
+          <option value="oferta">🏷️ Ofertas</option>
+          <option value="inactivo">⚪ Inactivos</option>
+        </select>
       </div>
 
       <div class="tabla-wrap">
@@ -1139,25 +1145,32 @@ function filtrarTabla() {
   const cat = document.getElementById('filtro-cat').value;
   const marca = document.getElementById('filtro-marca').value;
   const stock = document.getElementById('filtro-stock').value;
+  const estado = document.getElementById('filtro-estado') ? document.getElementById('filtro-estado').value : '';
 
   let prods = todosLosProductos.filter(p => {
     const matchQ = !q || (p.nombre||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q);
     const matchCat = !cat || p.categoria === cat;
     const matchMarca = !marca || p.marca === marca;
     const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
-    return matchQ && matchCat && matchMarca && matchStock;
+    const matchEstado = !estado || (p.estado||'activo') === estado;
+    return matchQ && matchCat && matchMarca && matchStock && matchEstado;
   });
 
-  if(sortField) {
-    prods.sort((a, b) => {
+  // Siempre agrupa por estado (activos → ofertas → inactivos), y dentro respeta el orden de columna
+  const rankEstado = { activo:0, oferta:1, inactivo:2 };
+  prods.sort((a, b) => {
+    const ea = rankEstado[a.estado||'activo'] ?? 1, eb = rankEstado[b.estado||'activo'] ?? 1;
+    if (ea !== eb) return ea - eb;
+    if (sortField) {
       const na = parseFloat(a[sortField]);
       const nb = parseFloat(b[sortField]);
       if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
       const va = (a[sortField]||'').toString().toLowerCase();
       const vb = (b[sortField]||'').toString().toLowerCase();
       return va < vb ? -sortDir : va > vb ? sortDir : 0;
-    });
-  }
+    }
+    return 0;
+  });
 
   renderTabla(prods);
 }
