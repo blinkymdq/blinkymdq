@@ -642,6 +642,11 @@
                     <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;pointer-events:none;" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
                     <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;pointer-events:none;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
+                <span style="color:rgba(255,255,255,0.25);font-weight:300;font-size:18px;line-height:1;user-select:none;">|</span>
+                <button onclick="filtrarOfertas()" class="flex-shrink-0" style="display:inline-flex;align-items:center;gap:5px;height:30px;margin-left:4px;background:#facc15;color:#1a1a1a;border:none;border-radius:999px;padding:0 14px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;box-shadow:0 2px 8px rgba(250,204,21,0.4);">
+                    <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                    Ofertas
+                </button>
             </div>
             <!-- Mobile: ticker badges -->
             <div class="md:hidden" style="height:36px;overflow:hidden;background:#fafafa;border-top:1px solid #f1f5f9;">
@@ -741,6 +746,10 @@
                 <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;pointer-events:none;" fill="none" stroke="#ffffff" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="#fff"/></svg>
                 <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:11px;height:11px;pointer-events:none;" fill="none" stroke="#ffffff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
+            <button onclick="filtrarOfertas()" class="flex-shrink-0" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;height:36px;background:#facc15;color:#1a1a1a;border:none;border-radius:999px;padding:0 14px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.03em;cursor:pointer;box-shadow:0 2px 8px rgba(250,204,21,0.4);">
+                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                Ofertas
+            </button>
         </div>
         <!-- Fila 5: revender -->
         <div style="text-align:center;padding:6px 0 4px;">
@@ -1570,7 +1579,7 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,oferta,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
@@ -1588,8 +1597,8 @@
                     precioLista:  String(p.precio_publico  || 0),
                     precioP:      String( Number(p.descuento||0) > 0 ? Math.round(Number(p.precio_publico||0) * (1 - Number(p.descuento)/100)) : (p.precio_publico || 0) ),
                     precioM:      String(p.precio_mayorista || 0),
-                    esOferta:     p.estado === 'oferta',
-                    esMasVisto:   p.estado === 'oferta',
+                    esOferta:     !!p.oferta,
+                    esMasVisto:   !!p.oferta,
                     stock:        Number(p.stock || 0),
                     sinStock:     Number(p.stock || 0) <= 0,
                     oculto:       false
@@ -1885,7 +1894,7 @@
 
         function filtrarOfertas() {
             paginaActual = 1;
-            render(productos.filter(p => p.esOferta));
+            render(productos.filter(p => Number(p.desc) > 0));
         }
 
         // ════════════════════════════════════════
