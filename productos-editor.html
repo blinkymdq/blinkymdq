@@ -1000,7 +1000,7 @@ function marcarSinGuardar(codigo) {
 }
 
 function editarProducto(codigo) {
-  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `desc-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `genero-${codigo}`];
+  const inputs = [`moneda-${codigo}`, `costoUsd-${codigo}`, `envioUsd-${codigo}`, `gan-${codigo}`, `ganmay-${codigo}`, `desc-${codigo}`, `oferta-${codigo}`, `stock-${codigo}`, `estado-${codigo}`, `nombre-${codigo}`, `marca-${codigo}`, `categoria-${codigo}`, `genero-${codigo}`];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
@@ -1032,6 +1032,7 @@ async function guardarProducto(codigo) {
   const gan      = parseFloat(document.getElementById(`gan-${codigo}`)?.value) || null;
   const ganM     = parseFloat(document.getElementById(`ganmay-${codigo}`)?.value) || null;
   const desc     = parseFloat(document.getElementById(`desc-${codigo}`)?.value) || 0;
+  const ofer     = document.getElementById(`oferta-${codigo}`)?.checked || false;
   const stock    = parseInt(document.getElementById(`stock-${codigo}`)?.value) || 0;
   const estado   = document.getElementById(`estado-${codigo}`)?.value || 'activo';
   const nombre   = document.getElementById(`nombre-${codigo}`)?.value.trim();
@@ -1056,6 +1057,7 @@ async function guardarProducto(codigo) {
     ganancia: gan,
     ganancia_mayorista: ganM,
     descuento: desc,
+    oferta: ofer,
     stock: stock,
     estado: estado
   };
@@ -1074,11 +1076,11 @@ async function guardarProducto(codigo) {
     if(Number(_prev.descuento||0) !== Number(desc)) _cp.push(`descuento ${Number(_prev.descuento||0)}% → ${desc}%`);
     if(_cp.length) logAct('precio', `Precio del producto ${codigo} (${nombre}): ${_cp.join(', ')}`, codigo);
     const p = todosLosProductos.find(x=>x.codigo===codigo);
-    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.descuento=desc; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
+    if(p) { p.nombre=nombre; p.marca=marca; p.categoria=categoria; p.genero=genero; p.moneda=moneda; p.costo_usd=costoUsd; p.imp_e=impE; p.costo_final=costoTotal; p.ganancia=gan; p.ganancia_mayorista=ganM; p.descuento=desc; p.oferta=ofer; p.stock=stock; p.estado=estado; if(precioPublico) p.precio_publico=precioPublico; if(precioMayor) p.precio_mayorista=precioMayor; }
     const btn = document.getElementById(`btn-${codigo}`);
     if(btn) { btn.textContent='✓ Guardado'; btn.classList.add('guardado'); }
     // Volver a deshabilitar inputs
-    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`desc-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`genero-${codigo}`].forEach(id => {
+    [`moneda-${codigo}`,`costoUsd-${codigo}`,`envioUsd-${codigo}`,`gan-${codigo}`,`ganmay-${codigo}`,`desc-${codigo}`,`oferta-${codigo}`,`stock-${codigo}`,`estado-${codigo}`,`nombre-${codigo}`,`marca-${codigo}`,`categoria-${codigo}`,`genero-${codigo}`].forEach(id => {
       const el = document.getElementById(id); if(el) el.disabled = true;
     });
     const _lnk = document.getElementById(`nombre-link-${codigo}`);
@@ -1152,12 +1154,12 @@ function filtrarTabla() {
     const matchCat = !cat || p.categoria === cat;
     const matchMarca = !marca || p.marca === marca;
     const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
-    const matchEstado = !estado || (p.estado||'activo') === estado;
+    const matchEstado = !estado || (estado==='oferta' ? !!p.oferta : (p.estado||'activo') === estado);
     return matchQ && matchCat && matchMarca && matchStock && matchEstado;
   });
 
-  // Siempre agrupa por estado (activos → ofertas → inactivos), y dentro respeta el orden de columna
-  const rankEstado = { activo:0, oferta:1, inactivo:2 };
+  // Siempre agrupa por estado (activos → inactivos), y dentro respeta el orden de columna
+  const rankEstado = { activo:0, inactivo:1 };
   prods.sort((a, b) => {
     const ea = rankEstado[a.estado||'activo'] ?? 1, eb = rankEstado[b.estado||'activo'] ?? 1;
     if (ea !== eb) return ea - eb;
@@ -1198,14 +1200,15 @@ function renderTabla(prods) {
         <th style="text-align:center;">Moneda</th>
         <th style="text-align:right;color:var(--yellow);">Costo</th>
         <th style="text-align:right;color:var(--yellow);">Imp.E %</th>
-        <th style="text-align:right;color:var(--yellow);">Costo Total</th>
+        <th style="text-align:right;color:var(--yellow);white-space:nowrap;">Costo F.</th>
         <th style="text-align:right;">Gan. Min. %</th>
         <th style="text-align:right;">P. Público</th>
         <th style="text-align:right;">Gan. May. %</th>
         <th style="text-align:right;">P. Mayor.</th>
         <th style="text-align:right;color:#f97316;">🔥 Desc %</th>
-        <th>Descripción</th>
+        <th title="Descripción" style="text-align:center;width:40px;">✏️</th>
         <th>Estado</th>
+        <th title="Aparece en el carrusel del inicio" style="text-align:center;white-space:nowrap;color:#f59e0b;">🏷️ Oferta</th>
         <th></th>
         <th></th>
       </tr></thead>
@@ -1249,10 +1252,10 @@ function renderTabla(prods) {
             <td>
               <select class="td-input" id="estado-${p.codigo}" style="width:90px;" oninput="marcarSinGuardar('${p.codigo}')" disabled>
                 <option value="activo" ${p.estado==='activo'?'selected':''}>Activo</option>
-                <option value="oferta" ${p.estado==='oferta'?'selected':''}>Oferta</option>
                 <option value="inactivo" ${p.estado==='inactivo'?'selected':''}>Inactivo</option>
               </select>
             </td>
+            <td style="text-align:center;"><input type="checkbox" id="oferta-${p.codigo}" ${p.oferta?'checked':''} onchange="marcarSinGuardar('${p.codigo}')" disabled style="width:16px;height:16px;cursor:pointer;"></td>
             <td><button class="btn-editar-row" id="btn-${p.codigo}" onclick="editarProducto('${p.codigo}')">Editar</button></td>
             <td><button onclick="eliminarProducto('${p.codigo}')" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:0.7rem;padding:4px 8px;cursor:pointer;">🗑</button></td>
           </tr>`;
