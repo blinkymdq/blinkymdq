@@ -222,6 +222,36 @@ def main():
         open(os.path.join(outdir, 'index.html'), 'w', encoding='utf-8').write(page)
         return canonical
 
+    def build_ofertas_clone():
+        # Clon del index que arranca en modo OFERTAS (productos con descuento) con URL limpia /ofertas/
+        canonical = f"{SITE}/ofertas/"
+        titulo = "Ofertas - Blinky MDQ"
+        desc = ("Todas las ofertas y productos con descuento de Blinky MDQ, Mar del Plata. "
+                "Envios a todo el pais y retiro en Punto Blinky.")[:160]
+        inject = ('<base href="/">\n<script>window.__OFERTAS__=true;'
+                  '(function(){var g=URLSearchParams.prototype.get;'
+                  'URLSearchParams.prototype.get=function(k){var v=g.call(this,k);'
+                  'if((v==null||v==="")&&k==="ofertas"&&window.__OFERTAS__)return "1";return v;};'
+                  'history.replaceState=function(){};history.pushState=function(){};})();</script>')
+        head_extra = (f'<link rel="canonical" href="{canonical}">'
+                      f'<meta name="description" content="{esc(desc)}">'
+                      f'<meta property="og:type" content="website">'
+                      f'<meta property="og:title" content="{esc(titulo)}">'
+                      f'<meta property="og:description" content="{esc(desc)}">'
+                      f'<meta property="og:image" content="{SITE}/blinkysinfondo.png">'
+                      f'<meta property="og:url" content="{canonical}">'
+                      f'<meta name="twitter:card" content="summary_large_image">')
+        page = idx_html
+        page = page.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n' + inject, 1)
+        page = re.sub(r'<title>.*?</title>',
+                      lambda m: f'<title>{esc(titulo)}</title>{head_extra}', page, count=1, flags=re.S)
+        outdir = os.path.join(ROOT, 'ofertas')
+        if os.path.isdir(outdir):
+            shutil.rmtree(outdir)
+        os.makedirs(outdir, exist_ok=True)
+        open(os.path.join(outdir, 'index.html'), 'w', encoding='utf-8').write(page)
+        return canonical
+
     if idx_html:
         for sg, info in sorted(cats.items()):
             loc = build_index_clone('categoria', sg, info['name'], info['items'])
@@ -229,8 +259,10 @@ def main():
         for sg, info in sorted(marcas.items()):
             loc = build_index_clone('marca', sg, info['name'], info['items'])
             sm.append(f'  <url><loc>{loc}</loc><changefreq>weekly</changefreq></url>')
+        loc = build_ofertas_clone()
+        sm.append(f'  <url><loc>{loc}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>')
     else:
-        print("   (aviso: no encontre index.html en la raiz; salteo categoria/marca)")
+        print("   (aviso: no encontre index.html en la raiz; salteo categoria/marca/ofertas)")
 
     sm.append('</urlset>')
     open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8').write('\n'.join(sm))
