@@ -829,6 +829,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <option value="">Todos los tipos</option>
           <option value="compra">📦 Compras</option>
           <option value="entrega">🚚 Entregas</option>
+          <option value="devolucion">↩️ Devoluciones</option>
           <option value="venta">🛒 Ventas</option>
           <option value="pago">💵 Pagos</option>
           <option value="descuento">🏷️ Descuentos</option>
@@ -1278,7 +1279,7 @@ function renderRegistro(){
   if(tipo) rows = rows.filter(r=>(r.tipo||'')===tipo);
   if(q) rows = rows.filter(r=> (`${r.descripcion||''} ${r.tipo||''} ${r.ref||''}`).toLowerCase().includes(q));
   if(!rows.length){ cont.innerHTML = '<div class="empty"><div class="empty-icon">🗒️</div><p>Sin movimientos</p></div>'; return; }
-  const ico = {compra:'📦',entrega:'🚚',venta:'🛒',pago:'💵',descuento:'🏷️',stock:'📊',precio:'💲',pedido:'🧾'};
+  const ico = {compra:'📦',entrega:'🚚',venta:'🛒',pago:'💵',descuento:'🏷️',stock:'📊',precio:'💲',pedido:'🧾',devolucion:'↩️'};
   cont.innerHTML = `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem;">${rows.length} movimiento${rows.length===1?'':'s'}</div>` + rows.map(r=>{
     const f = new Date(r.created_at);
     const fecha = f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' · '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'hs';
@@ -2129,10 +2130,12 @@ async function verPedido(num, esEliminado) {
     const esPagado=saldo<=0;
 
     let saldoFavorCliente = 0;
+    window._pedidoCliente = null;
     if (!esEliminado && p.email) {
       try {
-        const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(p.email)}&select=saldo_favor`,{headers:hdrs});
+        const uR = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(p.email)}&select=id,nombre,numero_usuario,email,telefono,direccion,saldo_favor,avatar,rol`,{headers:hdrs});
         const us = await uR.json();
+        window._pedidoCliente = us[0] || null;
         saldoFavorCliente = Number(us[0]?.saldo_favor||0);
       } catch(e){}
     }
@@ -2179,7 +2182,8 @@ async function verPedido(num, esEliminado) {
     }
 
     document.getElementById('modal-body').innerHTML=`
-      <div class="detail-row"><span class="detail-key">Cliente</span><span>${p.nombre}</span></div>
+      ${window._pedidoCliente&&window._pedidoCliente.numero_usuario?`<div class="detail-row"><span class="detail-key">Cliente nº</span><span>#${window._pedidoCliente.numero_usuario}</span></div>`:''}
+      <div class="detail-row"><span class="detail-key">Nombre</span>${window._pedidoCliente?`<a href="#" onclick="abrirFichaCliente(window._pedidoCliente);return false;" style="color:var(--violet);text-decoration:none;font-weight:700;cursor:pointer;">${p.nombre} ↗</a>`:`<span>${p.nombre}</span>`}</div>
       ${p.telefono?`<div class="detail-row"><span class="detail-key">Teléfono</span><a href="https://wa.me/549${p.telefono}" target="_blank" style="color:var(--green);">📱 ${p.telefono}</a></div>`:''}
       ${p.email?`<div class="detail-row"><span class="detail-key">Email</span><span>${p.email}</span></div>`:''}
       ${p.provincia||p.localidad?`<div class="detail-row"><span class="detail-key">Ubicación</span><span>${[p.localidad,p.provincia].filter(Boolean).join(', ')}</span></div>`:''}
@@ -4315,6 +4319,8 @@ async function devolverMercaderia(entregaId) {
   if(n<=0 || n>pend){ toast('Cantidad inválida','err'); return; }
   await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({devuelto:Number(e.devuelto||0)+n})});
   await logMov([{usuario_id:e.usuario_id, codigo:e.codigo, producto:e.producto, tipo:'devolucion', cantidad:n}]);
+  const _vd = vendUsuarios.find(u=>u.id===e.usuario_id);
+  logAct('devolucion', `Devolución de mercadería de ${_vd?.nombre||e.usuario_id}${_vd?.numero_usuario?` (#${_vd.numero_usuario})`:''} — ${e.producto} × ${n} u.`, '');
   toast('Devolución registrada ✓','ok');
   await cargarVendedores();
 }
@@ -4366,6 +4372,9 @@ async function registrarDevolucionVendedor(id, btn){
       const _r = await fetch(`${SUPA_URL}/rest/v1/devoluciones_comprobantes`,{method:'POST',headers:hdrs,body:JSON.stringify({usuario_id:id, vendedor_nombre:v.nombre, items:_its, total_unidades:_tot})});
       _compDev = (await _r.json())[0];
     }catch(e){}
+
+    const _totDev = items.reduce((s,it)=>s+Number(it.n||0),0);
+    logAct('devolucion', `Devolución de mercadería de ${v.nombre||''}${v.numero_usuario?` (#${v.numero_usuario})`:''} — ${_totDev} u.`, (_compDev&&_compDev.token)?_compDev.token:'');
 
     // Mail al vendedor con el listado devuelto (no bloquea si falla)
     let avisoMail = '';
