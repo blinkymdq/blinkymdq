@@ -2273,7 +2273,7 @@ async function verPedido(num, esEliminado) {
             </div>
           </div>`:''}
 
-        ${!esPagado?`
+        ${(!esPagado && (p.estado==='pendiente'||p.estado==='preparando'))?`
         <div class="pago-form" style="margin-top:1rem;">
           <div class="pago-form-title">🏷️ Aplicar descuento al pedido</div>
           <div class="pago-form-row">
@@ -2281,26 +2281,15 @@ async function verPedido(num, esEliminado) {
             <input type="number" class="pago-input" id="desc-pct" placeholder="% opc." min="0" max="100" style="max-width:110px;" oninput="if(this.value)document.getElementById('desc-monto').value=Math.round(${saldo}*this.value/100)">
             <button class="btn-agregar-pago" style="width:auto;background:#f59e0b;color:#111;margin-top:0;" onclick="aplicarDescuentoPedido('${num}')">Aplicar</button>
           </div>
-          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Baja el saldo del pedido, queda guardado y le llega el mail de descuento al cliente.</div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Baja el saldo del pedido, queda guardado y le llega el mail de descuento al cliente. Se bloquea al confirmar el pedido.</div>
         </div>`:''}
 
-        <!-- Los pagos se gestionan desde la ficha del cliente → Cuenta corriente -->
-        <div class="post-pago-btns" style="margin-top:1rem;">
-          <button class="btn-finalizar" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
-          <button class="btn-eliminar-chico" onclick="mostrarConfirmEliminar()">🗑️ Eliminar</button>
-        </div>
-
         ${stepperHTML(num, p.estado)}
-        <div class="estado-field">
-          <label>Estado del pedido</label>
-          <select onchange="cambiarEstado('${num}',this.value)">
-            <option value="pendiente" ${p.estado==='pendiente'?'selected':''}>Pendiente</option>
-            <option value="preparando" ${p.estado==='preparando'?'selected':''}>Preparando</option>
-            <option value="confirmado" ${p.estado==='confirmado'?'selected':''}>Confirmado</option>
-            <option value="en_camino" ${p.estado==='en_camino'?'selected':''}>En camino</option>
-            <option value="entregado" ${p.estado==='entregado'?'selected':''}>Entregado</option>
-            <option value="cancelado" ${p.estado==='cancelado'?'selected':''}>Cancelado</option>
-          </select>
+
+        <!-- Finalizar debajo de la barra de estado; eliminar como ícono chico -->
+        <div class="post-pago-btns" style="margin-top:0.8rem;display:flex;gap:0.5rem;align-items:center;">
+          <button class="btn-finalizar" style="flex:1;" onclick="finalizarPedido('${num}')">✓ Finalizar pedido</button>
+          <button onclick="mostrarConfirmEliminar()" title="Eliminar pedido" style="flex-shrink:0;background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;width:40px;height:40px;cursor:pointer;font-size:1.05rem;display:flex;align-items:center;justify-content:center;">🗑️</button>
         </div>
         <div id="confirm-box" style="display:none;" class="confirm-box">
           <p>¿Seguro que querés eliminar el pedido <strong>${num}</strong>?</p>
@@ -2809,7 +2798,11 @@ function stepperHTML(num, estado) {
     const done = cur>=0 && i<=cur;
     const bg = done ? '#7c3aed' : 'var(--surface2,#2a2a3a)';
     const col = done ? '#fff' : 'var(--text3,#94a3b8)';
-    h+='<button onclick="cambiarEstado(\''+num+'\',\''+pp[0]+'\')" style="flex:1;min-width:80px;border:none;border-radius:8px;padding:8px 4px;font-size:0.7rem;font-weight:800;cursor:pointer;background:'+bg+';color:'+col+';">'+(i+1)+'. '+pp[1]+'</button>';
+    // Solo se puede avanzar: los pasos ya alcanzados quedan bloqueados (no se vuelve atrás)
+    const clickable = i>cur && estado!=='cancelado';
+    const onclk = clickable ? ' onclick="cambiarEstado(\''+num+'\',\''+pp[0]+'\')"' : ' disabled';
+    const cursor = clickable ? 'pointer' : (done ? 'default' : 'not-allowed');
+    h+='<button'+onclk+' style="flex:1;min-width:80px;border:none;border-radius:8px;padding:8px 4px;font-size:0.7rem;font-weight:800;cursor:'+cursor+';background:'+bg+';color:'+col+';">'+(done?'✓ ':'')+(i+1)+'. '+pp[1]+'</button>';
   });
   h+='</div>';
   return h;
@@ -2817,6 +2810,11 @@ function stepperHTML(num, estado) {
 
 async function cambiarEstado(num,estado) {
   try {
+    const orden=['pendiente','preparando','confirmado','en_camino','entregado'];
+    const cur=(await (await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}&select=estado`,{headers:hdrs})).json())[0]?.estado;
+    if(cur && cur!=='cancelado' && estado!=='cancelado' && orden.indexOf(estado)>=0 && orden.indexOf(cur)>=0 && orden.indexOf(estado)<orden.indexOf(cur)){
+      toast('No se puede volver a un estado anterior','err'); return;
+    }
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({estado})});
     logAct('pedido', `Pedido ${num} → estado "${estadoLabel(estado)}"`, num);
     toast('Estado actualizado ✓','ok');
