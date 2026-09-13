@@ -617,7 +617,6 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div style="display:flex;gap:0.4rem;border-bottom:1px solid var(--border);margin-bottom:1rem;">
           <button class="fc-tab-btn active" id="fc-tabbtn-pedidos" onclick="switchFichaTab('pedidos')">Pedidos</button>
           <button class="fc-tab-btn" id="fc-tabbtn-pagos" onclick="switchFichaTab('pagos')">Pagos</button>
-          <button class="fc-tab-btn" id="fc-tabbtn-pendiente" onclick="switchFichaTab('pendiente')">Pendiente</button>
           <button class="fc-tab-btn" id="fc-tabbtn-saldo" onclick="switchFichaTab('saldo')">Saldo a favor</button>
           <button class="fc-tab-btn" id="fc-tabbtn-movimientos" onclick="switchFichaTab('movimientos')">Movimientos</button>
         </div>
@@ -627,9 +626,51 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <div id="fc-pedidos-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
-        <!-- TAB PAGOS (todos los pagos del cliente) -->
+        <!-- TAB PAGOS (cuenta corriente: cargar pago + saldo pendiente + pagos por pedido) -->
         <div id="fc-tab-pagos" style="display:none;">
-          <div class="fc-section-title" style="margin-top:0;">Pagos realizados por el cliente</div>
+          <!-- Pago a cuenta general: SOLO mayoristas/vendedores -->
+          <div id="fc-pg-general">
+            <div class="fc-section-title" style="margin-top:0;">Registrar pago a cuenta</div>
+            <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;gap:0.6rem;align-items:center;">
+              <input id="fc-pg-monto" type="number" min="0" step="0.01" placeholder="Monto a pagar">
+              <select id="fc-pg-caja">
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">📲 Transferencia</option>
+                <option value="transferencia_rm">🏦 Transferencia RM</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="descuento">🏷️ Descuento</option>
+              </select>
+              <input id="fc-pg-fecha" type="date" title="Fecha" style="max-width:150px;">
+            </div>
+            <input id="fc-pg-desc" type="text" placeholder="Descripción (opcional)" style="width:100%;margin-top:0.5rem;">
+            <div style="display:flex;justify-content:flex-end;margin-top:0.5rem;">
+              <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="registrarPagoGeneral()">Registrar pago</button>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se acredita a la cuenta del cliente y baja su saldo total (no se aplica a pedidos puntuales). Si sobra, queda como saldo a favor. "Descuento" no suma a las cajas de plata: se registra aparte.</div>
+          </div>
+          <!-- Pago asignado a un pedido: SOLO minoristas -->
+          <div id="fc-pg-porpedido" style="display:none;">
+            <div class="fc-section-title" style="margin-top:0;">Registrar pago a un pedido</div>
+            <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;gap:0.6rem;align-items:center;">
+              <select id="fc-pgp-pedido" onchange="_pgpSetMonto()"><option value="">Elegí un pedido…</option></select>
+              <select id="fc-pgp-caja">
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">📲 Transferencia</option>
+                <option value="transferencia_rm">🏦 Transferencia RM</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+              </select>
+              <input id="fc-pgp-fecha" type="date" title="Fecha" style="max-width:150px;">
+            </div>
+            <div class="fc-form-row" style="grid-template-columns:1fr auto;gap:0.6rem;align-items:center;margin-top:0.5rem;">
+              <input id="fc-pgp-monto" type="number" min="0" step="0.01" placeholder="Monto a pagar">
+              <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="registrarPagoPedidoFicha()">Registrar pago</button>
+            </div>
+            <input id="fc-pgp-desc" type="text" placeholder="Descripción (opcional)" style="width:100%;margin-top:0.5rem;">
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se asigna al pedido elegido y baja su saldo. Cuando el pedido queda pago, se puede enviar. Si se paga de más, el excedente queda como saldo a favor.</div>
+          </div>
+          <div class="fc-section-title">Saldo pendiente de pago</div>
+          <div id="fc-pendiente-lista"><div class="loading-txt">Cargando...</div></div>
+          <div class="fc-section-title">Pagos aplicados a pedidos</div>
           <div id="fc-pagos-cliente-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
@@ -637,29 +678,6 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         <div id="fc-tab-movimientos" style="display:none;">
           <div class="fc-section-title" style="margin-top:0;">Historial de movimientos</div>
           <div id="fc-movimientos-lista"><div class="loading-txt">Cargando...</div></div>
-        </div>
-
-        <!-- TAB PENDIENTE (pedidos sin pagar del todo) -->
-        <div id="fc-tab-pendiente" style="display:none;">
-          <div class="fc-section-title" style="margin-top:0;">Registrar pago a cuenta</div>
-          <div class="fc-form-row" style="grid-template-columns:1fr 1fr auto;gap:0.6rem;align-items:center;">
-            <input id="fc-pg-monto" type="number" min="0" step="0.01" placeholder="Monto a pagar">
-            <select id="fc-pg-caja">
-              <option value="efectivo">💵 Efectivo</option>
-              <option value="transferencia">📲 Transferencia</option>
-              <option value="transferencia_rm">🏦 Transferencia RM</option>
-              <option value="tarjeta">💳 Tarjeta</option>
-              <option value="descuento">🏷️ Descuento</option>
-            </select>
-            <input id="fc-pg-fecha" type="date" title="Fecha" style="max-width:150px;">
-          </div>
-          <input id="fc-pg-desc" type="text" placeholder="Descripción (opcional)" style="width:100%;margin-top:0.5rem;">
-          <div style="display:flex;justify-content:flex-end;margin-top:0.5rem;">
-            <button class="fc-btn" style="background:var(--green);color:#fff;" onclick="registrarPagoGeneral()">Registrar pago</button>
-          </div>
-          <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;">Se acredita a la cuenta del cliente y baja su saldo total (no se aplica a pedidos puntuales). Si sobra, queda como saldo a favor. "Descuento" no suma a las cajas de plata: se registra aparte.</div>
-          <div class="fc-section-title">Saldo pendiente de pago</div>
-          <div id="fc-pendiente-lista"><div class="loading-txt">Cargando...</div></div>
         </div>
 
         <!-- TAB SALDO A FAVOR -->
@@ -2991,14 +3009,81 @@ async function guardarEdicionFicha() {
 }
 
 function switchFichaTab(tab) {
-  ['pedidos','pagos','pendiente','saldo','movimientos'].forEach(t => {
+  ['pedidos','pagos','saldo','movimientos'].forEach(t => {
     const d = document.getElementById(`fc-tab-${t}`); if(d) d.style.display = t===tab ? 'block' : 'none';
     const b = document.getElementById(`fc-tabbtn-${t}`); if(b) b.classList.toggle('active', t===tab);
   });
   if(tab==='saldo') cargarSaldoFavorFicha();
-  if(tab==='pagos') cargarPagosCliente();
-  if(tab==='pendiente') cargarPendienteCliente();
+  if(tab==='pagos'){
+    const esMayorista = (clienteActual?.rol||'') === 'mayorista';
+    const gEl = document.getElementById('fc-pg-general');   if(gEl) gEl.style.display = esMayorista ? 'block' : 'none';
+    const pEl = document.getElementById('fc-pg-porpedido'); if(pEl) pEl.style.display = esMayorista ? 'none' : 'block';
+    if(!esMayorista) llenarPedidosPorPagar();
+    cargarPendienteCliente(); cargarPagosCliente();
+  }
   if(tab==='movimientos') cargarMovimientosCliente();
+}
+
+async function llenarPedidosPorPagar(){
+  const sel = document.getElementById('fc-pgp-pedido'); if(!sel) return;
+  const fEl = document.getElementById('fc-pgp-fecha'); if(fEl && !fEl.value) fEl.value = hoyStr();
+  window._pgpPend = {};
+  try {
+    const pend = await _fetchPendientesCliente();
+    if(!pend.length){ sel.innerHTML = '<option value="">Sin pedidos por pagar</option>'; return; }
+    sel.innerHTML = '<option value="">Elegí un pedido…</option>' + pend
+      .slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))
+      .map(p=>{
+        const pen = Number(p.total||0)-Number(p.monto_pagado||0);
+        window._pgpPend[p.numero_pedido] = pen;
+        return `<option value="${p.numero_pedido}">#${p.numero_pedido} — pendiente $${pen.toLocaleString('es-AR')}</option>`;
+      }).join('');
+  } catch(e){ sel.innerHTML = '<option value="">Error al cargar pedidos</option>'; }
+}
+function _pgpSetMonto(){
+  const num = document.getElementById('fc-pgp-pedido').value;
+  const m = document.getElementById('fc-pgp-monto');
+  if(num && window._pgpPend && window._pgpPend[num]!=null) m.value = window._pgpPend[num];
+  else m.value = '';
+}
+async function registrarPagoPedidoFicha(){
+  if(!clienteActual) return;
+  const num = document.getElementById('fc-pgp-pedido').value;
+  if(!num){ toast('Elegí un pedido','err'); return; }
+  const monto = parseFloat(document.getElementById('fc-pgp-monto').value);
+  const caja = document.getElementById('fc-pgp-caja').value;
+  const fecha = document.getElementById('fc-pgp-fecha').value || hoyStr();
+  const desc = (document.getElementById('fc-pgp-desc').value||'').trim();
+  const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja] || caja;
+  if(!monto || monto<=0){ toast('Poné un monto válido','err'); return; }
+  try {
+    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}&select=total,monto_pagado,email,nombre`,{headers:hdrs});
+    const pedido = (await pR.json())[0]; if(!pedido){ toast('Pedido no encontrado','err'); return; }
+    const total = Number(pedido.total||0), actual = Number(pedido.monto_pagado||0);
+    const restante = Math.max(total-actual, 0);
+    const exceso = Math.max(monto-restante, 0);
+    const nuevo = Math.min(actual+monto, total);
+    let msg = `Registrar pago de $${monto.toLocaleString('es-AR')} (${cajaLbl}) al pedido ${num}?\nSaldo del pedido: $${restante.toLocaleString('es-AR')} → $${Math.max(0,restante-monto).toLocaleString('es-AR')}`;
+    if(exceso>0) msg += `\n$${exceso.toLocaleString('es-AR')} pasan a saldo a favor.`;
+    if(!confirm(msg)) return;
+    const createdAt = fecha + 'T12:00:00-03:00';
+    await fetch(`${SUPA_URL}/rest/v1/pagos`,{method:'POST',headers:hdrs,body:JSON.stringify({numero_pedido:num, user_id:clienteActual.id, monto, forma_pago:caja, exceso_acreditado:exceso, descripcion:desc||null, created_at:createdAt})});
+    await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(num)}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({monto_pagado:nuevo})});
+    if(exceso>0){
+      const nuevoSF = Number(clienteActual.saldo_favor||0) + exceso;
+      await fetch(`${SUPA_URL}/rest/v1/usuarios?id=eq.${clienteActual.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({saldo_favor:nuevoSF})});
+      clienteActual.saldo_favor = nuevoSF;
+      const sb=document.getElementById('fc-saldo-favor-badge'); if(sb){ sb.style.display='block'; document.getElementById('fc-saldo-favor-val').textContent = '$'+nuevoSF.toLocaleString('es-AR'); }
+    }
+    if(pedido.email){ fetch(`${SUPA_URL}/functions/v1/notificar-pago`,{method:'POST',headers:hdrs,body:JSON.stringify({ email:pedido.email, nombre:pedido.nombre||'', numero_pedido:num, monto, forma_pago:cajaLbl })}).catch(()=>{}); }
+    logAct('pago', `Pago de $${monto.toLocaleString('es-AR')} (${cajaLbl}) al pedido ${num}${clienteActual.nombre?` — ${clienteActual.nombre}`:''}${clienteActual.numero_usuario?` (#${clienteActual.numero_usuario})`:''}`, num);
+    toast('Pago registrado ✓','ok');
+    document.getElementById('fc-pgp-monto').value=''; document.getElementById('fc-pgp-desc').value=''; document.getElementById('fc-pgp-pedido').value='';
+    llenarPedidosPorPagar();
+    cargarPendienteCliente(); cargarPagosCliente();
+    if(typeof cargarPedidos==='function') cargarPedidos();
+    if(typeof cargarCajas==='function') cargarCajas();
+  } catch(e){ toast('Error al registrar el pago','err'); }
 }
 
 async function cargarMovimientosCliente(){
