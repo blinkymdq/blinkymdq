@@ -367,4 +367,5 @@
   <url><loc>https://blinkymdq.com/marca/varios/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://blinkymdq.com/marca/victoria-s-secret/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://blinkymdq.com/marca/xiaomi/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://blinkymdq.com/ofertas/</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 </urlset>
