@@ -2247,12 +2247,13 @@ async function verPedido(num, esEliminado) {
       </div>
 
       ${!esEliminado?`
-        <!-- SALDO -->
+        <!-- SALDO (los mayoristas/vendedores llevan cuenta corriente: no se muestra saldo por pedido) -->
+        ${p.tipo!=='mayorista'?`
         <div class="saldo-box ${esPagado?'pagado':'debe'}">
           <div class="saldo-title">${esPagado?'✓ PAGADO':'Saldo pendiente'}</div>
           <div class="saldo-val">${esPagado?'$0':'$'+saldo.toLocaleString('es-AR')}</div>
           ${montoPagado>0?`<div style="font-size:0.78rem;margin-top:4px;opacity:0.7;">Pagado: $${montoPagado.toLocaleString('es-AR')}</div>`:''}
-        </div>
+        </div>`:''}
 
         <!-- HISTORIAL PAGOS -->
         ${pagos.length?`
