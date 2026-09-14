@@ -224,6 +224,7 @@ def main():
                       f'<meta property="og:url" content="{canonical}">'
                       f'<meta name="twitter:card" content="summary_large_image">')
         page = idx_html
+        page = re.sub(r'\s*<link rel="canonical"[^>]*>', '', page)  # la pagina define su propia canonica
         page = page.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n' + inject, 1)
         page = re.sub(r'<title>.*?</title>',
                       lambda m: f'<title>{esc(titulo)}</title>{head_extra}', page, count=1, flags=re.S)
@@ -252,6 +253,7 @@ def main():
                       f'<meta property="og:url" content="{canonical}">'
                       f'<meta name="twitter:card" content="summary_large_image">')
         page = idx_html
+        page = re.sub(r'\s*<link rel="canonical"[^>]*>', '', page)  # la pagina define su propia canonica
         page = page.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n' + inject, 1)
         page = re.sub(r'<title>.*?</title>',
                       lambda m: f'<title>{esc(titulo)}</title>{head_extra}', page, count=1, flags=re.S)
