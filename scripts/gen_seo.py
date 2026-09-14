@@ -9,7 +9,7 @@ Supabase (clave anon, solo lectura) y escribe:
   - /sitemap.xml   /robots.txt
 No modifica producto.html (lo usa solo como plantilla).
 """
-import re, json, os, sys, shutil, unicodedata, urllib.request
+import re, json, os, sys, shutil, unicodedata, urllib.request, html
 
 SITE   = 'https://blinkymdq.com'
 SUPA   = 'https://fcaytkwcypktvrmerexp.supabase.co'
@@ -44,6 +44,16 @@ def esc(s):
 def fmt_precio(v):
     try: return '$' + format(int(round(float(v))), ',d').replace(',', '.')
     except Exception: return ''
+
+def strip_html(s):
+    # Convierte la descripción (que viene con HTML) en texto plano para meta/JSON-LD
+    s = str(s or '')
+    s = re.sub(r'(?i)<br\s*/?>', ' ', s)
+    s = re.sub(r'(?i)</(p|div|li|ul|ol|h[1-6]|tr)>', ' ', s)
+    s = re.sub(r'<[^>]+>', ' ', s)      # quitar cualquier etiqueta restante
+    s = html.unescape(s)                # &amp; -> &, &nbsp; -> espacio, etc.
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s
 
 # Shim: si la pagina define window.__COD__, hacemos que cualquier lectura de
 # ?cod= / ?codigo= devuelva ese codigo, SIN modificar la URL (queda limpia).
@@ -118,7 +128,7 @@ def main():
         precio = fmt_precio(p.get('precio_publico'))
         instock = bool(p.get('stock')) and int(p.get('stock') or 0) > 0
         img = img_url(p.get('foto')) or f"{SITE}/blinkysinfondo.png"
-        desc_raw = re.sub(r'\s+', ' ', (p.get('descripcion') or '')).strip()
+        desc_raw = strip_html(p.get('descripcion') or '')
         meta_desc = (desc_raw[:155] if desc_raw else
                      f"Compra {nombre} en Blinky MDQ. {(precio + '. ') if precio else ''}"
                      f"Envios a todo el pais y retiro en Mar del Plata.")[:160]
