@@ -333,6 +333,19 @@
   </div>
 </div>
 
+<div id="modal-variantes" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:998;align-items:center;justify-content:center;padding:1rem;">
+  <div class="modal-fotos-card">
+    <h3 id="modal-variantes-titulo">Variantes del producto</h3>
+    <div style="font-size:0.68rem;color:var(--text3);margin-bottom:0.8rem;">Cargá variantes (ej. colores). Cada una con su nombre, foto y stock. Si no cargás ninguna, el producto se vende sin variantes (con el stock general).</div>
+    <div id="mv-lista"></div>
+    <button onclick="agregarVariante()" style="margin-top:0.6rem;background:var(--surface2);border:1px dashed var(--violet);border-radius:8px;color:var(--violet-light);font-size:0.78rem;font-weight:700;padding:0.5rem 0.8rem;cursor:pointer;width:100%;">+ Agregar variante</button>
+    <div class="modal-fotos-actions">
+      <button class="btn-modal-cancelar" onclick="cerrarModalVariantes()">Cancelar</button>
+      <button class="btn-modal-guardar" id="mv-btn-guardar" onclick="guardarVariantes()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EDITOR DE DESCRIPCIÓN -->
 <div id="modal-desc">
   <div class="modal-desc-card">
@@ -628,6 +641,74 @@ async function subirFotos(codigo, archivos) {
     urls.push(`${SUPA_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`);
   }
   return urls;
+}
+
+// ── VARIANTES (colores u opciones con foto + stock) ──────────────
+let mvCodigo = null;
+let mvVariantes = []; // [{nombre, foto, stock, _file?, _preview?}]
+
+function abrirModalVariantes(codigo){
+  const p = todosLosProductos.find(x=>x.codigo===codigo);
+  if(!p) return;
+  mvCodigo = codigo;
+  mvVariantes = Array.isArray(p.variantes) ? p.variantes.map(v=>({nombre:v.nombre||'', foto:v.foto||'', stock:Number(v.stock||0)})) : [];
+  document.getElementById('modal-variantes-titulo').textContent = `Variantes de ${p.nombre}`;
+  renderVariantes();
+  document.getElementById('modal-variantes').style.display='flex';
+}
+function cerrarModalVariantes(){ document.getElementById('modal-variantes').style.display='none'; mvCodigo=null; mvVariantes=[]; }
+function agregarVariante(){ mvVariantes.push({nombre:'',foto:'',stock:0}); renderVariantes(); }
+function quitarVariante(i){ mvVariantes.splice(i,1); renderVariantes(); }
+function onFotoVariante(e,i){
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  mvVariantes[i]._file = f;
+  mvVariantes[i]._preview = URL.createObjectURL(f);
+  renderVariantes();
+}
+function renderVariantes(){
+  const cont = document.getElementById('mv-lista');
+  if(!mvVariantes.length){ cont.innerHTML = '<div style="font-size:0.72rem;color:var(--text3);padding:0.5rem 0;">Sin variantes. Tocá "+ Agregar variante".</div>'; return; }
+  cont.innerHTML = mvVariantes.map((v,i)=>{
+    const img = v._preview || v.foto || '';
+    const thumb = img
+      ? `<img src="${img}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;display:block;">`
+      : `<div style="width:46px;height:46px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🎨</div>`;
+    return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:0.6rem;background:var(--surface2);padding:0.5rem;border-radius:10px;">
+      <label style="cursor:pointer;flex-shrink:0;" title="Elegir foto">${thumb}
+        <input type="file" accept="image/*" style="display:none;" onchange="onFotoVariante(event,${i})">
+      </label>
+      <input type="text" value="${(v.nombre||'').replace(/"/g,'&quot;')}" placeholder="Nombre (ej. Negro)" oninput="mvVariantes[${i}].nombre=this.value" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;padding:6px 8px;">
+      <input type="number" min="0" value="${Number(v.stock||0)}" title="Stock de esta variante" oninput="mvVariantes[${i}].stock=parseInt(this.value)||0" style="width:64px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;padding:6px 8px;">
+      <button onclick="quitarVariante(${i})" title="Quitar variante" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.95rem;">🗑️</button>
+    </div>`;
+  }).join('');
+}
+async function guardarVariantes(){
+  if(!mvCodigo) return;
+  // Validaciones
+  for(const v of mvVariantes){
+    if(!(v.nombre||'').trim()){ toast('Cada variante necesita un nombre','err'); return; }
+    if(!v.foto && !v._file){ toast(`La variante "${v.nombre}" necesita una foto`,'err'); return; }
+  }
+  const btn = document.getElementById('mv-btn-guardar'); const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try{
+    // Subir fotos nuevas
+    for(const v of mvVariantes){
+      if(v._file){ const urls = await subirFotos(mvCodigo, [v._file]); v.foto = urls[0]; }
+    }
+    const limpio = mvVariantes.map(v=>({ nombre:(v.nombre||'').trim(), foto:v.foto, stock:Number(v.stock||0) }));
+    const res = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(mvCodigo)}`, {
+      method:'PATCH',
+      headers:{ ...hdrs, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+      body: JSON.stringify({ variantes: limpio })
+    });
+    if(!res.ok){ throw new Error(await res.text().catch(()=> '')); }
+    const p = todosLosProductos.find(x=>x.codigo===mvCodigo); if(p) p.variantes = limpio;
+    toast('Variantes guardadas ✓','ok');
+    cerrarModalVariantes();
+    filtrarTabla();
+  }catch(err){ console.error(err); toast('Error al guardar las variantes','err'); btn.disabled=false; btn.textContent=orig; }
 }
 
 // ── GESTIÓN DE FOTOS (producto existente) ──────
@@ -1226,6 +1307,7 @@ function renderTabla(prods) {
               <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
                 <img src="${getImgUrl((p.foto||'').split(',')[0].trim())}" class="img-thumb" style="width:43px;height:43px;object-fit:contain;border-radius:6px;background:var(--surface2);" onerror="this.style.opacity='0.2';this.title='Sin foto o error al cargar'" onclick="abrirModalImg('${getImgUrl((p.foto||'').split(',')[0].trim())}','${p.nombre.replace(/'/g,"\\'")}','${(p.foto||'').replace(/'/g,"\\'")}')">
                 <button onclick="abrirModalFotos('${p.codigo}')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:0.62rem;padding:1px 5px;cursor:pointer;">🖼 Fotos</button>
+                <button onclick="abrirModalVariantes('${p.codigo}')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:0.62rem;padding:1px 5px;cursor:pointer;">🎨 Variantes${(p.variantes&&p.variantes.length)?` (${p.variantes.length})`:''}</button>
               </div>
             </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
@@ -1347,6 +1429,10 @@ function cerrarEditorDesc() {
   document.getElementById('modal-desc').classList.remove('open');
   descEditandoCodigo = null;
 }
+// Cerrar el editor de descripción con la tecla Escape
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && document.getElementById('modal-desc').classList.contains('open')) cerrarEditorDesc();
+});
 async function guardarEditorDesc() {
   const editor = document.getElementById('desc-editor');
   let html = limpiarHtmlDesc(editor.innerHTML).trim();
