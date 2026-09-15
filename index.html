@@ -2148,7 +2148,7 @@
                         const sel = v.nombre === _placaVarSel;
                         return `<button ${sin?'disabled':''} onclick="seleccionarVariante(${i})" data-vi="${i}"
                             class="variante-chip flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-xl border-2 ${sel?'border-violet-600 bg-violet-50':'border-slate-200'} ${sin?'opacity-40 cursor-not-allowed':''}"
-                            style="font-size:11px;font-weight:800;color:#1e293b;">
+                            style="font-size:12px;font-weight:400;color:#1e293b;font-family:Arial,sans-serif;">
                             <img src="${getImgUrl(v.foto,'200')}" style="width:28px;height:28px;object-fit:cover;border-radius:7px;">
                             <span ${sin?'style="text-decoration:line-through;"':''}>${v.nombre}</span>${sin?'<span style="font-size:9px;color:#94a3b8;">sin stock</span>':''}
                         </button>`;
@@ -2657,7 +2657,12 @@
                 if (!p) { cambio = true; return; }
                 var np = Number(getPrecioCarrito(p));
                 if (np && np !== it.precio) { it.precio = np; cambio = true; }
-                it.stock = Number(p.stock || 0);
+                if (it.variante && p.variantes && p.variantes.length) {
+                    var vv = p.variantes.find(function(v){ return v.nombre === it.variante; });
+                    it.stock = vv ? Number(vv.stock || 0) : 0;
+                } else {
+                    it.stock = Number(p.stock || 0);
+                }
                 if (p.nombre) it.nombre = p.nombre;
                 nuevos.push(it);
             });

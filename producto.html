@@ -725,7 +725,7 @@ function renderProducto(p) {
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             ${variantes.map((v,i)=>{
               const sin = v.stock <= 0;
-              return `<button ${sin?'disabled':''} data-vi="${i}" onclick="seleccionarVarianteProd(${i})" class="var-chip" style="display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:${sin?'not-allowed':'pointer'};opacity:${sin?'0.45':'1'};font-size:12px;font-weight:800;color:#1e293b;font-family:Arial,sans-serif;">
+              return `<button ${sin?'disabled':''} data-vi="${i}" onclick="seleccionarVarianteProd(${i})" class="var-chip" style="display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:${sin?'not-allowed':'pointer'};opacity:${sin?'0.45':'1'};font-size:13px;font-weight:400;color:#1e293b;font-family:Arial,sans-serif;">
                 <img src="${getImgUrl(v.foto,'200')}" style="width:30px;height:30px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity='0.2'">
                 <span style="${sin?'text-decoration:line-through;':''}">${v.nombre}</span>${sin?' <span style="font-size:9px;color:#94a3b8;">sin stock</span>':''}
               </button>`;
