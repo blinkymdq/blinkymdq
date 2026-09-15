@@ -10,22 +10,26 @@ async function cargarCuotasMP(){
   try{
     const r = await fetch(`${SUPA_URL}/functions/v1/mp-cuotas?amount=100000`, { headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY } });
     const j = await r.json();
-    if(!j || !j.ok || Number(j.n) < 2) return;
-    window._mpCuotas = { sinInteres: !!j.sinInteres, n: Number(j.n), coef: Number(j.coef) };
+    if(!j || !j.ok) return;
+    window._mpCuotas = { c3: (j.c3!=null?Number(j.c3):null), c6: (j.c6!=null?Number(j.c6):null) };
     const el = document.getElementById('cuotas-mp');
     if(el && productoActual){
       const _d = Number(productoActual.descuento||0);
       const _p = _d>0 ? Math.round(Number(productoActual.precio_publico||0)*(1-_d/100)) : Number(productoActual.precio_publico||0);
-      const t = cuotasTxt(_p); if(t){ el.textContent = t; el.style.display='block'; }
+      const t = cuotasFullHTML(_p); if(t){ el.innerHTML = t; el.style.display='block'; }
     }
   }catch(e){}
 }
 function _cuota2(n){ return '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function cuotasTxt(precio){
-  if(!window._mpCuotas || !precio) return '';
+function _cuotaLine(precio, n, coef){ if(!coef || !precio) return ''; return `${n} cuotas de ${_cuota2(Number(precio)*coef/n)}`; }
+function cuotasFullHTML(precio){
+  if(!window._mpCuotas) return '';
   const c = window._mpCuotas;
-  if(c.sinInteres) return `Mismo precio en ${c.n} cuotas de ${_cuota2(Number(precio)/c.n)} con Mercado Pago`;
-  return `Hasta ${c.n} cuotas de ${_cuota2(Number(precio)*c.coef/c.n)} con Mercado Pago`;
+  const l3 = c.c3 ? _cuotaLine(precio,3,c.c3) : '';
+  const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
+  const arr = [l3, l6].filter(Boolean);
+  if(!arr.length) return '';
+  return arr.join('<br>') + '<div style="font-weight:400;opacity:.8;">con Mercado Pago</div>';
 }
 
 function getImgUrl(foto, sz) {
@@ -364,7 +368,7 @@ function renderProducto(p) {
         ${mostrarPrecio ? `
         <div class="precio">${precio}${_dPct>0 ? ` <span style="text-decoration:line-through;color:#94a3b8;font-size:0.55em;font-weight:700;">${formatPrecio(p.precio_publico)}</span> <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.42em;font-weight:900;padding:3px 9px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${_dPct}%</span>` : ''}</div>
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
-        <div id="cuotas-mp" style="display:${cuotasTxt(_pubCon)?'block':'none'};font-size:12px;font-weight:700;color:#059669;margin-top:5px;font-family:Arial,sans-serif;">${cuotasTxt(_pubCon)}</div>
+        <div id="cuotas-mp" style="display:${cuotasFullHTML(_pubCon)?'block':'none'};font-size:12px;font-weight:700;color:#059669;margin-top:5px;font-family:Arial,sans-serif;line-height:1.35;">${cuotasFullHTML(_pubCon)}</div>
         ` : ''}
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
