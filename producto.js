@@ -29,7 +29,7 @@ function cuotasFullHTML(precio){
   const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
   const arr = [l3, l6].filter(Boolean);
   if(!arr.length) return '';
-  return arr.join('<br>') + '<div style="font-weight:400;opacity:.8;">con Mercado Pago</div>';
+  return arr.join('<br>') + '<img src="/MERCADOPAGO.JPG" alt="Mercado Pago" style="height:22px;width:auto;margin-top:5px;display:block;" onerror="this.style.display=\'none\'">';
 }
 
 function getImgUrl(foto, sz) {
@@ -356,14 +356,13 @@ function renderProducto(p) {
 
       <div class="info-card">
         ${badgeMercMobile}
-        ${p.marca ? `<div class="marca">${p.marca}</div>` : ''}
-        <h1 class="nombre">${p.nombre}</h1>
-        ${p.codigo ? `
-          <div class="codigo-row" onclick="copiarCodigo('${p.codigo}')" title="Copiar código">
-            Cód. ${p.codigo}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          ${p.marca ? `<span class="marca" style="color:#1a1a1a;">${p.marca}</span>` : ''}
+          ${p.codigo ? `<span onclick="copiarCodigo('${p.codigo}')" title="Copiar código" style="display:inline-flex;align-items:center;gap:4px;color:#7c3aed;font-size:12px;font-weight:700;cursor:pointer;">${p.codigo}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </div>
-        ` : ''}
+          </span>` : ''}
+        </div>
+        <h1 class="nombre">${p.nombre}</h1>
         <br>
         ${mostrarPrecio ? `
         <div class="precio">${precio}${_dPct>0 ? ` <span style="text-decoration:line-through;color:#94a3b8;font-size:0.55em;font-weight:700;">${formatPrecio(p.precio_publico)}</span> <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.42em;font-weight:900;padding:3px 9px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${_dPct}%</span>` : ''}</div>
@@ -372,7 +371,7 @@ function renderProducto(p) {
         ` : ''}
         ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div class="${sinStock ? 'sin-stock' : 'en-stock'}">${sinStock ? 'Sin stock' : '✓ Disponible'}</div>
+          ${sinStock ? `<div class="sin-stock">Sin stock</div>` : ''}
           ${badgeMercDesktop}
         </div>
 
@@ -391,14 +390,14 @@ function renderProducto(p) {
         </div>
         ` : ''}
 
-        <div class="btns">
-          <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            ${sinStock ? 'Sin stock' : 'Agregar al carrito'}
+        <div class="btns" style="flex-direction:column;gap:10px;">
+          <button class="btn-comprar" onclick="comprarAhora('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 13 10 20 10"/><path d="M20 10L8 22l1-8H4L16 2z"/></svg>
+            ${sinStock ? 'Sin stock' : 'Comprar ahora'}
           </button>
-          <button class="btn-wsp" onclick="consultarWsp()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.09.536 4.05 1.475 5.757L0 24l6.435-1.438A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.213-3.717.831.888-3.618-.234-.372A9.818 9.818 0 1112 21.818z"/></svg>
-            Consultar por WhatsApp
+          <button class="btn-wsp" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Agregar al carrito
           </button>
         </div>
         <div style="font-size:0.72rem;color:#64748b;font-family:Arial,sans-serif;margin-top:12px;">Los precios están sujetos a modificaciones sin previo aviso.</div>
@@ -447,17 +446,20 @@ function actualizarBadgeCarrito() {
     el.classList.toggle('hidden', n === 0);
   });
 }
-function agregarYVerCarrito(cod) {
+function comprarAhora(cod){
+  if (agregarYVerCarrito(cod, true)) window.location.href = '/index.html?checkout=1';
+}
+function agregarYVerCarrito(cod, paraComprar) {
   const p = productoActual;
-  if (!p) return;
+  if (!p) return false;
   const vs = window._prodVariantes || [];
   let vObj = null;
   if (vs.length) {
-    if (!window._prodVarSel) { toast('Elegí una opción'); return; }
+    if (!window._prodVarSel) { toast('Elegí una opción'); return false; }
     vObj = vs.find(v => v.nombre === window._prodVarSel);
-    if (!vObj || vObj.stock <= 0) { toast('Sin stock en esa opción'); return; }
+    if (!vObj || vObj.stock <= 0) { toast('Sin stock en esa opción'); return false; }
   } else {
-    if (!p.stock || p.stock <= 0) return;
+    if (!p.stock || p.stock <= 0) return false;
   }
   const esMay = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const _d = Number(p.descuento||0);
@@ -476,7 +478,8 @@ function agregarYVerCarrito(cod) {
   }
   try { localStorage.setItem('blinky_carrito', JSON.stringify(carrito)); } catch(e){}
   actualizarBadgeCarrito();
-  toastAgregado();
+  if (!paraComprar) toastAgregado();
+  return true;
 }
 function toastAgregado() {
   const t = document.getElementById('ok-toast');
