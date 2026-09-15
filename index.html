@@ -1562,23 +1562,34 @@
         const SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXl0a3djeXBrdHZybWVyZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU1OTYsImV4cCI6MjA5NzM4MTU5Nn0.7GiUl0o_B3dAnpE2x98sBqtC0eY9HoM6p67fOBghoJY';
         // Clave pública de Mercado Pago (producción, empieza con APP_USR-). Vacía = no se muestran cuotas.
         const MP_PUBLIC_KEY = 'APP_USR-40d12cd5-c81a-47cf-b381-8f73a3f3b937';
-        // Info de cuotas de MP (se pide 1 vez a nuestra edge function). { sinInteres, n, coef }
+        // Info de cuotas de MP (se pide 1 vez a nuestra edge function). { c3, c6 } = coeficiente total/monto
         window._mpCuotas = null;
         async function cargarCuotasMP(){
             try{
                 const r = await fetch(`${SUPA_URL}/functions/v1/mp-cuotas?amount=100000`, { headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY } });
                 const j = await r.json();
-                if(!j || !j.ok || Number(j.n) < 2) return;
-                window._mpCuotas = { sinInteres: !!j.sinInteres, n: Number(j.n), coef: Number(j.coef) };
+                if(!j || !j.ok) return;
+                window._mpCuotas = { c3: (j.c3!=null?Number(j.c3):null), c6: (j.c6!=null?Number(j.c6):null) };
                 if (typeof render === 'function' && Array.isArray(filtrados)) render(filtrados);
             }catch(e){}
         }
         function _cuota2(n){ return '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+        function _cuotaLine(precio, n, coef){ if(!coef || !precio) return ''; return `${n} cuotas de ${_cuota2(Number(precio)*coef/n)}`; }
+        // Grilla: solo 3 cuotas
         function cuotasTxt(precio){
-            if(!window._mpCuotas || !precio) return '';
+            if(!window._mpCuotas || !window._mpCuotas.c3) return '';
+            const l = _cuotaLine(precio, 3, window._mpCuotas.c3);
+            return l ? l + ' con Mercado Pago' : '';
+        }
+        // Ficha/modal: 3 y 6 cuotas
+        function cuotasFullHTML(precio){
+            if(!window._mpCuotas) return '';
             const c = window._mpCuotas;
-            if(c.sinInteres) return `Mismo precio en ${c.n} cuotas de ${_cuota2(Number(precio)/c.n)} con Mercado Pago`;
-            return `Hasta ${c.n} cuotas de ${_cuota2(Number(precio)*c.coef/c.n)} con Mercado Pago`;
+            const l3 = c.c3 ? _cuotaLine(precio,3,c.c3) : '';
+            const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
+            const arr = [l3, l6].filter(Boolean);
+            if(!arr.length) return '';
+            return arr.join('<br>') + '<div style="font-weight:400;opacity:.8;">con Mercado Pago</div>';
         }
         const NRO_TELEFONO = "5492235910492";
 
@@ -2206,9 +2217,9 @@
             if (!ocultarPrecio) {
                 document.getElementById('modalPrecioPub').innerHTML = precioPublicoTxt + _tachado(p) + (Number(p.desc)>0 ? ` <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.5em;font-weight:900;padding:2px 7px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${p.desc}%</span>` : '');
                 document.getElementById('modalPrecioMay').innerText = formatPrecio(precioDinamico);
-                var _mc = document.getElementById('modalCuotas'); if(_mc) _mc.textContent = cuotasTxt(p.precioP);
+                var _mc = document.getElementById('modalCuotas'); if(_mc) _mc.innerHTML = cuotasFullHTML(p.precioP);
             } else {
-                var _mc2 = document.getElementById('modalCuotas'); if(_mc2) _mc2.textContent = '';
+                var _mc2 = document.getElementById('modalCuotas'); if(_mc2) _mc2.innerHTML = '';
             }
 
             const link = generarLink(p.codigo);
