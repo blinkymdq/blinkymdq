@@ -51,7 +51,63 @@ function mostrarLogin() {
 }
 
 function abrirCarrito() {
-  window.location.href = '/index.html';
+  renderPanelCarrito();
+  document.getElementById('ov-carrito').style.display = 'block';
+  document.getElementById('panel-carrito').style.transform = 'translateX(0)';
+  document.body.style.overflow = 'hidden';
+}
+function cerrarCarrito() {
+  document.getElementById('ov-carrito').style.display = 'none';
+  document.getElementById('panel-carrito').style.transform = 'translateX(100%)';
+  document.body.style.overflow = '';
+}
+function renderPanelCarrito() {
+  var carrito = leerCarrito();
+  var lista = document.getElementById('pc-lista');
+  var footer = document.getElementById('pc-footer');
+  var vacio = document.getElementById('pc-vacio');
+  document.getElementById('pc-count').textContent = carrito.reduce(function(s,i){return s+Number(i.cantidad||0);},0) + ' items';
+  if (!carrito.length) { lista.style.display='none'; footer.style.display='none'; vacio.style.display='flex'; return; }
+  lista.style.display='block'; footer.style.display='block'; vacio.style.display='none';
+  var total = 0;
+  lista.innerHTML = carrito.map(function(i, idx){
+    total += Number(i.precio) * Number(i.cantidad);
+    return `<div style="display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #f8fafc;">
+      <img src="${i.img}" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'" style="width:48px;height:48px;object-fit:cover;border-radius:10px;background:#f8fafc;flex-shrink:0;">
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:11px;font-weight:800;color:#1e293b;text-transform:uppercase;line-height:1.2;margin:0;">${i.nombre}</p>
+        ${i.variante?`<p style="font-size:10px;color:#7c3aed;font-weight:700;margin:1px 0 0;">🎨 ${i.variante}</p>`:''}
+        <p style="font-size:12px;font-weight:900;color:#7c3aed;margin:3px 0 0;">${formatPrecio(i.precio * i.cantidad)}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+        <button onclick="pcQuitar(${idx})" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:13px;line-height:1;">✕</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="pcCant(${idx},-1)" style="width:24px;height:24px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:900;color:#475569;line-height:1;">−</button>
+          <span style="font-size:12px;font-weight:900;width:16px;text-align:center;color:#1e293b;">${i.cantidad}</span>
+          <button onclick="pcCant(${idx},1)" style="width:24px;height:24px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:900;color:#475569;line-height:1;">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('pc-total').textContent = formatPrecio(total);
+}
+function pcCant(idx, d) {
+  var c = leerCarrito(); var it = c[idx]; if (!it) return;
+  if (d > 0 && Number(it.stock||0) > 0 && it.cantidad >= Number(it.stock||0)) {
+    toast('Solo hay ' + it.stock + ' unidad' + (Number(it.stock)===1?'':'es') + ' disponible' + (Number(it.stock)===1?'':'s')); return;
+  }
+  it.cantidad += d;
+  if (it.cantidad <= 0) c.splice(idx, 1);
+  try { localStorage.setItem('blinky_carrito', JSON.stringify(c)); } catch(e){}
+  actualizarBadgeCarrito(); renderPanelCarrito();
+}
+function pcQuitar(idx) {
+  var c = leerCarrito(); c.splice(idx, 1);
+  try { localStorage.setItem('blinky_carrito', JSON.stringify(c)); } catch(e){}
+  actualizarBadgeCarrito(); renderPanelCarrito();
+}
+function irACheckout() {
+  window.location.href = '/index.html?checkout=1';
 }
 
 function toggleUserMenu() {
