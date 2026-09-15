@@ -7,18 +7,11 @@ const NRO_WSP = '5492235910492';
 const MP_PUBLIC_KEY = 'APP_USR-40d12cd5-c81a-47cf-b381-8f73a3f3b937';
 window._mpCuotas = null;
 async function cargarCuotasMP(){
-  if(!MP_PUBLIC_KEY) return;
   try{
-    const ref = 10000;
-    const r = await fetch(`https://api.mercadopago.com/v1/payment_methods/installments?public_key=${encodeURIComponent(MP_PUBLIC_KEY)}&amount=${ref}&locale=es-AR`);
-    const d = await r.json();
-    const cc = (Array.isArray(d)?d:[]).find(m=>m.payment_type_id==='credit_card') || (Array.isArray(d)?d[0]:null);
-    if(!cc || !Array.isArray(cc.payer_costs) || !cc.payer_costs.length) return;
-    const pcs = cc.payer_costs;
-    const sin = pcs.filter(p=>Number(p.installment_rate)===0 && Number(p.installments)>=2);
-    const maxSin = sin.length ? sin.reduce((a,b)=>Number(b.installments)>Number(a.installments)?b:a) : null;
-    const maxAny = pcs.reduce((a,b)=>Number(b.installments)>Number(a.installments)?b:a);
-    window._mpCuotas = { nSin: maxSin?Number(maxSin.installments):0, n: Number(maxAny.installments), coefN: Number(maxAny.total_amount)/ref };
+    const r = await fetch(`${SUPA_URL}/functions/v1/mp-cuotas?amount=100000`, { headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY } });
+    const j = await r.json();
+    if(!j || !j.ok || Number(j.n) < 2) return;
+    window._mpCuotas = { sinInteres: !!j.sinInteres, n: Number(j.n), coef: Number(j.coef) };
     const el = document.getElementById('cuotas-mp');
     if(el && productoActual){
       const _d = Number(productoActual.descuento||0);
@@ -31,9 +24,8 @@ function _cuota2(n){ return '$' + Number(n).toLocaleString('es-AR',{minimumFract
 function cuotasTxt(precio){
   if(!window._mpCuotas || !precio) return '';
   const c = window._mpCuotas;
-  if(c.nSin >= 2) return `Mismo precio en ${c.nSin} cuotas de ${_cuota2(Number(precio)/c.nSin)} con Mercado Pago`;
-  if(c.n >= 2)    return `Hasta ${c.n} cuotas de ${_cuota2(Number(precio)*c.coefN/c.n)} con Mercado Pago`;
-  return '';
+  if(c.sinInteres) return `Mismo precio en ${c.n} cuotas de ${_cuota2(Number(precio)/c.n)} con Mercado Pago`;
+  return `Hasta ${c.n} cuotas de ${_cuota2(Number(precio)*c.coef/c.n)} con Mercado Pago`;
 }
 
 function getImgUrl(foto, sz) {
