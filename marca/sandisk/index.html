@@ -1708,6 +1708,17 @@
                     history.replaceState(null, '', window.location.pathname);
                 }
 
+                // Venís de la ficha del producto tocando el carrito → abrirlo
+                if (new URLSearchParams(window.location.search).get('cart')) {
+                    abrirCarrito();
+                    history.replaceState(null, '', window.location.pathname);
+                }
+                // Venís de la ficha tocando "Confirmar pedido" → abrir checkout
+                if (new URLSearchParams(window.location.search).get('checkout') && carrito.length) {
+                    abrirCheckout();
+                    history.replaceState(null, '', window.location.pathname);
+                }
+
             } catch (e) {
                 console.error('Error cargando datos:', e);
                 document.getElementById('contenedor').innerHTML = `
