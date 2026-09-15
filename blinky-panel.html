@@ -2216,7 +2216,7 @@ async function verPedido(num, esEliminado) {
       <table class="items-table">
         <thead><tr><th>Producto</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th>${!esEliminado?'<th style="width:30px;"></th>':''}</tr></thead>
         <tbody>${items.map(i=>`<tr>
-          <td>${i.producto}${(vendMap[i.codigo] && !['entregado','cancelado'].includes(p.estado))?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}${descontadoSet.has(i.codigo)?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;">⚠️ Producto descontado de su mercadería</div>`:''}</td>
+          <td>${i.producto}${i.variante?` <span style="color:var(--violet-light);font-weight:800;white-space:nowrap;">· 🎨 ${esc(i.variante)}</span>`:''}${(vendMap[i.codigo] && !['entregado','cancelado'].includes(p.estado))?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;display:flex;gap:4px;align-items:center;">⚠️ Lo tiene: ${esc(vendMap[i.codigo])}</div>`:''}${descontadoSet.has(i.codigo)?`<div style="color:var(--yellow);font-size:0.72rem;font-weight:700;margin-top:3px;">⚠️ Producto descontado de su mercadería</div>`:''}</td>
           <td style="text-align:right;">${i.cantidad}</td>
           <td style="text-align:right;">$${Number(i.precio_unitario).toLocaleString('es-AR')}</td>
           <td style="text-align:right;font-weight:700;">$${Number(i.subtotal).toLocaleString('es-AR')}</td>
