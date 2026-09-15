@@ -208,7 +208,10 @@ function renderProducto(p) {
   const _dPct = Number(p.descuento || 0);
   const _pubCon = _dPct > 0 ? Math.round(Number(p.precio_publico||0) * (1 - _dPct/100)) : Number(p.precio_publico||0);
   const precio = formatPrecio(_pubCon);
-  const sinStock = !p.stock || p.stock <= 0;
+  const variantes = Array.isArray(p.variantes) ? p.variantes.map(v=>({nombre:v.nombre||'',foto:v.foto||'',stock:Number(v.stock||0)})) : [];
+  window._prodVariantes = variantes; window._prodVarSel = null;
+  const stockEfectivo = variantes.length ? variantes.reduce((s,v)=>s+Math.max(0,v.stock),0) : Number(p.stock||0);
+  const sinStock = stockEfectivo <= 0;
   const esMayoristaLogueado = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const mostrarPrecio = !sinStock || esMayoristaLogueado;
   const miCantMerc = (esMayoristaLogueado && window._miMercaderia) ? Number(window._miMercaderia[p.codigo] || 0) : 0;
@@ -287,6 +290,21 @@ function renderProducto(p) {
           ${badgeMercDesktop}
         </div>
 
+        ${variantes.length ? `
+        <div style="margin:12px 0 2px;">
+          <div style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;margin-bottom:7px;font-family:Arial,sans-serif;">Elegí una opción</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${variantes.map((v,i)=>{
+              const sin = v.stock <= 0;
+              return `<button ${sin?'disabled':''} data-vi="${i}" onclick="seleccionarVarianteProd(${i})" class="var-chip" style="display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:${sin?'not-allowed':'pointer'};opacity:${sin?'0.45':'1'};font-size:13px;font-weight:400;color:#1e293b;font-family:Arial,sans-serif;">
+                <img src="${getImgUrl(v.foto,'200')}" style="width:30px;height:30px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity='0.2'">
+                <span style="${sin?'text-decoration:line-through;':''}">${v.nombre}</span>${sin?' <span style="font-size:9px;color:#94a3b8;">sin stock</span>':''}
+              </button>`;
+            }).join('')}
+          </div>
+        </div>
+        ` : ''}
+
         <div class="btns">
           <button class="btn-comprar" onclick="agregarYVerCarrito('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -308,6 +326,26 @@ function renderProducto(p) {
       </div>
     ` : ''}
   `;
+
+  if (variantes.length) {
+    const firstOk = variantes.findIndex(v => v.stock > 0);
+    if (firstOk >= 0) seleccionarVarianteProd(firstOk);
+  }
+}
+
+function seleccionarVarianteProd(i){
+  const vs = window._prodVariantes || [];
+  const v = vs[i]; if(!v || v.stock <= 0) return;
+  window._prodVarSel = v.nombre;
+  const fp = document.getElementById('foto-principal');
+  const vid = document.getElementById('video-principal');
+  if(vid) vid.style.display='none';
+  if(fp){ fp.style.display='block'; fp.src = getImgUrl(v.foto, 1600); }
+  document.querySelectorAll('.var-chip').forEach(b=>{
+    const on = Number(b.getAttribute('data-vi')) === i;
+    b.style.borderColor = on ? '#7c3aed' : '#e2e8f0';
+    b.style.background  = on ? '#f5f3ff' : '#fff';
+  });
 }
 
 function leerCarrito() {
@@ -325,20 +363,30 @@ function actualizarBadgeCarrito() {
 }
 function agregarYVerCarrito(cod) {
   const p = productoActual;
-  if (!p || !p.stock || p.stock <= 0) return;
+  if (!p) return;
+  const vs = window._prodVariantes || [];
+  let vObj = null;
+  if (vs.length) {
+    if (!window._prodVarSel) { toast('Elegí una opción'); return; }
+    vObj = vs.find(v => v.nombre === window._prodVarSel);
+    if (!vObj || vObj.stock <= 0) { toast('Sin stock en esa opción'); return; }
+  } else {
+    if (!p.stock || p.stock <= 0) return;
+  }
   const esMay = document.body.classList.contains('is-logged-in') && window._userRol === 'mayorista';
   const _d = Number(p.descuento||0);
   const _pubCon = _d>0 ? Math.round(Number(p.precio_publico||0)*(1-_d/100)) : Number(p.precio_publico||0);
   const precio = (esMay && Number(p.precio_mayorista) > 0) ? Number(p.precio_mayorista) : _pubCon;
-  const img = getImgUrl((p.foto || '').split(',')[0].trim(), '200');
-  const stock = Number(p.stock || 0);
+  const img = vObj ? getImgUrl(vObj.foto, '200') : getImgUrl((p.foto || '').split(',')[0].trim(), '200');
+  const stock = vObj ? Number(vObj.stock || 0) : Number(p.stock || 0);
+  const lineId = vObj ? (p.codigo + '::' + vObj.nombre) : p.codigo;
   const carrito = leerCarrito();
-  const existente = carrito.find(i => i.codigo === p.codigo);
+  const existente = carrito.find(i => String(i.id) === String(lineId));
   if (existente) {
     if (existente.cantidad >= stock) { toast(`Solo hay ${stock} unidad${stock===1?'':'es'} disponible${stock===1?'':'s'}`); return; }
     existente.cantidad++;
   } else {
-    carrito.push({ id: p.codigo, codigo: p.codigo || '', nombre: p.nombre, precio: precio, img: img, stock: stock, cantidad: 1 });
+    carrito.push({ id: lineId, codigo: p.codigo || '', nombre: p.nombre, variante: vObj ? vObj.nombre : null, precio: precio, img: img, stock: stock, cantidad: 1 });
   }
   try { localStorage.setItem('blinky_carrito', JSON.stringify(carrito)); } catch(e){}
   actualizarBadgeCarrito();
