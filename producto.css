@@ -3,7 +3,8 @@
 .search-wrapper { position: relative; flex-grow: 1; }
 .search-wrapper input { padding-right: 2.75rem; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Inter',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
+  body { font-family:'Roboto',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
+  h1,h2,h3,h4,.nombre,.precio,.precio-mayorista,.marca,.btn-comprar,.btn-wsp,.descripcion-titulo { font-family:'Manrope',sans-serif; }
   a { color:inherit; }
 
   .header { background:white; border-bottom:1px solid #e2e8f0; padding:12px 20px; display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:10; }
