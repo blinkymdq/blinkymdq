@@ -459,7 +459,7 @@ function cuotasFullHTML(precio){
   const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
   const arr = [l3, l6].filter(Boolean);
   if(!arr.length) return '';
-  return arr.join('<br>') + '<img src="/MERCADOPAGO.JPG" alt="Mercado Pago" style="height:22px;width:auto;margin-top:5px;display:block;" onerror="this.style.display=\'none\'">';
+  return arr.join('<br>') + '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:22px;width:auto;margin-top:5px;display:block;" onerror="this.style.display=\'none\'">';
 }
 
 function getImgUrl(foto, sz) {
