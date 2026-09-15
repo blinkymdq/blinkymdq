@@ -993,6 +993,7 @@
 
         </div>
         <div class="border-t border-white/10 py-5 flex flex-col items-center gap-3">
+            <a href="/quienes-somos.html" class="text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-white transition-colors">Quiénes somos</a>
             <!-- Data Fiscal ARCA (F960/D) -->
             <a href="http://qr.afip.gob.ar/?qr=X_t_26xTLlZ4lJ4Zv4-8Fg,," target="_F960AFIPInfo" rel="noopener" style="display:inline-block;background:#fff;border-radius:6px;padding:4px;line-height:0;">
                 <img src="https://www.afip.gob.ar/images/f960/DATAWEB.jpg" alt="Data Fiscal" style="height:54px;width:auto;display:block;">
@@ -1034,6 +1035,7 @@
                 </div>
             </div>
             <div id="modalSinStockMsg" class="hidden py-5 border-y border-slate-100 my-5 text-center text-sm font-black text-slate-400 uppercase">Sin stock disponible</div>
+            <div id="modalVariantes" class="hidden mb-5"></div>
             <div id="botonesModalContenedor" class="flex gap-2 h-14"></div>
         </div>
     </div>
@@ -1621,13 +1623,20 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,oferta,stock,estado,descripcion&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
                 const data = await resP.json();
 
-                productos = data.map((p, index) => ({
+                productos = data.map((p, index) => {
+                    const variantes = Array.isArray(p.variantes)
+                        ? p.variantes.map(v => ({ nombre: v.nombre || '', foto: v.foto || '', stock: Number(v.stock || 0) }))
+                        : [];
+                    const stockEfectivo = variantes.length
+                        ? variantes.reduce((s, v) => s + Math.max(0, Number(v.stock || 0)), 0)
+                        : Number(p.stock || 0);
+                    return {
                     id:           index,
                     codigo:       p.codigo || "",
                     nombre:       p.nombre || "",
@@ -1641,10 +1650,12 @@
                     precioM:      String(p.precio_mayorista || 0),
                     esOferta:     !!p.oferta,
                     esMasVisto:   !!p.oferta,
-                    stock:        Number(p.stock || 0),
-                    sinStock:     Number(p.stock || 0) <= 0,
+                    variantes:    variantes,
+                    stock:        stockEfectivo,
+                    sinStock:     stockEfectivo <= 0,
                     oculto:       false
-                }));
+                    };
+                });
 
                 const ordenCat = ['perfume','body splash','cosmeticos','body lotion','desodorante','electro','varios','decant'];
                 function catOrder(p) {
@@ -2073,6 +2084,26 @@
             }
         }
 
+        let _placaIdx = null, _placaVarSel = null;
+        function seleccionarVariante(i){
+            const p = filtrados[_placaIdx]; if(!p || !p.variantes) return;
+            const v = p.variantes[i]; if(!v || Number(v.stock) <= 0) return;
+            _placaVarSel = v.nombre;
+            document.getElementById('modalImg').src = getImgUrl(v.foto, '800');
+            document.querySelectorAll('#modalVariantes .variante-chip').forEach(b=>{
+                const on = Number(b.getAttribute('data-vi')) === i;
+                b.classList.toggle('border-violet-600', on);
+                b.classList.toggle('bg-violet-50', on);
+                b.classList.toggle('border-slate-200', !on);
+            });
+        }
+        function agregarAlCarritoModal(){
+            const p = filtrados[_placaIdx]; if(!p) return;
+            if (p.variantes && p.variantes.length && !_placaVarSel){ toast('Elegí una opción'); return; }
+            agregarAlCarrito(_placaIdx, _placaVarSel);
+            cerrarPlaca();
+        }
+
         function abrirPlacaPorIdx(idx) {
             const p = filtrados[idx];
             if (!p) return;
@@ -2101,6 +2132,33 @@
                 ).join('');
             }
 
+            // ── Variantes: selector con foto + stock ──
+            _placaIdx = idx; _placaVarSel = null;
+            const contVar = document.getElementById('modalVariantes');
+            if (p.variantes && p.variantes.length) {
+                const firstOk = p.variantes.find(v => Number(v.stock) > 0);
+                _placaVarSel = firstOk ? firstOk.nombre : null;
+                if (firstOk) { modalImg.src = getImgUrl(firstOk.foto, '800'); }
+                document.getElementById('carruselPrev').classList.add('hidden');
+                document.getElementById('carruselNext').classList.add('hidden');
+                document.getElementById('carruselDots').classList.add('hidden');
+                contVar.classList.remove('hidden');
+                contVar.innerHTML = `<div class="text-[10px] font-black text-slate-500 uppercase mb-2">Elegí una opción</div><div class="flex flex-wrap gap-2">` +
+                    p.variantes.map((v,i)=>{
+                        const sin = Number(v.stock) <= 0;
+                        const sel = v.nombre === _placaVarSel;
+                        return `<button ${sin?'disabled':''} onclick="seleccionarVariante(${i})" data-vi="${i}"
+                            class="variante-chip flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-xl border-2 ${sel?'border-violet-600 bg-violet-50':'border-slate-200'} ${sin?'opacity-40 cursor-not-allowed':''}"
+                            style="font-size:12px;font-weight:400;color:#1e293b;font-family:Arial,sans-serif;">
+                            <img src="${getImgUrl(v.foto,'200')}" style="width:28px;height:28px;object-fit:cover;border-radius:7px;">
+                            <span ${sin?'style="text-decoration:line-through;"':''}>${v.nombre}</span>${sin?'<span style="font-size:9px;color:#94a3b8;">sin stock</span>':''}
+                        </button>`;
+                    }).join('') + `</div>`;
+            } else {
+                contVar.classList.add('hidden');
+                contVar.innerHTML = '';
+            }
+
             const badge = document.getElementById('modalBadgeSinStock');
             badge.classList.toggle('hidden', !p.sinStock);
 
@@ -2127,7 +2185,7 @@
                     class="flex-[1.2] bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
                     ${iconWA} Consultar
                 </a>
-                <button onclick="agregarAlCarrito(${idx}); cerrarPlaca();"
+                <button onclick="agregarAlCarritoModal();"
                     class="flex-1 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 text-white"
                     style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
                     <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -2168,10 +2226,10 @@
         // SLIDER
         // ════════════════════════════════════════
         const misDestacados = [
+            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg`, link:`https://blinkymdq.com/ofertas/` },
             { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto1.jpg`, link:`caja-sorpresa.html` },
             { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto2.jpg` },
             { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto3.jpg` },
-            { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto4.jpg` },
             { img:`https://raw.githubusercontent.com/blinkymdq/blinkymdq/main/destacados/foto5.jpg` }
         ];
         let bannerIndex     = 0;
@@ -2600,7 +2658,12 @@
                 if (!p) { cambio = true; return; }
                 var np = Number(getPrecioCarrito(p));
                 if (np && np !== it.precio) { it.precio = np; cambio = true; }
-                it.stock = Number(p.stock || 0);
+                if (it.variante && p.variantes && p.variantes.length) {
+                    var vv = p.variantes.find(function(v){ return v.nombre === it.variante; });
+                    it.stock = vv ? Number(vv.stock || 0) : 0;
+                } else {
+                    it.stock = Number(p.stock || 0);
+                }
                 if (p.nombre) it.nombre = p.nombre;
                 nuevos.push(it);
             });
@@ -2608,15 +2671,32 @@
             if (cambio) actualizarCarritoUI();
         }
 
-        function agregarAlCarrito(idx) {
+        function agregarAlCarrito(idx, variante) {
             const p = filtrados[idx];
             if (!p) return;
-            if (p.sinStock) return;
 
-            const precio = getPrecioCarrito(p);
-            const img    = getImgUrl((p.foto || '').split(',')[0].trim(), '200');
+            // Producto con variantes: hay que elegir una (si vino sin elegir, abrir la ficha)
+            if (p.variantes && p.variantes.length && !variante) {
+                abrirPlacaPorIdx(idx);
+                toast('Elegí una opción');
+                return;
+            }
 
-            const existente = carrito.find(item => item.id === p.id);
+            let vObj = null;
+            if (variante) {
+                vObj = p.variantes.find(v => v.nombre === variante);
+                if (!vObj) { toast('Opción no disponible'); return; }
+                if (Number(vObj.stock) <= 0) { toast('Sin stock en esa opción'); return; }
+            } else {
+                if (p.sinStock) return;
+            }
+
+            const precio    = getPrecioCarrito(p);
+            const stockItem = vObj ? Number(vObj.stock || 0) : Number(p.stock || 0);
+            const img       = vObj ? getImgUrl(vObj.foto, '200') : getImgUrl((p.foto || '').split(',')[0].trim(), '200');
+            const lineId    = vObj ? (p.id + '::' + variante) : p.id;
+
+            const existente = carrito.find(item => String(item.id) === String(lineId));
             if (existente) {
                 if (existente.cantidad >= existente.stock) {
                     toast(`Solo hay ${existente.stock} unidad${existente.stock === 1 ? '' : 'es'} disponible${existente.stock === 1 ? '' : 's'}`);
@@ -2625,12 +2705,13 @@
                 existente.cantidad++;
             } else {
                 carrito.push({
-                    id:          p.id,
+                    id:          lineId,
                     codigo:      p.codigo || '',
                     nombre:      p.nombre,
+                    variante:    vObj ? variante : null,
                     precio:      precio,
                     img:         img,
-                    stock:       Number(p.stock || 0),
+                    stock:       stockItem,
                     cantidad:    1
                 });
             }
@@ -2738,6 +2819,7 @@
                     <img src="${item.img}" alt="" class="carrito-item-img" onerror="this.src='sin-foto.png'">
                     <div class="flex-1 min-w-0">
                         <p class="text-[9px] font-black text-slate-800 uppercase leading-tight line-clamp-2">${item.nombre}</p>
+                        ${item.variante?`<p class="text-[9px] font-bold text-violet-500 mt-0.5">🎨 ${item.variante}</p>`:''}
                         <p class="text-[11px] font-black text-violet-600 mt-1">${subtotal}</p>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -2904,6 +2986,7 @@
                     <img src="${i.img}" onerror="this.onerror=null;this.src='sin-foto.png'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#fff;">
                     <div class="flex-1 min-w-0">
                       <p class="text-[12px] font-normal text-slate-900 leading-snug line-clamp-2">${i.nombre}</p>
+                      ${i.variante?`<p class="text-[10px] font-bold text-violet-500">🎨 ${i.variante}</p>`:''}
                       <div class="flex items-center gap-2 mt-1.5">
                         <div class="flex items-center gap-1.5">
                           <button onclick="cambiarCantidadCheckout('${String(i.id).replace(/'/g,"\\'")}',-1)" class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold leading-none flex items-center justify-center hover:bg-slate-100" title="Restar">−</button>
@@ -3160,7 +3243,7 @@
                 var sub = carrito.reduce(function(s, i) { return s + i.precio * i.cantidad; }, 0);
                 var _desc = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
                 var total = Math.max(0, sub - _desc);
-                var items = carrito.map(function(i) { return { nombre: i.nombre, codigo: i.codigo || null, precio: i.precio, cantidad: i.cantidad }; });
+                var items = carrito.map(function(i) { return { nombre: i.variante ? (i.nombre + ' (' + i.variante + ')') : i.nombre, codigo: i.codigo || null, precio: i.precio, cantidad: i.cantidad }; });
                 var direccion = document.getElementById('checkout-direccion') ? document.getElementById('checkout-direccion').value.trim() : '';
                 var res = await fetch(SUPA_URL + '/functions/v1/mercadopago-checkout', {
                     method: 'POST',
@@ -3236,7 +3319,7 @@
                 totalNum2 = Math.max(0, totalNum2 - _descTarjeta);
 
                 var items = carrito.map(function(i) {
-                    return { nombre: i.nombre, precio: i.precio, cantidad: i.cantidad };
+                    return { nombre: i.variante ? (i.nombre + ' (' + i.variante + ')') : i.nombre, precio: i.precio, cantidad: i.cantidad };
                 });
 
                 var res = await fetch(SUPA_URL + '/functions/v1/openpay-checkout', {
@@ -3362,7 +3445,7 @@
             var logueado  = document.body.classList.contains('is-logged-in');
             var tipoPrec  = logueado ? ' _(precios especiales)_' : '';
             var lineas    = carrito.map(function(i) {
-                return '• ' + i.cantidad + 'x ' + i.nombre + ' — ' + formatPrecio(i.precio * i.cantidad);
+                return '• ' + i.cantidad + 'x ' + (i.variante ? (i.nombre + ' (' + i.variante + ')') : i.nombre) + ' — ' + formatPrecio(i.precio * i.cantidad);
             }).join('\n');
             var total     = formatPrecio(carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0));
 
@@ -3426,7 +3509,7 @@
                         pedidoPayload.notas = (nota ? nota + ' · ' : '') + 'Retiro en ' + window._puntoRetiroSel.nombre;
                     }
                     var itemsPayload = carrito.map(function(i) {
-                        return { producto: i.nombre, codigo: i.codigo || null, cantidad: i.cantidad, precio_unitario: i.precio };
+                        return { producto: i.nombre, codigo: i.codigo || null, cantidad: i.cantidad, precio_unitario: i.precio, variante: i.variante || null };
                     });
                     var _rpcAuth = SUPA_KEY;
                     try { var _sess = await supabaseClient.auth.getSession(); if (_sess && _sess.data && _sess.data.session) _rpcAuth = _sess.data.session.access_token; } catch(_e){}
