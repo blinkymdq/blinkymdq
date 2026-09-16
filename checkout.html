@@ -2738,6 +2738,7 @@
             if (!carrito.length || !productos || !productos.length) return;
             var cambio = false;
             var nuevos = [];
+            var mapa   = {};
             carrito.forEach(function(it) {
                 var p = productos.find(function(x){ return x.id === it.id || (it.codigo && x.codigo === it.codigo); });
                 if (!p) { cambio = true; return; }
@@ -2750,7 +2751,18 @@
                     it.stock = Number(p.stock || 0);
                 }
                 if (p.nombre) it.nombre = p.nombre;
-                nuevos.push(it);
+                // Unificar líneas: mismo producto + misma variante = una sola línea
+                var key = (it.codigo || p.codigo || it.id) + '::' + (it.variante || '');
+                var ex  = mapa[key];
+                if (ex) {
+                    var total = Number(ex.cantidad || 0) + Number(it.cantidad || 0);
+                    ex.cantidad = (ex.stock > 0) ? Math.min(total, ex.stock) : total;
+                    cambio = true;
+                } else {
+                    if (it.stock > 0 && it.cantidad > it.stock) { it.cantidad = it.stock; cambio = true; }
+                    mapa[key] = it;
+                    nuevos.push(it);
+                }
             });
             carrito = nuevos;
             if (cambio) actualizarCarritoUI();
