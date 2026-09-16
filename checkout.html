@@ -450,9 +450,14 @@
             transition: opacity 0.2s;
         }
         #modalCheckout.visible { opacity: 1; pointer-events: all; }
-        /* Página de checkout: ocultar el catálogo y mostrar el fondo del checkout de entrada */
-        header, main, footer, #btnCarritoFlotante, #panelCarrito, #overlayCarrito, #popupPadre, #popupVierSab { display: none !important; }
-        #modalCheckout { opacity: 1 !important; pointer-events: all !important; background:#f1f2f6; }
+        /* Página de checkout: mostrar header y footer como en el index, ocultar sólo el catálogo */
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        main, #btnCarritoFlotante, #panelCarrito, #overlayCarrito, #popupPadre, #popupVierSab { display: none !important; }
+        #modalCheckout { position: static; inset: auto; z-index: auto; opacity: 1 !important; pointer-events: all !important; background:#f1f2f6; order: 900; flex: 1 0 auto; padding-top: 1.25rem; }
+        footer { order: 901; }
+        /* El header real ya muestra el logo: en el checkout dejamos sólo el "Volver a la tienda" */
+        .co-topbar { justify-content: flex-start; border-bottom: none; padding-top: 0; margin-bottom: 0.5rem; }
+        .co-topbar img { display: none; }
         #modalCheckoutInner { max-width: 1040px; margin: 0 auto; padding: 0 1rem 3rem; -ms-overflow-style: none; scrollbar-width: none; }
         #modalCheckoutInner::-webkit-scrollbar { display: none; }
         .co-topbar { display:flex; align-items:center; justify-content:space-between; padding: 0.8rem 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; background:#f1f2f6; z-index:5; }
