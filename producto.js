@@ -22,14 +22,29 @@ async function cargarCuotasMP(){
 }
 function _cuota2(n){ return '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function _cuotaLine(precio, n, coef){ if(!coef || !precio) return ''; return `${n} cuotas de ${_cuota2(Number(precio)*coef/n)}`; }
+// OpenPay MiPyME: interés que paga el cliente (%), se le suma IVA (21%). coef = 1 + i/100 * 1.21
+const OPENPAY_INT = { 3: 6.91, 6: 13.02 };
+function _opCoef(n){ const i = OPENPAY_INT[n]; return (i==null) ? null : (1 + (i/100)*1.21); }
 function cuotasFullHTML(precio){
-  if(!window._mpCuotas) return '';
-  const c = window._mpCuotas;
-  const l3 = c.c3 ? _cuotaLine(precio,3,c.c3) : '';
-  const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
-  const arr = [l3, l6].filter(Boolean);
-  if(!arr.length) return '';
-  return '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:48px;width:auto;display:block;margin-bottom:6px;" onerror="this.outerHTML=\'<span style=&quot;font-weight:400;opacity:.8;&quot;>con Mercado Pago</span>\'">' + arr.join('<br>');
+  if(!precio) return '';
+  // Columna Mercado Pago (cuotas desde la edge function)
+  let mpCol = '';
+  if(window._mpCuotas){
+    const m3 = window._mpCuotas.c3 ? _cuotaLine(precio,3,window._mpCuotas.c3) : '';
+    const m6 = window._mpCuotas.c6 ? _cuotaLine(precio,6,window._mpCuotas.c6) : '';
+    if(m3||m6) mpCol = `<div style="flex:1;min-width:130px;"><img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:34px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>Mercado Pago</b>'">${m3?`<div>${m3}</div>`:''}${m6?`<div>${m6}</div>`:''}</div>`;
+  }
+  // Columna OpenPay (coeficientes fijos)
+  const o3 = _cuotaLine(precio,3,_opCoef(3)), o6 = _cuotaLine(precio,6,_opCoef(6));
+  let opCol = '';
+  if(o3||o6) opCol = `<div style="flex:1;min-width:130px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:34px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+  if(!mpCol && !opCol) return '';
+  const divider = (mpCol && opCol) ? '<div style="width:1px;background:#e2e8f0;align-self:stretch;"></div>' : '';
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:700;color:#1e293b;">Formas de pago:</span>
+      <img src="/tarjetas.png" alt="Medios de pago" style="height:20px;width:auto;" onerror="this.style.display='none'">
+    </div>
+    <div style="display:flex;gap:16px;align-items:flex-start;">${mpCol}${divider}${opCol}</div>`;
 }
 
 function getImgUrl(foto, sz) {
@@ -135,7 +150,7 @@ function pcQuitar(idx) {
   actualizarBadgeCarrito(); renderPanelCarrito();
 }
 function irACheckout() {
-  window.location.href = '/index.html?checkout=1';
+  window.location.href = 'checkout.html';
 }
 
 function toggleUserMenu() {
@@ -446,7 +461,7 @@ function actualizarBadgeCarrito() {
   });
 }
 function comprarAhora(cod){
-  if (agregarYVerCarrito(cod, true)) window.location.href = '/index.html?checkout=1';
+  if (agregarYVerCarrito(cod, true)) window.location.href = 'checkout.html';
 }
 function agregarYVerCarrito(cod, paraComprar) {
   const p = productoActual;
