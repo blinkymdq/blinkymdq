@@ -1585,15 +1585,24 @@
             const l = _cuotaLine(precio, 3, window._mpCuotas.c3);
             return l ? l + ' con Mercado Pago' : '';
         }
-        // Ficha/modal: 3 y 6 cuotas
+        // OpenPay MiPyME: interés que paga el cliente (%), + IVA (21%). coef = 1 + i/100 * 1.21
+        const OPENPAY_INT = { 3: 6.91, 6: 13.02 };
+        function _opCoef(n){ const i = OPENPAY_INT[n]; return (i==null) ? null : (1 + (i/100)*1.21); }
+        // Ficha/modal: OpenPay + Mercado Pago, 3 y 6 cuotas
         function cuotasFullHTML(precio){
-            if(!window._mpCuotas) return '';
-            const c = window._mpCuotas;
-            const l3 = c.c3 ? _cuotaLine(precio,3,c.c3) : '';
-            const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
-            const arr = [l3, l6].filter(Boolean);
-            if(!arr.length) return '';
-            return '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:40px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML=\'<span style=&quot;font-weight:400;opacity:.8;&quot;>con Mercado Pago</span>\'">' + arr.join('<br>');
+            if(!precio) return '';
+            let mpCol = '';
+            if(window._mpCuotas){
+                const m3 = window._mpCuotas.c3 ? _cuotaLine(precio,3,window._mpCuotas.c3) : '';
+                const m6 = window._mpCuotas.c6 ? _cuotaLine(precio,6,window._mpCuotas.c6) : '';
+                if(m3||m6) mpCol = `<div style="flex:1;min-width:120px;"><img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>Mercado Pago</b>'">${m3?`<div>${m3}</div>`:''}${m6?`<div>${m6}</div>`:''}</div>`;
+            }
+            const o3 = _cuotaLine(precio,3,_opCoef(3)), o6 = _cuotaLine(precio,6,_opCoef(6));
+            let opCol = '';
+            if(o3||o6) opCol = `<div style="flex:1;min-width:120px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+            if(!mpCol && !opCol) return '';
+            const divider = (mpCol && opCol) ? '<div style="width:1px;background:#e2e8f0;align-self:stretch;"></div>' : '';
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:700;color:#1e293b;">Formas de pago:</span><img src="/tarjetas.png" alt="Medios de pago" style="height:18px;width:auto;" onerror="this.style.display='none'"></div><div style="display:flex;gap:14px;align-items:flex-start;">${mpCol}${divider}${opCol}</div>`;
         }
         const NRO_TELEFONO = "5492235910492";
 
