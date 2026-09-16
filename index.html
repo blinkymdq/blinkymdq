@@ -1749,10 +1749,14 @@
                     abrirCarrito();
                     history.replaceState(null, '', window.location.pathname);
                 }
-                // Venís de la ficha tocando "Confirmar pedido" → abrir checkout
+                // Venís de la ficha con "Comprar ahora" → abrir checkout (esperando a que resuelva el login)
                 if (new URLSearchParams(window.location.search).get('checkout') && carrito.length) {
-                    abrirCheckout();
                     history.replaceState(null, '', window.location.pathname);
+                    let _ct = 0;
+                    (function _tryCheckout(){
+                        if (document.body.classList.contains('is-logged-in') || _ct > 20) { abrirCheckout(); return; }
+                        _ct++; setTimeout(_tryCheckout, 150);
+                    })();
                 }
 
             } catch (e) {
