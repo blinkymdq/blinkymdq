@@ -2465,10 +2465,16 @@
             document.body.classList.add('is-logged-in');
             if (esMayorista) document.body.classList.add('es-mayorista');
             else document.body.classList.remove('es-mayorista');
-            // La cuenta es la fuente de verdad: el carrito guardado manda (así se propagan las bajas).
-            // Si la cuenta nunca guardó un carrito (null), se mantiene el local del invitado.
+            // La cuenta manda para lo que ya tenía; pero sumamos los ítems locales nuevos
+            // (ej. el que se agregó con "Comprar ahora" antes de loguear), sin duplicar.
             try {
-                if (data && Array.isArray(data.carrito)) { carrito = data.carrito; }
+                if (data && Array.isArray(data.carrito)) {
+                    const _local = Array.isArray(carrito) ? carrito : [];
+                    const _map = {};
+                    data.carrito.forEach(function(i){ _map[String(i.id)] = i; });
+                    _local.forEach(function(i){ if(!_map[String(i.id)]) _map[String(i.id)] = i; });
+                    carrito = Object.keys(_map).map(function(k){ return _map[k]; });
+                }
             } catch(e){}
             refrescarCarrito();
             actualizarCarritoUI();
