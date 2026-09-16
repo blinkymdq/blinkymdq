@@ -1246,8 +1246,12 @@
                     <div id="co-pay-tarjetas">
                         <div class="checkout-label" style="text-align:center;margin-top:1.6rem;font-size:11px;">Otras formas de pago</div>
                         <div class="checkout-opciones">
-                            <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()">💳 Tarjeta<br>créd/déb</div>
-                            <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()">🛒 Mercado<br>Pago</div>
+                            <div class="checkout-opcion" id="opt-pago-tarjeta" onclick="seleccionarOpcion('pago', 'Tarjeta de crédito/débito', this); actualizarBotonesPago()"><img src="/OPENPAY.jpg" alt="Tarjeta crédito/débito" style="height:24px;width:auto;display:block;margin:0 auto 5px;" onerror="this.outerHTML='💳'">Tarjeta<br>créd/déb</div>
+                            <div class="checkout-opcion" id="opt-pago-mp" onclick="seleccionarOpcion('pago', 'Mercado Pago', this); actualizarBotonesPago()"><img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:24px;width:auto;display:block;margin:0 auto 5px;" onerror="this.outerHTML='🛒'">Mercado<br>Pago</div>
+                        </div>
+                        <div style="text-align:center;margin-top:1rem;">
+                            <div class="checkout-label" style="text-align:center;font-size:9px;margin-bottom:6px;">Aceptamos</div>
+                            <img src="/tarjetas.png" alt="Medios de pago aceptados" style="height:22px;width:auto;display:inline-block;" onerror="this.style.display='none'">
                         </div>
                     </div>
                     <input type="hidden" id="checkout-pago" value="">
