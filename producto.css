@@ -24,10 +24,10 @@
 
   .pagina-cont { max-width:1280px; margin:0 auto; padding:14px 16px 50px; }
   .layout { display:grid; grid-template-columns:1fr; gap:24px; }
-  @media (min-width:800px) { .layout { grid-template-columns:0.42fr 0.58fr; align-items:stretch; gap:32px; } }
+  @media (min-width:800px) { .layout { grid-template-columns:0.42fr 0.58fr; align-items:start; gap:32px; } }
 
-  .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); display:flex; flex-direction:column; }
-  .galeria { position:relative; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; overflow:hidden; flex:1; min-height:360px; }
+  .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  .galeria { position:relative; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; overflow:hidden; height:460px; }
   .galeria img { width:100%; height:100%; object-fit:contain; cursor:zoom-in; transition:opacity 0.2s; }
 
   .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; align-items:center; justify-content:center; padding:24px; cursor:zoom-out; }
