@@ -1077,7 +1077,7 @@
                 <span class="text-xs font-black uppercase text-slate-500 tracking-widest">Total</span>
                 <span id="carritoTotal" class="text-2xl font-black text-violet-600"></span>
             </div>
-            <button onclick="abrirCheckout()"
+            <button onclick="window.location.href='checkout.html'"
                 class="w-full h-14 rounded-2xl text-white text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
                 style="background: linear-gradient(135deg, #7c3aed, #5b21b6); box-shadow: 0 4px 15px rgba(124,58,237,0.35);">
                 Confirmar Pedido
@@ -1586,15 +1586,24 @@
             const l = _cuotaLine(precio, 3, window._mpCuotas.c3);
             return l ? l + ' con Mercado Pago' : '';
         }
-        // Ficha/modal: 3 y 6 cuotas
+        // OpenPay MiPyME: interés que paga el cliente (%), + IVA (21%). coef = 1 + i/100 * 1.21
+        const OPENPAY_INT = { 3: 6.91, 6: 13.02 };
+        function _opCoef(n){ const i = OPENPAY_INT[n]; return (i==null) ? null : (1 + (i/100)*1.21); }
+        // Ficha/modal: OpenPay + Mercado Pago, 3 y 6 cuotas
         function cuotasFullHTML(precio){
-            if(!window._mpCuotas) return '';
-            const c = window._mpCuotas;
-            const l3 = c.c3 ? _cuotaLine(precio,3,c.c3) : '';
-            const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
-            const arr = [l3, l6].filter(Boolean);
-            if(!arr.length) return '';
-            return '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:40px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML=\'<span style=&quot;font-weight:400;opacity:.8;&quot;>con Mercado Pago</span>\'">' + arr.join('<br>');
+            if(!precio) return '';
+            let mpCol = '';
+            if(window._mpCuotas){
+                const m3 = window._mpCuotas.c3 ? _cuotaLine(precio,3,window._mpCuotas.c3) : '';
+                const m6 = window._mpCuotas.c6 ? _cuotaLine(precio,6,window._mpCuotas.c6) : '';
+                if(m3||m6) mpCol = `<div style="flex:1;min-width:120px;"><img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>Mercado Pago</b>'">${m3?`<div>${m3}</div>`:''}${m6?`<div>${m6}</div>`:''}</div>`;
+            }
+            const o3 = _cuotaLine(precio,3,_opCoef(3)), o6 = _cuotaLine(precio,6,_opCoef(6));
+            let opCol = '';
+            if(o3||o6) opCol = `<div style="flex:1;min-width:120px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+            if(!mpCol && !opCol) return '';
+            const divider = (mpCol && opCol) ? '<div style="width:1px;background:#e2e8f0;align-self:stretch;"></div>' : '';
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:700;color:#1e293b;">Formas de pago:</span><img src="/tarjetas.png" alt="Medios de pago" style="height:18px;width:auto;" onerror="this.style.display='none'"></div><div style="display:flex;gap:14px;align-items:flex-start;">${mpCol}${divider}${opCol}</div>`;
         }
         const NRO_TELEFONO = "5492235910492";
 
@@ -1749,15 +1758,6 @@
                 if (new URLSearchParams(window.location.search).get('cart')) {
                     abrirCarrito();
                     history.replaceState(null, '', window.location.pathname);
-                }
-                // Venís de la ficha con "Comprar ahora" → abrir checkout (esperando a que resuelva el login)
-                if (new URLSearchParams(window.location.search).get('checkout') && carrito.length) {
-                    history.replaceState(null, '', window.location.pathname);
-                    let _ct = 0;
-                    (function _tryCheckout(){
-                        if (document.body.classList.contains('is-logged-in') || _ct > 20) { abrirCheckout(); return; }
-                        _ct++; setTimeout(_tryCheckout, 150);
-                    })();
                 }
 
             } catch (e) {
@@ -2466,10 +2466,16 @@
             document.body.classList.add('is-logged-in');
             if (esMayorista) document.body.classList.add('es-mayorista');
             else document.body.classList.remove('es-mayorista');
-            // La cuenta es la fuente de verdad: el carrito guardado manda (así se propagan las bajas).
-            // Si la cuenta nunca guardó un carrito (null), se mantiene el local del invitado.
+            // La cuenta manda para lo que ya tenía; pero sumamos los ítems locales nuevos
+            // (ej. el que se agregó con "Comprar ahora" antes de loguear), sin duplicar.
             try {
-                if (data && Array.isArray(data.carrito)) { carrito = data.carrito; }
+                if (data && Array.isArray(data.carrito)) {
+                    const _local = Array.isArray(carrito) ? carrito : [];
+                    const _map = {};
+                    data.carrito.forEach(function(i){ _map[String(i.id)] = i; });
+                    _local.forEach(function(i){ if(!_map[String(i.id)]) _map[String(i.id)] = i; });
+                    carrito = Object.keys(_map).map(function(k){ return _map[k]; });
+                }
             } catch(e){}
             refrescarCarrito();
             actualizarCarritoUI();
@@ -2696,6 +2702,28 @@
         // CARRITO
         // ════════════════════════════════════════
         let carrito = (function(){ try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e){ return []; } })(); // persistido en localStorage
+
+        // ¿Venimos de "Comprar ahora"? (marca en localStorage o ?checkout=1). Se captura una sola vez.
+        window._irCheckout = (function(){ try {
+            var f = localStorage.getItem('blinky_ir_checkout') === '1';
+            var q = !!new URLSearchParams(location.search).get('checkout');
+            if (f) localStorage.removeItem('blinky_ir_checkout');
+            return f || q;
+        } catch(e){ return false; } })();
+
+        // Al cargar, si venimos de "Comprar ahora", esperamos a que el carrito y el login estén listos y abrimos el checkout
+        window.addEventListener('load', function(){
+            if (!window._irCheckout) return;
+            try { history.replaceState(null, '', location.pathname); } catch(e){}
+            var tries = 0;
+            (function _esperarYAbrir(){
+                tries++;
+                var logueado = document.body.classList.contains('is-logged-in');
+                if (carrito && carrito.length && logueado) { abrirCheckout(); return; }
+                if (tries > 40) { if (carrito && carrito.length) abrirCheckout(); return; } // ~10s: abre igual (abrirCheckout pide login si hace falta)
+                setTimeout(_esperarYAbrir, 250);
+            })();
+        });
 
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
