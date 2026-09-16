@@ -1758,15 +1758,6 @@
                     abrirCarrito();
                     history.replaceState(null, '', window.location.pathname);
                 }
-                // Venís de la ficha con "Comprar ahora" → abrir checkout (esperando a que resuelva el login)
-                if (new URLSearchParams(window.location.search).get('checkout') && carrito.length) {
-                    history.replaceState(null, '', window.location.pathname);
-                    let _ct = 0;
-                    (function _tryCheckout(){
-                        if (document.body.classList.contains('is-logged-in') || _ct > 20) { abrirCheckout(); return; }
-                        _ct++; setTimeout(_tryCheckout, 150);
-                    })();
-                }
 
             } catch (e) {
                 console.error('Error cargando datos:', e);
@@ -2488,15 +2479,6 @@
             refrescarCarrito();
             actualizarCarritoUI();
 
-            // Si venías de "Comprar ahora", abrir el checkout ahora que el login y el carrito están listos
-            try {
-                if ((localStorage.getItem('blinky_ir_checkout') === '1' || new URLSearchParams(location.search).get('checkout')) && carrito.length) {
-                    localStorage.removeItem('blinky_ir_checkout');
-                    history.replaceState(null, '', window.location.pathname);
-                    setTimeout(function(){ abrirCheckout(); }, 80);
-                }
-            } catch(e){}
-
             const nombreCorto = nombre.split(' ')[0].toUpperCase();
             document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
             document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
@@ -2719,6 +2701,28 @@
         // CARRITO
         // ════════════════════════════════════════
         let carrito = (function(){ try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e){ return []; } })(); // persistido en localStorage
+
+        // ¿Venimos de "Comprar ahora"? (marca en localStorage o ?checkout=1). Se captura una sola vez.
+        window._irCheckout = (function(){ try {
+            var f = localStorage.getItem('blinky_ir_checkout') === '1';
+            var q = !!new URLSearchParams(location.search).get('checkout');
+            if (f) localStorage.removeItem('blinky_ir_checkout');
+            return f || q;
+        } catch(e){ return false; } })();
+
+        // Al cargar, si venimos de "Comprar ahora", esperamos a que el carrito y el login estén listos y abrimos el checkout
+        window.addEventListener('load', function(){
+            if (!window._irCheckout) return;
+            try { history.replaceState(null, '', location.pathname); } catch(e){}
+            var tries = 0;
+            (function _esperarYAbrir(){
+                tries++;
+                var logueado = document.body.classList.contains('is-logged-in');
+                if (carrito && carrito.length && logueado) { abrirCheckout(); return; }
+                if (tries > 40) { if (carrito && carrito.length) abrirCheckout(); return; } // ~10s: abre igual (abrirCheckout pide login si hace falta)
+                setTimeout(_esperarYAbrir, 250);
+            })();
+        });
 
         function getPrecioCarrito(p) {
             const logueado = document.body.classList.contains('is-logged-in');
