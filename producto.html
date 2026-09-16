@@ -580,7 +580,7 @@ function pcQuitar(idx) {
   actualizarBadgeCarrito(); renderPanelCarrito();
 }
 function irACheckout() {
-  window.location.href = 'index.html?checkout=1';
+  window.location.href = 'checkout.html';
 }
 
 function toggleUserMenu() {
@@ -891,10 +891,7 @@ function actualizarBadgeCarrito() {
   });
 }
 function comprarAhora(cod){
-  if (agregarYVerCarrito(cod, true)) {
-    try { localStorage.setItem('blinky_ir_checkout', '1'); } catch(e){}
-    window.location.href = 'index.html?checkout=1';
-  }
+  if (agregarYVerCarrito(cod, true)) window.location.href = 'checkout.html';
 }
 function agregarYVerCarrito(cod, paraComprar) {
   const p = productoActual;

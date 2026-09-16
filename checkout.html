@@ -24,7 +24,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para CSV robusto -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Blinky MDQ — Perfumes importados, cosmética y electrónica | Mar del Plata</title>
+    <title>Finalizar compra — Blinky MDQ</title>
+    <meta name="robots" content="noindex, follow">
 <meta name="description" content="Blinky MDQ, tienda online en Mar del Plata de perfumes importados, cosmética y electrónica, por mayor y menor. Marcas como Lattafa, Armaf, Maison Alhambra, Victoria's Secret, Xiaomi y JBL. Envíos a todo el país y retiro en Mar del Plata.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Blinky MDQ — Perfumes, cosmética y electrónica en Mar del Plata">
@@ -449,6 +450,9 @@
             transition: opacity 0.2s;
         }
         #modalCheckout.visible { opacity: 1; pointer-events: all; }
+        /* Página de checkout: ocultar el catálogo y mostrar el fondo del checkout de entrada */
+        header, main, footer, #btnCarritoFlotante, #panelCarrito, #overlayCarrito, #popupPadre, #popupVierSab { display: none !important; }
+        #modalCheckout { opacity: 1 !important; pointer-events: all !important; background:#f1f2f6; }
         #modalCheckoutInner { max-width: 1040px; margin: 0 auto; padding: 0 1rem 3rem; -ms-overflow-style: none; scrollbar-width: none; }
         #modalCheckoutInner::-webkit-scrollbar { display: none; }
         .co-topbar { display:flex; align-items:center; justify-content:space-between; padding: 0.8rem 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; background:#f1f2f6; z-index:5; }
@@ -1076,7 +1080,7 @@
                 <span class="text-xs font-black uppercase text-slate-500 tracking-widest">Total</span>
                 <span id="carritoTotal" class="text-2xl font-black text-violet-600"></span>
             </div>
-            <button onclick="window.location.href='checkout.html'"
+            <button onclick="abrirCheckout()"
                 class="w-full h-14 rounded-2xl text-white text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
                 style="background: linear-gradient(135deg, #7c3aed, #5b21b6); box-shadow: 0 4px 15px rgba(124,58,237,0.35);">
                 Confirmar Pedido
@@ -2479,6 +2483,9 @@
             refrescarCarrito();
             actualizarCarritoUI();
 
+            // Página de checkout: al quedar logueado, abrir el checkout (cubre el caso invitado → login)
+            if (carrito && carrito.length) setTimeout(function(){ abrirCheckout(); }, 60);
+
             const nombreCorto = nombre.split(' ')[0].toUpperCase();
             document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
             document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
@@ -2702,24 +2709,20 @@
         // ════════════════════════════════════════
         let carrito = (function(){ try { return JSON.parse(localStorage.getItem('blinky_carrito') || '[]') || []; } catch(e){ return []; } })(); // persistido en localStorage
 
-        // ¿Venimos de "Comprar ahora"? (marca en localStorage o ?checkout=1). Se captura una sola vez.
-        window._irCheckout = (function(){ try {
-            var f = localStorage.getItem('blinky_ir_checkout') === '1';
-            var q = !!new URLSearchParams(location.search).get('checkout');
-            if (f) localStorage.removeItem('blinky_ir_checkout');
-            return f || q;
-        } catch(e){ return false; } })();
-
-        // Al cargar, si venimos de "Comprar ahora", esperamos a que el carrito y el login estén listos y abrimos el checkout
+        // ESTA ES LA PÁGINA DE CHECKOUT: al cargar abrimos el checkout directamente.
+        // Si el carrito está vacío, volvemos a la tienda. Esperamos a que resuelva el login.
+        try { localStorage.removeItem('blinky_ir_checkout'); } catch(e){}
         window.addEventListener('load', function(){
-            if (!window._irCheckout) return;
-            try { history.replaceState(null, '', location.pathname); } catch(e){}
             var tries = 0;
             (function _esperarYAbrir(){
                 tries++;
+                if (!carrito || !carrito.length) {
+                    if (tries > 8) { window.location.replace('index.html'); return; } // carrito vacío → a la tienda
+                    setTimeout(_esperarYAbrir, 250); return;
+                }
                 var logueado = document.body.classList.contains('is-logged-in');
-                if (carrito && carrito.length && logueado) { abrirCheckout(); return; }
-                if (tries > 40) { if (carrito && carrito.length) abrirCheckout(); return; } // ~10s: abre igual (abrirCheckout pide login si hace falta)
+                if (logueado) { abrirCheckout(); return; }
+                if (tries > 40) { abrirCheckout(); return; } // ~10s: abre igual (abrirCheckout pide login si hace falta)
                 setTimeout(_esperarYAbrir, 250);
             })();
         });
@@ -3148,8 +3151,7 @@
 
         function cerrarCheckout(e) {
             if (e && e.target !== document.getElementById('modalCheckout')) return;
-            document.getElementById('modalCheckout').classList.remove('visible');
-            document.body.style.overflow = '';
+            window.location.href = 'index.html';
         }
 
         function seleccionarOpcion(grupo, valor, el) {
@@ -3706,9 +3708,7 @@
     }
 
     function cerrarModalExito() {
-        document.getElementById('modalExito').style.display = 'none';
-        document.body.style.overflow = '';
-        cargarDatos();
+        window.location.href = 'index.html';
     }
 
     // Mostrar éxito si vuelve de OpenPay con ?pago=ok
