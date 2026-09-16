@@ -36,8 +36,15 @@ function cuotasFullHTML(precio){
   }
   // Columna OpenPay (coeficientes fijos)
   const o3 = _cuotaLine(precio,3,_opCoef(3)), o6 = _cuotaLine(precio,6,_opCoef(6));
+  // Promo 6 cuotas SIN INTERÉS — sólo válida en la fecha indicada (se apaga sola al día siguiente)
+  const PROMO_6SI_FECHA = '2026-09-16';
+  const _h = new Date(); const _p = n => String(n).padStart(2,'0');
+  const _hoyStr = _h.getFullYear() + '-' + _p(_h.getMonth()+1) + '-' + _p(_h.getDate());
+  const promo6 = (_hoyStr === PROMO_6SI_FECHA && precio)
+    ? `<div style="margin-top:7px;padding-top:7px;border-top:1px dashed #cbd5e1;font-size:12px;font-weight:800;color:#059669;line-height:1.25;">6 CUOTAS SIN INTERÉS de ${_cuota2(Number(precio)/6)}<div style="font-size:9px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:.04em;margin-top:1px;">🔥 Solo por hoy</div></div>`
+    : '';
   let opCol = '';
-  if(o3||o6) opCol = `<div style="flex:1;min-width:130px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:34px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+  if(o3||o6) opCol = `<div style="flex:1;min-width:130px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:34px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}${promo6}</div>`;
   if(!mpCol && !opCol) return '';
   const divider = (mpCol && opCol) ? '<div style="width:1px;background:#e2e8f0;align-self:stretch;"></div>' : '';
   return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
