@@ -2488,6 +2488,15 @@
             refrescarCarrito();
             actualizarCarritoUI();
 
+            // Si venías de "Comprar ahora", abrir el checkout ahora que el login y el carrito están listos
+            try {
+                if ((localStorage.getItem('blinky_ir_checkout') === '1' || new URLSearchParams(location.search).get('checkout')) && carrito.length) {
+                    localStorage.removeItem('blinky_ir_checkout');
+                    history.replaceState(null, '', window.location.pathname);
+                    setTimeout(function(){ abrirCheckout(); }, 80);
+                }
+            } catch(e){}
+
             const nombreCorto = nombre.split(' ')[0].toUpperCase();
             document.getElementById('user-badge-name').innerText = `HOLA, ${nombreCorto}`;
             document.getElementById('user-badge-name-mobile').innerText = `HOLA, ${nombreCorto}`;
