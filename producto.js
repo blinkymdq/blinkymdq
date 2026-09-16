@@ -29,7 +29,7 @@ function cuotasFullHTML(precio){
   const l6 = c.c6 ? _cuotaLine(precio,6,c.c6) : '';
   const arr = [l3, l6].filter(Boolean);
   if(!arr.length) return '';
-  return arr.join('<br>') + '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:22px;width:auto;margin-top:5px;display:block;" onerror="this.outerHTML=\'<span style=&quot;font-weight:400;opacity:.8;&quot;>con Mercado Pago</span>\'">';
+  return '<img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:48px;width:auto;display:block;margin-bottom:6px;" onerror="this.outerHTML=\'<span style=&quot;font-weight:400;opacity:.8;&quot;>con Mercado Pago</span>\'">' + arr.join('<br>');
 }
 
 function getImgUrl(foto, sz) {
@@ -363,7 +363,6 @@ function renderProducto(p) {
           </span>` : ''}
         </div>
         <h1 class="nombre">${p.nombre}</h1>
-        <br>
         ${mostrarPrecio ? `
         <div class="precio">${precio}${_dPct>0 ? ` <span style="text-decoration:line-through;color:#94a3b8;font-size:0.55em;font-weight:700;">${formatPrecio(p.precio_publico)}</span> <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.42em;font-weight:900;padding:3px 9px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${_dPct}%</span>` : ''}</div>
         ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}

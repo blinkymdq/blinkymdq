@@ -24,10 +24,10 @@
 
   .pagina-cont { max-width:1280px; margin:0 auto; padding:14px 16px 50px; }
   .layout { display:grid; grid-template-columns:1fr; gap:24px; }
-  @media (min-width:800px) { .layout { grid-template-columns:0.36fr 0.64fr; align-items:start; gap:32px; } }
+  @media (min-width:800px) { .layout { grid-template-columns:0.42fr 0.58fr; align-items:stretch; gap:32px; } }
 
-  .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
-  .galeria { position:relative; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; aspect-ratio:1; overflow:hidden; }
+  .galeria-wrap { background:white; border-radius:20px; padding:14px; box-shadow:0 4px 24px rgba(0,0,0,0.06); display:flex; flex-direction:column; }
+  .galeria { position:relative; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; overflow:hidden; flex:1; min-height:360px; }
   .galeria img { width:100%; height:100%; object-fit:contain; cursor:zoom-in; transition:opacity 0.2s; }
 
   .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; align-items:center; justify-content:center; padding:24px; cursor:zoom-out; }
@@ -55,7 +55,7 @@
   .marca { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#7c3aed; margin-bottom:6px; }
   .codigo-row { display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border-radius:8px; padding:3px 10px; font-size:0.72rem; color:#64748b; font-family:Arial,sans-serif; margin-bottom:14px; cursor:pointer; }
   .codigo-row:hover { background:#e2e8f0; }
-  .nombre { font-size:1.35rem; font-weight:900; line-height:1.3; margin-bottom:16px; }
+  .nombre { font-size:1.35rem; font-weight:900; line-height:1.3; margin-bottom:8px; }
   .precio { font-size:2.1rem; font-weight:900; color:#7c3aed; margin-bottom:4px; letter-spacing:-1px; }
   .precio-mayorista { display:none; font-size:1rem; font-weight:800; color:#16a34a; margin-bottom:12px; }
   body.is-logged-in.es-mayorista .precio-mayorista { display:block; }
