@@ -3065,7 +3065,8 @@
             checkoutIrPaso(1);
 
             document.getElementById('modalCheckout').classList.add('visible');
-            document.body.style.overflow = 'hidden';
+            // En la página de checkout el scroll es el de la página: NO bloquear el body
+            document.body.style.overflow = '';
         }
 
         var checkoutPasoActual = 1;
@@ -3082,6 +3083,7 @@
             if(n===3 && typeof chequearRetiroDisponible === 'function') chequearRetiroDisponible();
             if(n===4 && typeof configurarPagosSegunEntrega === 'function') configurarPagosSegunEntrega();
             var inner = document.getElementById('modalCheckoutInner'); if(inner) inner.scrollTop = 0;
+            try { window.scrollTo(0, 0); } catch(e){}
         }
         function renderCheckoutItems(){
             var cont = document.getElementById('checkout-items-lista'); if(!cont) return;
