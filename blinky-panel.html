@@ -1256,6 +1256,7 @@ async function eliminarReporte(id){
 }
 
 function switchTab(tab, btn) {
+  if(hayEntregaSinGuardar()){ if(!confirmarDescartarEntrega()) return; entregaCarrito=[]; }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
@@ -3976,10 +3977,11 @@ async function quitarVendedor(id, nombre) {
   toast('Quitado','ok'); cargarVendedores();
 }
 
-function cerrarModalVendedor(){ document.getElementById('vend-detalle-wrap').style.display='none'; document.getElementById('vend-list-wrap').style.display=''; vendActualId=null; }
+function cerrarModalVendedor(){ if(!confirmarDescartarEntrega()) return; entregaCarrito=[]; document.getElementById('vend-detalle-wrap').style.display='none'; document.getElementById('vend-list-wrap').style.display=''; vendActualId=null; }
 
 function abrirVendedor(id) {
   const v = vendUsuarios.find(u=>u.id===id); if(!v) return;
+  if(id !== vendActualId && !confirmarDescartarEntrega()) return;
   vendActualId = id;
   entregaCarrito = [];
   document.getElementById('vend-list-wrap').style.display='none';
@@ -4252,6 +4254,18 @@ async function entregarMercaderia(uid) {
 
 let entregaCarrito = [];
 
+// ── Seguridad: avisar si hay mercadería cargada "A entregar" sin registrar ──
+function hayEntregaSinGuardar(){ return Array.isArray(entregaCarrito) && entregaCarrito.length > 0; }
+function confirmarDescartarEntrega(){
+  if(!hayEntregaSinGuardar()) return true;
+  const totalU = entregaCarrito.reduce((s,c)=>s+Number(c.cant||0),0);
+  return confirm(`⚠️ Tenés ${totalU} u. en la lista "A entregar" que todavía NO registraste.\n\nSi salís ahora se van a perder. ¿Salir igual y descartar la lista?`);
+}
+// Aviso del navegador al recargar o cerrar la pestaña con la lista sin registrar
+window.addEventListener('beforeunload', function(e){
+  if(hayEntregaSinGuardar()){ e.preventDefault(); e.returnValue = ''; return ''; }
+});
+
 async function agregarAEntrega(uid){
   const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
   const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
@@ -4303,13 +4317,14 @@ function renderEntregaCarrito(uid){
 }
 
 async function confirmarEntrega(uid, btn){
+  if(btn && btn.dataset.procesando==='1') return;   // evitar doble clic
   const v = vendUsuarios.find(u=>u.id===uid); if(!v) return;
   if(!entregaCarrito.length){ toast('Agregá al menos un producto','err'); return; }
   const _totU = entregaCarrito.reduce((s,c)=>s+Number(c.cant||0),0);
   const _mailTxt = v.email ? `Se le enviará un mail de aviso a ${v.email}.` : '⚠️ El vendedor no tiene email cargado: NO se le va a avisar.';
   if(!confirm(`¿Confirmás la entrega de ${_totU} u. a ${v.nombre}?\n\n${_mailTxt}\n\nEsto queda registrado en la cuenta del vendedor.`)) return;
-  if(btn){ btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Entregando...'; }
-  const _restaurarBtn = () => { if(btn && btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } };
+  if(btn){ btn.dataset.procesando='1'; btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = '<span class="bk-spinner"></span>Entregando...'; }
+  const _restaurarBtn = () => { if(btn){ btn.dataset.procesando=''; if(btn._orig){ btn.disabled = false; btn.innerHTML = btn._orig; } } };
   try {
     // Re-chequeo de disponibilidad con stock fresco
     for(const c of entregaCarrito){

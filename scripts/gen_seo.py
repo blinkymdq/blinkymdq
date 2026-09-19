@@ -9,7 +9,7 @@ Supabase (clave anon, solo lectura) y escribe:
   - /sitemap.xml   /robots.txt
 No modifica producto.html (lo usa solo como plantilla).
 """
-import re, json, os, sys, shutil, unicodedata, urllib.request, html
+import re, json, os, sys, shutil, unicodedata, urllib.request, html, time
 
 SITE   = 'https://blinkymdq.com'
 SUPA   = 'https://fcaytkwcypktvrmerexp.supabase.co'
@@ -66,6 +66,11 @@ def main():
         print("ERROR: no se encontro producto.html en la raiz del repo", file=sys.stderr); sys.exit(1)
     h = open(TEMPLATE, encoding='utf-8').read()
 
+    # Version de cache-busting: cambia en cada corrida del robot (UTC AAAAMMDDHHMM).
+    # Se agrega como ?v=VER a producto.css / producto.js para que, apenas se publica
+    # una version nueva, el navegador la baje al instante en la proxima carga.
+    VER = time.strftime('%Y%m%d%H%M', time.gmtime())
+
     # extraer estilos y scripts inline (todos, en orden)
     css = '\n'.join(re.findall(r'<style[^>]*>(.*?)</style>', h, re.S))
     inline = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', h, re.S)
@@ -85,7 +90,7 @@ def main():
     open(os.path.join(ROOT, 'producto.js'), 'w', encoding='utf-8').write(js)
 
     # armar shell: css -> link, sacar styles restantes, sacar scripts inline, marcar preview
-    shell = re.sub(r'<style[^>]*>.*?</style>', '<link rel="stylesheet" href="../producto.css">', h, count=1, flags=re.S)
+    shell = re.sub(r'<style[^>]*>.*?</style>', f'<link rel="stylesheet" href="../producto.css?v={VER}">', h, count=1, flags=re.S)
     shell = re.sub(r'<style[^>]*>.*?</style>', '', shell, flags=re.S)
     shell = re.sub(r'<script(?![^>]*\bsrc=)[^>]*>.*?</script>', '', shell, flags=re.S)
     shell = re.sub(r'(<div id="contenido">).*?(</div>\s*</div>)', r'\1__PREVIEW__</div></div>', shell, count=1, flags=re.S)
@@ -119,7 +124,8 @@ def main():
 
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-          f'  <url><loc>{SITE}/</loc><priority>1.0</priority></url>']
+          f'  <url><loc>{SITE}/</loc><priority>1.0</priority></url>',
+          f'  <url><loc>{SITE}/quienes-somos.html</loc><changefreq>monthly</changefreq></url>']
     seen = set(); count = 0
     for p in prods:
         if (p.get('estado') or '').lower() == 'inactivo': continue
@@ -177,7 +183,7 @@ def main():
         page = page.replace('content="https://blinkymdq.com/blinkysinfondo.png"', f'content="{esc(img)}"')
         page = page.replace('content="https://blinkymdq.com"', f'content="{canonical}"')
         page = page.replace('__PREVIEW__', preview)
-        page = page.replace('__INLINE_JS__', f'<script>window.__COD__="{cod}";</script>\n<script src="../producto.js"></script>')
+        page = page.replace('__INLINE_JS__', f'<script>window.__COD__="{cod}";</script>\n<script src="../producto.js?v={VER}"></script>')
 
         open(os.path.join(pdir, fname), 'w', encoding='utf-8').write(page)
         sm.append(f'  <url><loc>{canonical}</loc><changefreq>weekly</changefreq></url>')
