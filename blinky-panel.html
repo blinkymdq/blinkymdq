@@ -1107,7 +1107,7 @@ function agregarProdCupon(){
   if(!val){ return; }
   // permite pegar "codigo — nombre" o buscar por nombre
   let prod = _cupProds.find(p=>String(p.codigo)===val);
-  if(!prod){ const low=val.toLowerCase(); prod = _cupProds.find(p=>(p.nombre||'').toLowerCase()===low) || _cupProds.find(p=>(p.nombre||'').toLowerCase().includes(low)); }
+  if(!prod){ const low=sinAcentos(val); prod = _cupProds.find(p=>sinAcentos(p.nombre)===low) || _cupProds.find(p=>sinAcentos(p.nombre).includes(low)); }
   if(!prod){ toast('No encontré ese producto','err'); return; }
   if(!cupProdSel.includes(String(prod.codigo))) cupProdSel.push(String(prod.codigo));
   inp.value='';
@@ -1255,6 +1255,27 @@ async function eliminarReporte(id){
   cargarReportes();
 }
 
+// Normaliza texto para buscar: minúsculas y SIN acentos (á=a, ñ=n, etc.)
+function sinAcentos(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+// Genera el mismo slug que el robot SEO (gen_seo.py) para armar el link /p/<slug>-<codigo>.html
+function slugSeo(s){
+  s=(s||'').toString().normalize('NFKD').replace(/[̀-ͯ]/g,'');
+  s=s.replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase();
+  s=s.replace(/-+/g,'-').slice(0,60).replace(/^-+|-+$/g,'');
+  return s||'producto';
+}
+function linkProducto(p){
+  return p && p.codigo ? `https://blinkymdq.com/p/${slugSeo(p.nombre)}-${p.codigo}.html` : '';
+}
+// Link /p/ a partir del código; usa el nombre ACTUAL del catálogo (por si cambió tras la entrega)
+function linkProductoCod(codigo, nombreFallback){
+  if(!codigo) return '';
+  var p = (typeof vendProductos!=='undefined' && vendProductos) ? vendProductos.find(function(x){ return String(x.codigo)===String(codigo); }) : null;
+  var nom = (p && p.nombre) ? p.nombre : (nombreFallback||'');
+  return `https://blinkymdq.com/p/${slugSeo(nom)}-${codigo}.html`;
+}
+
 function switchTab(tab, btn) {
   if(hayEntregaSinGuardar()){ if(!confirmarDescartarEntrega()) return; entregaCarrito=[]; }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -1296,7 +1317,7 @@ function renderRegistro(){
   const tipo = document.getElementById('reg-tipo').value;
   let rows = _regCache.slice();
   if(tipo) rows = rows.filter(r=>(r.tipo||'')===tipo);
-  if(q) rows = rows.filter(r=> (`${r.descripcion||''} ${r.tipo||''} ${r.ref||''}`).toLowerCase().includes(q));
+  if(q) rows = rows.filter(r=> sinAcentos(`${r.descripcion||''} ${r.tipo||''} ${r.ref||''}`).includes(sinAcentos(q)));
   if(!rows.length){ cont.innerHTML = '<div class="empty"><div class="empty-icon">🗒️</div><p>Sin movimientos</p></div>'; return; }
   const ico = {compra:'📦',entrega:'🚚',venta:'🛒',pago:'💵',descuento:'🏷️',stock:'📊',precio:'💲',pedido:'🧾',devolucion:'↩️'};
   cont.innerHTML = `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem;">${rows.length} movimiento${rows.length===1?'':'s'}</div>` + rows.map(r=>{
@@ -2055,7 +2076,7 @@ async function cargarPedidos() {
   try {
     let pedidos=await(await fetch(url,{headers:hdrs})).json();
     if(!Array.isArray(pedidos)){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';return;}
-    if(busca) pedidos=pedidos.filter(p=>p.nombre.toLowerCase().includes(busca));
+    if(busca) pedidos=pedidos.filter(p=>sinAcentos(p.nombre).includes(sinAcentos(busca)));
     if(filtroPago==='pagado') pedidos=pedidos.filter(p=>Number(p.monto_pagado||0)>=Number(p.total));
     if(filtroPago==='debe') pedidos=pedidos.filter(p=>Number(p.monto_pagado||0)<Number(p.total));
     if(!pedidos.length){cont.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p>No hay pedidos</p></div>';return;}
@@ -2492,7 +2513,7 @@ async function seleccionarClienteNP(valor) {
 function autocompletarPrecioNP(valor) {
   const nombre = valor.replace(/\s*\((stock:.*|Sin stock)\)$/, '').trim();
   let prod = npProductosCache.find(p => p.nombre === nombre);
-  if (!prod && nombre) { const nl=nombre.toLowerCase(); let c=npProductosCache.filter(p=>p.nombre.toLowerCase().startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>p.nombre.toLowerCase().includes(nl)); if(c.length===1) prod=c[0]; }
+  if (!prod && nombre) { const nl=sinAcentos(nombre); let c=npProductosCache.filter(p=>sinAcentos(p.nombre).startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>sinAcentos(p.nombre).includes(nl)); if(c.length===1) prod=c[0]; }
   const tipoLabel = document.getElementById('np-tipo-precio');
   if (!prod) { if (tipoLabel) tipoLabel.textContent = ''; return; }
 
@@ -2531,7 +2552,7 @@ function agregarItemNP() {
   if (!precio || precio <= 0) { toast('Ingresá un precio válido', 'err'); return; }
 
   let prod = npProductosCache.find(p => p.nombre === nombre);
-  if (!prod && nombre) { const nl=nombre.toLowerCase(); let c=npProductosCache.filter(p=>p.nombre.toLowerCase().startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>p.nombre.toLowerCase().includes(nl)); if(c.length===1) prod=c[0]; }
+  if (!prod && nombre) { const nl=sinAcentos(nombre); let c=npProductosCache.filter(p=>sinAcentos(p.nombre).startsWith(nl)); if(c.length!==1) c=npProductosCache.filter(p=>sinAcentos(p.nombre).includes(nl)); if(c.length===1) prod=c[0]; }
   if (!prod) { toast('Ese producto no existe en el catálogo. Elegilo de la lista.', 'err'); return; }
 
   const stock = Number(prod.stock || 0);
@@ -2839,8 +2860,8 @@ async function cargarUsuarios() {
       cont.innerHTML='<div class="empty"><div class="empty-icon">👤</div><p>No hay usuarios</p></div>';return;
     }
     const filtrados = q ? usuarios.filter(u =>
-      (u.nombre||'').toLowerCase().includes(q.toLowerCase()) ||
-      (u.email||'').toLowerCase().includes(q.toLowerCase())
+      sinAcentos(u.nombre).includes(sinAcentos(q)) ||
+      sinAcentos(u.email).includes(sinAcentos(q))
     ) : usuarios;
     if(!filtrados.length){
       cont.innerHTML='<div class="empty"><div class="empty-icon">👤</div><p>Sin resultados</p></div>';return;
@@ -3584,7 +3605,7 @@ async function cargarProductos() {
 
     // Filtro local por búsqueda
     if(q) prods = prods.filter(p =>
-      (p.nombre||'').toLowerCase().includes(q.toLowerCase()) ||
+      sinAcentos(p.nombre).includes(sinAcentos(q)) ||
       (p.codigo||'').toLowerCase().includes(q.toLowerCase())
     );
 
@@ -3645,7 +3666,7 @@ function abrirModalProducto(id) {
   document.getElementById('stock-signo-btn').style.color = 'var(--green)';
   document.getElementById('stock-nuevo-preview').textContent = '';
   document.getElementById('mp-descripcion').value = p.descripcion || '';
-  document.getElementById('mp-link').value = p.codigo ? `https://blinkymdq.com/producto.html?cod=${p.codigo}` : '';
+  document.getElementById('mp-link').value = linkProducto(p);
   document.getElementById('stock-cantidad').oninput = actualizarPreviewStock;
   const modal = document.getElementById('modal-producto');
   modal.style.display = 'flex';
@@ -3942,7 +3963,7 @@ function renderVendedores() {
     <div class="stat-card cyan"><div class="stat-label">Unidades afuera</div><div class="stat-val">${totU}</div></div>
     <div class="stat-card yellow"><div class="stat-label">Valor mercadería</div><div class="stat-val">$${totV.toLocaleString('es-AR')}</div></div>`;
   let lista = vendedores;
-  if(q) lista = lista.filter(v=>(v.nombre||'').toLowerCase().includes(q));
+  if(q) lista = lista.filter(v=>sinAcentos(v.nombre).includes(sinAcentos(q)));
   if(!lista.length){ cont.innerHTML='<div class="empty"><div class="empty-icon">🧑</div><p>No hay vendedores. Habilitá uno arriba.</p></div>'; return; }
   cont.innerHTML = lista.map(v=>{
     const filas = entregasDe(v.id);
@@ -4001,9 +4022,9 @@ function renderModalVendedor(id) {
     const precio = precioVend(e.codigo, v.rol);
     const img = fotoVend(e.codigo);
     return `<div class="vmerc-card" data-buscar="${((e.producto||'')+' '+(e.codigo||'')).toLowerCase().replace(/"/g,'')}">
-      ${e.codigo?`<a class="vmerc-img" href="producto.html?cod=${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</a>`:`<div class="vmerc-img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>`}
+      ${e.codigo?`<a class="vmerc-img" href="${linkProductoCod(e.codigo, e.producto)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</a>`:`<div class="vmerc-img">${img?`<img src="${img}" onerror="this.parentNode.style.opacity='0.25'">`:''}</div>`}
       <div class="vmerc-body">
-        ${e.codigo?`<a class="vmerc-nombre" href="producto.html?cod=${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;text-decoration:none;color:inherit;">${e.producto}</a>`:`<div class="vmerc-nombre">${e.producto}</div>`}
+        ${e.codigo?`<a class="vmerc-nombre" href="${linkProductoCod(e.codigo, e.producto)}" target="_blank" rel="noopener" title="Ver en la web" style="cursor:pointer;text-decoration:none;color:inherit;">${e.producto}</a>`:`<div class="vmerc-nombre">${e.producto}</div>`}
         ${e.codigo?`<div class="vmerc-cod">Cód. ${e.codigo}</div>`:''}
         <div class="vmerc-stats"><span>📦 ${e.entregado}</span><span style="color:var(--green);">✓ ${e.vendido}</span><span style="color:var(--yellow);">↩ ${e.devuelto}</span><span style="font-weight:900;color:${pend>0?'var(--violet-light)':'var(--text3)'};">Tiene ${pend}</span></div>
         <div class="vmerc-precio">$${precio.toLocaleString('es-AR')}</div>
@@ -4233,7 +4254,7 @@ async function entregarMercaderia(uid) {
   const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
   const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
-  const prod = (vendProductos||[]).find(p=>p.nombre===nombre);
+  const prod = (vendProductos||[]).find(p=>p.nombre===nombre) || (vendProductos||[]).find(p=>sinAcentos(p.nombre)===sinAcentos(nombre));
   if(!prod){ toast('Elegí un producto del catálogo','err'); return; }
   // Disponibilidad = stock físico (fresco) - unidades que ya están afuera con TODOS los vendedores
   let stockActual = Number(prod.stock||0);
@@ -4270,7 +4291,7 @@ async function agregarAEntrega(uid){
   const nombre = (document.getElementById('vend-ent-prod').value||'').trim();
   const cant = parseInt(document.getElementById('vend-ent-cant').value)||0;
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
-  const prod = (vendProductos||[]).find(p=>p.nombre===nombre);
+  const prod = (vendProductos||[]).find(p=>p.nombre===nombre) || (vendProductos||[]).find(p=>sinAcentos(p.nombre)===sinAcentos(nombre));
   if(!prod){ toast('Elegí un producto del catálogo','err'); return; }
   const afuera = (vendEntregas||[]).filter(e=>e.codigo===prod.codigo).reduce((s,e)=>s+Math.max(0,pendItem(e)),0);
   const enCarrito = entregaCarrito.filter(c=>c.codigo===prod.codigo).reduce((s,c)=>s+c.cant,0);
@@ -4506,7 +4527,7 @@ function buscarProductoVendedores(){
   if(!box) return;
   if(!q){ box.innerHTML=''; box.style.display='none'; if(lista) lista.style.display=''; return; }
   box.style.display='block'; if(lista) lista.style.display='none';
-  const rows = vendEntregas.filter(e=> pendItem(e)>0 && (((e.producto||'').toLowerCase().includes(q)) || (String(e.codigo||'').toLowerCase().includes(q))));
+  const rows = vendEntregas.filter(e=> pendItem(e)>0 && ((sinAcentos(e.producto).includes(sinAcentos(q))) || (String(e.codigo||'').toLowerCase().includes(q))));
   if(!rows.length){ box.innerHTML='<div class="empty"><div class="empty-icon">🔎</div><p>Nadie tiene ese producto en su poder</p></div>'; return; }
   const porProd = {};
   rows.forEach(e=>{ const key=e.producto||e.codigo; (porProd[key]=porProd[key]||[]).push(e); });

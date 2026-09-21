@@ -1209,15 +1209,26 @@ function sortBy(field) {
   filtrarTabla();
 }
 
+// Normaliza texto para buscar: minúsculas y SIN acentos (á=a, ñ=n, etc.)
+function sinAcentos(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+// Genera el mismo slug que el robot SEO para el link /p/<slug>-<codigo>.html
+function slugSeo(s){
+  s=(s||'').toString().normalize('NFKD').replace(/[̀-ͯ]/g,'');
+  s=s.replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase();
+  s=s.replace(/-+/g,'-').slice(0,60).replace(/^-+|-+$/g,'');
+  return s||'producto';
+}
+
 function filtrarTabla() {
-  const q = document.getElementById('buscar').value.toLowerCase();
+  const q = sinAcentos(document.getElementById('buscar').value);
   const cat = document.getElementById('filtro-cat').value;
   const marca = document.getElementById('filtro-marca').value;
   const stock = document.getElementById('filtro-stock').value;
   const estado = document.getElementById('filtro-estado') ? document.getElementById('filtro-estado').value : '';
 
   let prods = todosLosProductos.filter(p => {
-    const matchQ = !q || (p.nombre||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q);
+    const matchQ = !q || sinAcentos(p.nombre).includes(q) || (p.codigo||'').toLowerCase().includes(q);
     const matchCat = !cat || p.categoria === cat;
     const matchMarca = !marca || p.marca === marca;
     const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
@@ -1297,7 +1308,7 @@ function renderTabla(prods) {
             </td>
             <td style="color:var(--text3);font-family:monospace;font-size:0.75rem;">${p.codigo||'-'}</td>
             <td style="min-width:320px;max-width:420px;">
-              <a id="nombre-link-${p.codigo}" href="producto.html?cod=${encodeURIComponent(p.codigo)}" target="_blank" rel="noopener" class="nombre-link" title="Abrir la ficha del producto en una pestaña nueva">${p.nombre||'(sin nombre)'}</a>
+              <a id="nombre-link-${p.codigo}" href="https://blinkymdq.com/p/${slugSeo(p.nombre)}-${p.codigo}.html" target="_blank" rel="noopener" class="nombre-link" title="Abrir la ficha del producto en una pestaña nueva">${p.nombre||'(sin nombre)'}</a>
               <textarea class="td-input nombre-auto" id="nombre-${p.codigo}" rows="2" style="width:100%;resize:vertical;font-weight:700;white-space:normal;text-align:left;overflow:hidden;min-height:2.6em;display:none;" oninput="marcarSinGuardar('${p.codigo}');autoAltura(this)" disabled>${p.nombre||''}</textarea>
             </td>
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
