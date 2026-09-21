@@ -879,6 +879,37 @@ function limpiarFormNuevo() {
   mostrarProximoCodigo();
 }
 
+// Abre "Nuevo producto" con los datos de un producto existente precargados (menos la foto)
+function agregarSimilar(codigo) {
+  const p = todosLosProductos.find(x => String(x.codigo) === String(codigo));
+  if (!p) { toast('No encontré el producto', 'err'); return; }
+  switchTab('nuevo'); // muestra el form y calcula el próximo código
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+  set('np-nombre', p.nombre);
+  set('np-marca', p.marca);
+  set('np-categoria', p.categoria);
+  set('np-genero', p.genero || '');
+  set('np-stock', p.stock);
+  set('np-estado', p.estado || 'activo');
+  set('np-moneda', (p.moneda || 'USD').toString().toUpperCase());
+  set('np-costo-usd', p.costo_usd);
+  set('np-imp-e', p.imp_e);
+  set('np-gan-min', p.ganancia);
+  set('np-gan-may', p.ganancia_mayorista);
+  // Descripción (se copia)
+  nuevaDescHtml = p.descripcion || '';
+  const dp = document.getElementById('np-desc-preview'); if (dp) dp.innerHTML = nuevaDescHtml;
+  // SIN foto: se deja vacía a propósito
+  fotosSeleccionadas = [];
+  if (typeof renderFotoPreviews === 'function') renderFotoPreviews();
+  const ft = document.getElementById('np-foto-total'); if (ft) ft.textContent = '';
+  // Recalcular label de moneda y precios estimados
+  if (typeof actualizarCalcNuevo === 'function') actualizarCalcNuevo();
+  toast('Datos copiados — agregá la foto, revisá y tocá "Crear producto"', 'ok');
+  const _n = document.getElementById('np-nombre');
+  if (_n) { try { _n.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} _n.focus(); }
+}
+
 async function crearProducto() {
   const nombre = document.getElementById('np-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
@@ -1335,7 +1366,10 @@ function renderTabla(prods) {
             </td>
             <td style="text-align:center;"><input type="checkbox" id="oferta-${p.codigo}" ${p.oferta?'checked':''} onchange="marcarSinGuardar('${p.codigo}')" disabled style="width:16px;height:16px;cursor:pointer;"></td>
             <td><button class="btn-editar-row" id="btn-${p.codigo}" onclick="editarProducto('${p.codigo}')">Editar</button></td>
-            <td><button onclick="eliminarProducto('${p.codigo}')" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:0.7rem;padding:4px 8px;cursor:pointer;">🗑</button></td>
+            <td><div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
+              <button onclick="agregarSimilar('${p.codigo}')" title="Agregar un producto similar (copia los datos, menos la foto)" style="background:none;border:1px solid var(--green);border-radius:6px;color:var(--green);font-size:0.95rem;font-weight:800;line-height:1;padding:4px 8px;cursor:pointer;">+</button>
+              <button onclick="eliminarProducto('${p.codigo}')" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:0.7rem;padding:4px 8px;cursor:pointer;">🗑</button>
+            </div></td>
           </tr>`;
         }).join('')}
       </tbody>
