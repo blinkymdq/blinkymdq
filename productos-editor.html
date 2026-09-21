@@ -139,6 +139,8 @@
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -197,6 +199,18 @@
           <option value="oferta">🏷️ Ofertas</option>
           <option value="inactivo">⚪ Inactivos</option>
         </select>
+        <select class="filter-input" id="filtro-genero" onchange="filtrarTabla()">
+          <option value="">Todos los géneros</option>
+          <option value="masculino">♂ Masculino</option>
+          <option value="femenino">♀ Femenino</option>
+          <option value="unisex">⚥ Unisex</option>
+        </select>
+        <select class="filter-input" id="filtro-orden" onchange="filtrarTabla()">
+          <option value="">Orden por defecto</option>
+          <option value="stock-desc">Stock: mayor a menor</option>
+          <option value="stock-asc">Stock: menor a mayor</option>
+        </select>
+        <button onclick="abrirModalExport()" title="Exportar a PDF con opciones" style="cursor:pointer;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:0 1rem;font-weight:700;font-size:0.82rem;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">📄 Exportar PDF</button>
       </div>
 
       <div class="tabla-wrap">
@@ -1257,6 +1271,11 @@ function filtrarTabla() {
   const marca = document.getElementById('filtro-marca').value;
   const stock = document.getElementById('filtro-stock').value;
   const estado = document.getElementById('filtro-estado') ? document.getElementById('filtro-estado').value : '';
+  const genero = document.getElementById('filtro-genero') ? document.getElementById('filtro-genero').value : '';
+  const orden  = document.getElementById('filtro-orden')  ? document.getElementById('filtro-orden').value  : '';
+  // Orden por stock si se eligió en el selector
+  if (orden === 'stock-desc') { sortField = 'stock'; sortDir = -1; }
+  else if (orden === 'stock-asc') { sortField = 'stock'; sortDir = 1; }
 
   let prods = todosLosProductos.filter(p => {
     const matchQ = !q || sinAcentos(p.nombre).includes(q) || (p.codigo||'').toLowerCase().includes(q);
@@ -1264,7 +1283,8 @@ function filtrarTabla() {
     const matchMarca = !marca || p.marca === marca;
     const matchStock = !stock || (stock==='sin' ? !p.stock||p.stock<=0 : p.stock>0);
     const matchEstado = !estado || (estado==='oferta' ? !!p.oferta : (p.estado||'activo') === estado);
-    return matchQ && matchCat && matchMarca && matchStock && matchEstado;
+    const matchGenero = !genero || (p.genero||'') === genero;
+    return matchQ && matchCat && matchMarca && matchStock && matchEstado && matchGenero;
   });
 
   // Siempre agrupa por estado (activos → inactivos), y dentro respeta el orden de columna
@@ -1283,7 +1303,114 @@ function filtrarTabla() {
     return 0;
   });
 
+  window._prodsFiltrados = prods;
   renderTabla(prods);
+}
+
+// ══ Exportar PDF con opciones (modal) ══
+const EXPORT_COLS = [
+  { k:'codigo',           label:'Código',      def:true,  get:p=>p.codigo||'',                       w:44,  align:'center' },
+  { k:'nombre',           label:'Nombre',      def:true,  get:p=>p.nombre||'' },
+  { k:'marca',            label:'Marca',       def:true,  get:p=>p.marca||'-' },
+  { k:'categoria',        label:'Categoría',   def:true,  get:p=>p.categoria||'-' },
+  { k:'genero',           label:'Género',      def:false, get:p=>p.genero||'-',                      align:'center' },
+  { k:'stock',            label:'Stock',       def:true,  get:p=>String(p.stock==null?0:p.stock),    w:36,  align:'center', bold:true },
+  { k:'precio_publico',   label:'$ Público',   def:true,  get:p=>_fmtPrecioExp(p.precio_publico),    align:'right' },
+  { k:'precio_mayorista', label:'$ Mayorista', def:false, get:p=>_fmtPrecioExp(p.precio_mayorista),  align:'right' },
+  { k:'estado',           label:'Estado',      def:false, get:p=>p.estado||'activo',                 align:'center' },
+];
+function _fmtPrecioExp(v){ return (v==null||v==='') ? '-' : '$'+Number(v).toLocaleString('es-AR'); }
+
+function abrirModalExport() {
+  const cats = [...new Set(todosLosProductos.map(p=>p.categoria).filter(Boolean))].sort();
+  const marcas = [...new Set(todosLosProductos.map(p=>p.marca).filter(Boolean))].sort();
+  const ec = document.getElementById('exp-cat');
+  ec.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const em = document.getElementById('exp-marca');
+  em.innerHTML = '<option value="">Todas las marcas</option>' + marcas.map(m=>`<option value="${m}">${m}</option>`).join('');
+  // Comodidad: precargar con lo que esté filtrado en la tabla
+  ec.value = document.getElementById('filtro-cat').value || '';
+  em.value = document.getElementById('filtro-marca').value || '';
+  document.getElementById('exp-genero').value = (document.getElementById('filtro-genero')||{}).value || '';
+  document.getElementById('exp-estado').value = document.getElementById('filtro-estado').value || '';
+  document.getElementById('exp-stock').value = document.getElementById('filtro-stock').value || '';
+  document.getElementById('exp-orden').value = 'nombre';
+  document.getElementById('exp-cols').innerHTML = EXPORT_COLS.map(c=>
+    `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="expcol-${c.k}" ${c.def?'checked':''} onchange="_actualizarConteoExport()"> ${c.label}</label>`
+  ).join('');
+  ['exp-cat','exp-marca','exp-genero','exp-estado','exp-stock','exp-orden'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.onchange=_actualizarConteoExport;
+  });
+  document.getElementById('modal-export').style.display = 'flex';
+  _actualizarConteoExport();
+}
+function cerrarModalExport(){ document.getElementById('modal-export').style.display = 'none'; }
+
+function _listaExport() {
+  const cat=document.getElementById('exp-cat').value, marca=document.getElementById('exp-marca').value,
+        genero=document.getElementById('exp-genero').value, estado=document.getElementById('exp-estado').value,
+        stock=document.getElementById('exp-stock').value, orden=document.getElementById('exp-orden').value;
+  let lista = todosLosProductos.filter(p=>{
+    const mc = !cat || p.categoria===cat;
+    const mm = !marca || p.marca===marca;
+    const mg = !genero || (p.genero||'')===genero;
+    const me = !estado || (estado==='oferta' ? !!p.oferta : (p.estado||'activo')===estado);
+    const ms = !stock || (stock==='sin' ? (!p.stock||p.stock<=0) : p.stock>0);
+    return mc&&mm&&mg&&me&&ms;
+  });
+  if (orden==='stock-desc') lista.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0));
+  else if (orden==='stock-asc') lista.sort((a,b)=>Number(a.stock||0)-Number(b.stock||0));
+  else if (orden==='codigo') lista.sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo)));
+  else lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  return lista;
+}
+function _actualizarConteoExport(){
+  const n=_listaExport().length;
+  const el=document.getElementById('exp-conteo'); if(el) el.textContent = `Se exportarán ${n} producto${n===1?'':'s'}.`;
+}
+
+function exportarPDF() {
+  if (!window.jspdf || !window.jspdf.jsPDF) { toast('La librería PDF aún está cargando, probá de nuevo en un segundo', 'err'); return; }
+  const lista = _listaExport();
+  if (!lista.length) { toast('No hay productos con esos filtros', 'err'); return; }
+  const cols = EXPORT_COLS.filter(c=>{ const cb=document.getElementById('expcol-'+c.k); return cb && cb.checked; });
+  if (!cols.length) { toast('Elegí al menos una columna', 'err'); return; }
+
+  const cat=document.getElementById('exp-cat').value, marca=document.getElementById('exp-marca').value,
+        genero=document.getElementById('exp-genero').value, estado=document.getElementById('exp-estado').value,
+        stock=document.getElementById('exp-stock').value;
+  const filtros=[];
+  if(cat) filtros.push('Categoría: '+cat);
+  if(marca) filtros.push('Marca: '+marca);
+  if(genero) filtros.push('Género: '+genero);
+  if(estado) filtros.push('Estado: '+estado);
+  if(stock) filtros.push('Stock: '+(stock==='sin'?'Sin stock':'Con stock'));
+
+  const orient = document.getElementById('exp-orient').value || 'landscape';
+  const formato = document.getElementById('exp-formato').value || 'a4';
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:orient, unit:'pt', format:formato });
+  const fecha = new Date().toLocaleDateString('es-AR');
+  doc.setFontSize(15); doc.setTextColor(124,58,237);
+  doc.text('Blinky MDQ — Listado de productos', 40, 36);
+  doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text('Fecha: '+fecha+'   |   '+lista.length+' productos   |   '+(filtros.length?filtros.join('   ·   '):'Sin filtros'), 40, 52);
+
+  const head = [cols.map(c=>c.label)];
+  const body = lista.map(p=>cols.map(c=>c.get(p)));
+  const columnStyles = {};
+  cols.forEach((c,i)=>{ const s={}; if(c.w)s.cellWidth=c.w; if(c.align)s.halign=c.align; if(c.bold)s.fontStyle='bold'; if(Object.keys(s).length) columnStyles[i]=s; });
+
+  doc.autoTable({
+    startY:64, head, body,
+    styles:{ fontSize:7.5, cellPadding:3, overflow:'linebreak' },
+    headStyles:{ fillColor:[124,58,237], textColor:255, fontStyle:'bold' },
+    alternateRowStyles:{ fillColor:[245,243,255] },
+    columnStyles, margin:{ left:40, right:40 }
+  });
+  doc.save('productos-blinky-'+fecha.replace(/\//g,'-')+'.pdf');
+  cerrarModalExport();
+  toast('PDF generado ('+lista.length+' productos)', 'ok');
 }
 
 function renderTabla(prods) {
@@ -1345,7 +1472,7 @@ function renderTabla(prods) {
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;"><select class="td-input" id="genero-${p.codigo}" style="width:96px;" oninput="marcarSinGuardar('${p.codigo}')" disabled><option value="" ${!p.genero?'selected':''}>—</option><option value="unisex" ${p.genero==='unisex'?'selected':''}>Unisex</option><option value="masculino" ${p.genero==='masculino'?'selected':''}>Masculino</option><option value="femenino" ${p.genero==='femenino'?'selected':''}>Femenino</option></select></td>
-            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:32px;padding:4px 4px;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:48px;padding:4px 6px;text-align:center;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;"><select class="td-input" id="moneda-${p.codigo}" style="width:74px;" onchange="actualizarCalc('${p.codigo}')" disabled><option value="USD" ${(p.moneda||'USD')==='USD'?'selected':''}>USD</option><option value="ARS" ${p.moneda==='ARS'?'selected':''}>Pesos</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
@@ -1498,5 +1625,66 @@ function toast(msg, tipo) {
 }
 
 </script>
+<!-- ═══ Modal Exportar PDF ═══ -->
+<div id="modal-export" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)cerrarModalExport()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.4rem;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h3 style="margin:0;font-size:1.05rem;color:var(--text);">📄 Exportar a PDF</h3>
+      <button onclick="cerrarModalExport()" style="background:none;border:none;color:var(--text3);font-size:1.3rem;cursor:pointer;line-height:1;">×</button>
+    </div>
+
+    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:0.5rem;">Filtrar qué exportar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1rem;">
+      <select class="filter-input" id="exp-cat" style="width:100%;"><option value="">Todas las categorías</option></select>
+      <select class="filter-input" id="exp-marca" style="width:100%;"><option value="">Todas las marcas</option></select>
+      <select class="filter-input" id="exp-genero" style="width:100%;">
+        <option value="">Todos los géneros</option>
+        <option value="masculino">♂ Masculino</option>
+        <option value="femenino">♀ Femenino</option>
+        <option value="unisex">⚥ Unisex</option>
+      </select>
+      <select class="filter-input" id="exp-estado" style="width:100%;">
+        <option value="">Todos los estados</option>
+        <option value="activo">🟢 Activos</option>
+        <option value="oferta">🏷️ Ofertas</option>
+        <option value="inactivo">⚪ Inactivos</option>
+      </select>
+      <select class="filter-input" id="exp-stock" style="width:100%;">
+        <option value="">Todo el stock</option>
+        <option value="con">Con stock</option>
+        <option value="sin">Sin stock</option>
+      </select>
+      <select class="filter-input" id="exp-orden" style="width:100%;">
+        <option value="nombre">Orden: Nombre (A-Z)</option>
+        <option value="stock-desc">Stock: mayor a menor</option>
+        <option value="stock-asc">Stock: menor a mayor</option>
+        <option value="codigo">Código</option>
+      </select>
+    </div>
+
+    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:0.5rem;">Columnas a incluir</div>
+    <div id="exp-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem 0.8rem;margin-bottom:1rem;font-size:0.82rem;color:var(--text);"></div>
+
+    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:0.5rem;">Página</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1rem;">
+      <select class="filter-input" id="exp-orient" style="width:100%;">
+        <option value="landscape">Apaisado (horizontal)</option>
+        <option value="portrait">Vertical</option>
+      </select>
+      <select class="filter-input" id="exp-formato" style="width:100%;">
+        <option value="a4">A4</option>
+        <option value="a3">A3</option>
+        <option value="letter">Carta</option>
+      </select>
+    </div>
+
+    <div id="exp-conteo" style="font-size:0.78rem;color:var(--text3);margin-bottom:0.9rem;"></div>
+
+    <div style="display:flex;gap:0.6rem;justify-content:flex-end;">
+      <button onclick="cerrarModalExport()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:0.6rem 1.1rem;font-weight:700;cursor:pointer;">Cancelar</button>
+      <button onclick="exportarPDF()" style="background:#dc2626;border:none;border-radius:10px;color:#fff;padding:0.6rem 1.3rem;font-weight:700;cursor:pointer;">Generar PDF</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
