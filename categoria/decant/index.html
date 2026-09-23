@@ -26,7 +26,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para CSV robusto -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Decant - Blinky MDQ</title><link rel="canonical" href="https://blinkymdq.com/categoria/decant/"><meta name="description" content="Compra Decant en Blinky MDQ, Mar del Plata. 2 productos con envios a todo el pais y retiro en Punto Blinky."><meta property="og:type" content="website"><meta property="og:title" content="Decant - Blinky MDQ"><meta property="og:description" content="Compra Decant en Blinky MDQ, Mar del Plata. 2 productos con envios a todo el pais y retiro en Punto Blinky."><meta property="og:image" content="https://fcaytkwcypktvrmerexp.supabase.co/storage/v1/object/public/productos-fotos/7617/1788407664826-pqptat.jpg"><meta property="og:url" content="https://blinkymdq.com/categoria/decant/"><meta name="twitter:card" content="summary_large_image">
+    <title>Decant - Blinky MDQ</title><link rel="canonical" href="https://blinkymdq.com/categoria/decant/"><meta name="description" content="Compra Decant en Blinky MDQ, Mar del Plata. 3 productos con envios a todo el pais y retiro en Punto Blinky."><meta property="og:type" content="website"><meta property="og:title" content="Decant - Blinky MDQ"><meta property="og:description" content="Compra Decant en Blinky MDQ, Mar del Plata. 3 productos con envios a todo el pais y retiro en Punto Blinky."><meta property="og:image" content="https://fcaytkwcypktvrmerexp.supabase.co/storage/v1/object/public/productos-fotos/7617/1788407664826-pqptat.jpg"><meta property="og:url" content="https://blinkymdq.com/categoria/decant/"><meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Blinky MDQ, tienda online en Mar del Plata de perfumes importados, cosmética y electrónica, por mayor y menor. Marcas como Lattafa, Armaf, Maison Alhambra, Victoria's Secret, Xiaomi y JBL. Envíos a todo el país y retiro en Mar del Plata.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Blinky MDQ — Perfumes, cosmética y electrónica en Mar del Plata">
@@ -1701,8 +1701,11 @@
             ejecutarFiltros();
         }
 
+        // Normaliza texto para buscar: minúsculas y SIN acentos (á=a, ñ=n, etc.)
+        function sinAcentos(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
         function ejecutarFiltros() {
-            const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
+            const val = sinAcentos(document.getElementById('inputBusqueda').value.trim());
             const c   = document.getElementById('selectCat').value;
             const m   = document.getElementById('selectMarca').value;
 
@@ -1729,7 +1732,7 @@
             var _bo = document.getElementById('seccionBannerOfertas'); if (_bo) _bo.style.display = 'none';
 
             let res = productos.filter(p => {
-                const nombreLimpio = p.nombre.toLowerCase();
+                const nombreLimpio = sinAcentos(p.nombre);
                 const codigoLimpio = p.codigo.toLowerCase();
                 const matchTexto   = !val || val.split(/\s+/).every(w => nombreLimpio.includes(w) || codigoLimpio.includes(w));
                 const matchCat     = !c || p.cat   === c.toLowerCase();

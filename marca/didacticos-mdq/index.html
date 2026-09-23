@@ -1701,8 +1701,11 @@
             ejecutarFiltros();
         }
 
+        // Normaliza texto para buscar: minúsculas y SIN acentos (á=a, ñ=n, etc.)
+        function sinAcentos(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
         function ejecutarFiltros() {
-            const val = document.getElementById('inputBusqueda').value.toLowerCase().trim();
+            const val = sinAcentos(document.getElementById('inputBusqueda').value.trim());
             const c   = document.getElementById('selectCat').value;
             const m   = document.getElementById('selectMarca').value;
 
@@ -1729,7 +1732,7 @@
             var _bo = document.getElementById('seccionBannerOfertas'); if (_bo) _bo.style.display = 'none';
 
             let res = productos.filter(p => {
-                const nombreLimpio = p.nombre.toLowerCase();
+                const nombreLimpio = sinAcentos(p.nombre);
                 const codigoLimpio = p.codigo.toLowerCase();
                 const matchTexto   = !val || val.split(/\s+/).every(w => nombreLimpio.includes(w) || codigoLimpio.includes(w));
                 const matchCat     = !c || p.cat   === c.toLowerCase();
