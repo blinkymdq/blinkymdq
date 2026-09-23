@@ -1495,7 +1495,7 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,desc_efectivo_pct,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
@@ -1517,6 +1517,7 @@
                     marca:        (p.marca     || "").toLowerCase(),
                     gen:          (p.genero    || "").toLowerCase(),
                     desc:         Number(p.descuento || 0),
+                    descEf:       Number(p.desc_efectivo_pct || 0),
                     precioLista:  String(p.precio_publico  || 0),
                     precioP:      String( Number(p.descuento||0) > 0 ? Math.round(Number(p.precio_publico||0) * (1 - Number(p.descuento)/100)) : (p.precio_publico || 0) ),
                     precioM:      String(p.precio_mayorista || 0),

@@ -1288,6 +1288,7 @@
                     <div id="checkout-cupon-msg" class="text-[11px] font-bold mt-1.5 hidden"></div>
                 </div>
                 <div id="co-row-cupon" class="hidden justify-between items-center" style="font-size:0.82rem;color:#16a34a;font-weight:700;margin-top:0.7rem;"><span>Cupón</span><span id="co-val-cupon"></span></div>
+                <div id="co-row-efdesc" class="hidden justify-between items-center" style="font-size:0.82rem;color:#16a34a;font-weight:700;margin-top:0.4rem;"><span>Descuento cosméticos (transf./efectivo)</span><span id="co-val-efdesc"></span></div>
                 <div id="co-row-transf" class="hidden justify-between items-center" style="font-size:0.82rem;color:#16a34a;font-weight:700;margin-top:0.4rem;"><span>Descuento 5% (transf./efectivo)</span><span id="co-val-transf"></span></div>
                 <div class="co-total"><span class="lbl">Total</span><span id="checkoutTotal" class="text-xl font-black text-violet-600"></span></div>
               </aside>
@@ -1680,7 +1681,7 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,desc_efectivo_pct,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
@@ -1702,6 +1703,7 @@
                     marca:        (p.marca     || "").toLowerCase(),
                     gen:          (p.genero    || "").toLowerCase(),
                     desc:         Number(p.descuento || 0),
+                    descEf:       Number(p.desc_efectivo_pct || 0),
                     precioLista:  String(p.precio_publico  || 0),
                     precioP:      String( Number(p.descuento||0) > 0 ? Math.round(Number(p.precio_publico||0) * (1 - Number(p.descuento)/100)) : (p.precio_publico || 0) ),
                     precioM:      String(p.precio_mayorista || 0),
@@ -3112,18 +3114,30 @@
             }).join('');
             actualizarResumenTotales();
         }
+        // Descuento por producto que SOLO aplica en efectivo/transferencia (ej. cosméticos 15%)
+        function descEfectivoCarrito() {
+            return carrito.reduce(function(s,i){
+                var p = (productos||[]).find(function(x){ return String(x.codigo) === String(i.codigo); });
+                var pct = p ? Number(p.descEf || 0) : 0;
+                return s + (pct > 0 ? Math.round(i.precio * i.cantidad * pct/100) : 0);
+            }, 0);
+        }
         function actualizarResumenTotales() {
             var sub = carrito.reduce(function(s,i){ return s + i.precio * i.cantidad; }, 0);
             var cupD = (window._cupon && window._cupon.descuento) ? window._cupon.descuento : 0;
             var pagoEl = document.getElementById('checkout-pago');
             var pago = pagoEl ? pagoEl.value : '';
             var aplicaTransf = (window._userRol !== 'mayorista') && (pago === 'Efectivo' || pago === 'Transferencia');
-            var base = Math.max(0, sub - cupD);
+            var efD = aplicaTransf ? descEfectivoCarrito() : 0;
+            var base = Math.max(0, sub - cupD - efD);
             var transfD = aplicaTransf ? Math.round(base * 0.05) : 0;
             var total = Math.max(0, base - transfD);
             var rc = document.getElementById('co-row-cupon'), vc = document.getElementById('co-val-cupon');
             if (rc) { rc.classList.toggle('hidden', cupD<=0); rc.classList.toggle('flex', cupD>0); }
             if (vc) vc.textContent = '-' + formatPrecio(cupD);
+            var re = document.getElementById('co-row-efdesc'), ve = document.getElementById('co-val-efdesc');
+            if (re) { re.classList.toggle('hidden', efD<=0); re.classList.toggle('flex', efD>0); }
+            if (ve) ve.textContent = '-' + formatPrecio(efD);
             var rt = document.getElementById('co-row-transf'), vt = document.getElementById('co-val-transf');
             if (rt) { rt.classList.toggle('hidden', transfD<=0); rt.classList.toggle('flex', transfD>0); }
             if (vt) vt.textContent = '-' + formatPrecio(transfD);
@@ -3607,6 +3621,7 @@
                         total: totalNum,
                         cupon: (window._cupon ? window._cupon.codigo : null),
                         desc_pago_pct: ((window._userRol !== 'mayorista') && (pago === 'Efectivo' || pago === 'Transferencia')) ? 5 : 0,
+                        desc_efectivo: ((window._userRol !== 'mayorista') && (pago === 'Efectivo' || pago === 'Transferencia')) ? descEfectivoCarrito() : 0,
                         user_id: window._userId || null
                     };
                     // RETIRO EN PUNTO BLINKY: usa una función aparte (no descuenta stock/consignación hasta que el vendedor confirma la entrega)
@@ -3616,6 +3631,7 @@
                         pedidoPayload.punto_retiro_nombre = window._puntoRetiroSel.nombre;
                         pedidoPayload.cupon = null;
                         pedidoPayload.desc_pago_pct = 0; // precio público
+                        pedidoPayload.desc_efectivo = 0; // retiro: sin descuento efectivo
                         pedidoPayload.notas = (nota ? nota + ' · ' : '') + 'Retiro en ' + window._puntoRetiroSel.nombre;
                     }
                     var itemsPayload = carrito.map(function(i) {
