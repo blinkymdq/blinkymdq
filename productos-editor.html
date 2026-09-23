@@ -1307,6 +1307,52 @@ function filtrarTabla() {
   renderTabla(prods);
 }
 
+// ══ Quién tiene la mercadería (vendedores con unidades del producto) ══
+function cerrarModalQuien(){ document.getElementById('modal-quien').style.display = 'none'; }
+async function verQuienTiene(codigo) {
+  const p = todosLosProductos.find(x => String(x.codigo) === String(codigo));
+  document.getElementById('quien-prod').textContent = (p ? p.nombre : '') + ' · Cód. ' + codigo + (p ? (' · Stock local: ' + (p.stock || 0)) : '');
+  const body = document.getElementById('quien-body');
+  body.innerHTML = '<div class="loading-txt">Cargando...</div>';
+  document.getElementById('modal-quien').style.display = 'flex';
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/quien_tiene_mercaderia`, {
+      method: 'POST', headers: hdrs, body: JSON.stringify({ p_codigo: String(codigo) })
+    });
+    const data = await r.json();
+    const vendedores = Array.isArray(data) ? data : [];
+    const stockLocal = p ? Number(p.stock || 0) : 0;
+    const totalVend = vendedores.reduce((s, d) => s + Number(d.pendiente || 0), 0);
+    const totalGlobal = stockLocal + totalVend;
+
+    let html = `<div style="font-size:0.8rem;color:var(--text);margin-bottom:0.7rem;">Total: <b>${totalGlobal} u.</b> · 📦 Depósito ${stockLocal} · 🧑 Vendedores ${totalVend}</div>`;
+    // Fila de Depósito (stock en el local)
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+        <div>
+          <div style="font-weight:700;color:var(--text);font-size:0.86rem;">📦 Depósito</div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">En el local, sin asignar a vendedores</div>
+        </div>
+        <div style="font-size:1.1rem;font-weight:900;color:var(--green);white-space:nowrap;">${stockLocal} u.</div>
+      </div>`;
+    // Vendedores que tienen unidades
+    html += vendedores.map(d => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div>
+            <div style="font-weight:700;color:var(--text);font-size:0.86rem;">${d.numero_usuario ? ('#' + d.numero_usuario + ' ') : ''}${d.vendedor || '—'}</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">Entregado ${d.entregado} · Vendido ${d.vendido} · Devuelto ${d.devuelto}</div>
+          </div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--violet-light);white-space:nowrap;">${d.pendiente} u.</div>
+        </div>`).join('');
+    if (!vendedores.length) {
+      html += '<div style="text-align:center;color:var(--text3);font-size:0.76rem;padding:0.4rem 0;">Ningún vendedor tiene unidades de este producto.</div>';
+    }
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div style="text-align:center;color:var(--red);padding:1.2rem 0;">Error al consultar.</div>';
+  }
+}
+
 // ══ Exportar PDF con opciones (modal) ══
 const EXPORT_COLS = [
   { k:'codigo',           label:'Código',      def:true,  get:p=>p.codigo||'',                       w:44,  align:'center' },
@@ -1495,6 +1541,7 @@ function renderTabla(prods) {
             <td><button class="btn-editar-row" id="btn-${p.codigo}" onclick="editarProducto('${p.codigo}')">Editar</button></td>
             <td><div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
               <button onclick="agregarSimilar('${p.codigo}')" title="Agregar un producto similar (copia los datos, menos la foto)" style="background:none;border:1px solid var(--green);border-radius:6px;color:var(--green);font-size:0.95rem;font-weight:800;line-height:1;padding:4px 8px;cursor:pointer;">+</button>
+              <button onclick="verQuienTiene('${p.codigo}')" title="Ver qué vendedores tienen esta mercadería" style="background:none;border:1px solid var(--violet);border-radius:6px;color:var(--violet-light);font-size:0.8rem;line-height:1;padding:4px 8px;cursor:pointer;">👁</button>
               <button onclick="eliminarProducto('${p.codigo}')" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:0.7rem;padding:4px 8px;cursor:pointer;">🗑</button>
             </div></td>
           </tr>`;
@@ -1625,6 +1672,20 @@ function toast(msg, tipo) {
 }
 
 </script>
+<!-- ═══ Modal "Quién tiene la mercadería" ═══ -->
+<div id="modal-quien" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)cerrarModalQuien()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.4rem;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <h3 style="margin:0;font-size:1.02rem;color:var(--text);">👁 Quién tiene la mercadería</h3>
+        <div id="quien-prod" style="font-size:0.78rem;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <button onclick="cerrarModalQuien()" style="background:none;border:none;color:var(--text3);font-size:1.3rem;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div id="quien-body"><div class="loading-txt">Cargando...</div></div>
+  </div>
+</div>
+
 <!-- ═══ Modal Exportar PDF ═══ -->
 <div id="modal-export" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)cerrarModalExport()">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.4rem;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;">
