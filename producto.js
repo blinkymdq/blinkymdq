@@ -387,14 +387,14 @@ function renderProducto(p) {
         <h1 class="nombre">${p.nombre}</h1>
         ${mostrarPrecio ? `
         <div class="precio">${precio}${_dPct>0 ? ` <span style="text-decoration:line-through;color:#94a3b8;font-size:0.55em;font-weight:700;">${formatPrecio(p.precio_publico)}</span> <span style="background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:0.42em;font-weight:900;padding:3px 9px;border-radius:999px;vertical-align:middle;white-space:nowrap;">🔥 -${_dPct}%</span>` : ''}</div>
-        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>'}
-        <div id="cuotas-mp" style="display:${cuotasFullHTML(_pubCon)?'block':'none'};font-size:12px;font-weight:700;color:#059669;margin-top:5px;font-family:Arial,sans-serif;line-height:1.35;">${cuotasFullHTML(_pubCon)}</div>
+        ${esMayoristaLogueado ? `<div class="precio-mayorista" style="display:block;">Precio mayorista: ${formatPrecio(p.precio_mayorista)}</div>` : (Number(p.desc_efectivo_pct||0) > 0 ? `<div class="desc-transf">💸 ${p.desc_efectivo_pct}% + 5% OFF en efectivo o transferencia</div>` : '<div class="desc-transf">💸 5% OFF pagando por transferencia o efectivo</div>')}
+        <div id="cuotas-mp" style="display:${cuotasFullHTML(_pubCon)?'block':'none'};font-size:12px;font-weight:700;color:#059669;margin-top:16px;padding-top:16px;border-top:1px solid #eef2f7;font-family:Arial,sans-serif;line-height:1.4;">${cuotasFullHTML(_pubCon)}</div>
         ` : ''}
-        ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          ${sinStock ? `<div class="sin-stock">Sin stock</div>` : ''}
+        ${(sinStock || badgeMercDesktop) ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px;">
+          ${sinStock ? `<div class="sin-stock" style="margin-bottom:0;">Sin stock</div>` : ''}
           ${badgeMercDesktop}
-        </div>
+        </div>` : ''}
+        ${sinStock ? '<div class="reposicion-aviso">⚠️ El precio de reposición del producto puede sufrir variaciones</div>' : ''}
 
         ${variantes.length ? `
         <div style="margin:12px 0 2px;">
@@ -411,7 +411,7 @@ function renderProducto(p) {
         </div>
         ` : ''}
 
-        <div class="btns" style="flex-direction:column;gap:10px;">
+        <div class="btns" style="flex-direction:column;gap:10px;margin-top:20px;">
           <button class="btn-comprar" onclick="comprarAhora('${p.codigo}')" ${sinStock ? 'disabled' : ''}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 13 10 20 10"/><path d="M20 10L8 22l1-8H4L16 2z"/></svg>
             ${sinStock ? 'Sin stock' : 'Comprar ahora'}
