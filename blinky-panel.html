@@ -511,8 +511,8 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         Actualizar el costo del producto (promedio ponderado). Si lo dejás destildado, solo suma stock y deja el costo como estaba.
       </label>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
-        <div style="font-size:1.1rem;font-weight:900;">Total compra: <span id="co-total" style="color:var(--violet-light);">$0</span></div>
-        <button class="fc-btn" style="background:var(--green);color:#fff;padding:0.6rem 1.4rem;" onclick="confirmarCompra()">✓ Confirmar compra</button>
+        <div style="font-size:1.1rem;font-weight:900;">Total compra: <span id="co-total" style="color:var(--violet-light);">$0</span> <span id="co-count" style="font-size:0.8rem;font-weight:700;color:var(--text3);margin-left:8px;"></span></div>
+        <button id="co-confirmar-btn" class="fc-btn" style="background:var(--green);color:#fff;padding:0.6rem 1.4rem;" onclick="confirmarCompra()">✓ Confirmar compra</button>
       </div>
 
       <div class="fc-section-title" style="margin-top:1.5rem;">Compras registradas</div>
@@ -1534,7 +1534,9 @@ function quitarCoItem(i){ coItems.splice(i,1); renderCoLista(); }
 function renderCoLista(){
   const cont = document.getElementById('co-lista'); if(!cont) return;
   const moneda = document.getElementById('co-moneda').value;
-  if(!coItems.length){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Agregá productos a la compra.</div>'; document.getElementById('co-total').textContent='$0'; return; }
+  const _cc = document.getElementById('co-count');
+  if(!coItems.length){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:0.5rem 0;">Agregá productos a la compra.</div>'; document.getElementById('co-total').textContent='$0'; if(_cc) _cc.textContent=''; return; }
+  if(_cc){ const _u = coItems.reduce((s,it)=>s+Number(it.cantidad||0),0); _cc.textContent = `· ${coItems.length} ítem${coItems.length===1?'':'s'} · ${_u} u.`; }
   let total=0;
   cont.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
     <thead><tr>
@@ -1576,6 +1578,12 @@ async function confirmarCompra(){
   const total = coItems.reduce((s,it)=>s+it.costo_total,0);
   const cajaLbl = ({efectivo:'Efectivo',transferencia:'Transferencia',transferencia_rm:'Transferencia RM',tarjeta:'Tarjeta'})[caja];
   if(!confirm(`Confirmar compra por ${_coMoney(total)}.\nSe sumará el stock y se descontará de ${cajaLbl}. ¿Está todo OK?`)) return;
+
+  // Candado anti doble-clic + spinner
+  if(window._confirmandoCompra) return;
+  window._confirmandoCompra = true;
+  const _btnCo = document.getElementById('co-confirmar-btn');
+  if(_btnCo){ _btnCo.disabled = true; _btnCo._orig = _btnCo.innerHTML; _btnCo.innerHTML = '<span class="bk-spinner"></span>Confirmando...'; }
 
   try {
     // 1) Crear compra
@@ -1687,6 +1695,11 @@ async function confirmarCompra(){
     // Abrir comprobante
     window.open(`https://blinkymdq.github.io/blinkymdq/compra-imprimir.html?t=${compra.token}`, '_blank');
   } catch(e){ toast('Error al confirmar la compra','err'); }
+  finally {
+    window._confirmandoCompra = false;
+    const _b = document.getElementById('co-confirmar-btn');
+    if(_b){ _b.disabled = false; if(_b._orig != null) _b.innerHTML = _b._orig; }
+  }
 }
 
 async function anularCompra(id){
