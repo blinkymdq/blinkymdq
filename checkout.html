@@ -2987,6 +2987,7 @@
         // CHECKOUT — MODAL DE DATOS
         // ════════════════════════════════════════
         function abrirCheckout() {
+            window._enviandoPedido = false;
             if (carrito.length === 0) return;
             if (!document.body.classList.contains('is-logged-in')) {
                 mostrarLogin('checkout');
@@ -3565,6 +3566,12 @@
                 return;
             }
 
+            // Candado anti doble-envío: evita 2 pedidos por doble clic / doble toque
+            if (window._enviandoPedido) return;
+            window._enviandoPedido = true;
+            var _btnEnviarLock = document.getElementById('btn-enviar');
+            if (_btnEnviarLock) { _btnEnviarLock.disabled = true; _btnEnviarLock.dataset.orig = _btnEnviarLock.textContent; _btnEnviarLock.textContent = 'Enviando...'; }
+
             // Armar mensaje
             var logueado  = document.body.classList.contains('is-logged-in');
             var tipoPrec  = logueado ? ' _(precios especiales)_' : '';
@@ -3668,6 +3675,7 @@
 
                 } catch(e) {
                     console.warn('Supabase: no se pudo guardar el pedido', e);
+                    window._enviandoPedido = false;
                 }
 
                 // Mostrar modal de éxito y vaciar carrito
