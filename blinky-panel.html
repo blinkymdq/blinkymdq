@@ -490,6 +490,13 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
             <datalist id="co-marcas"></datalist>
           </div>
         </div>
+        <div id="co-variante-wrap" style="display:none;margin-top:0.5rem;">
+          <label style="font-size:0.72rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Variante / color (¿a cuál se suma?)</label>
+          <select class="gasto-input" id="co-variante" style="width:100%;margin-top:3px;"></select>
+        </div>
+        <div id="co-crear-var-wrap" style="display:none;margin-top:0.4rem;">
+          <button type="button" class="fc-btn" style="background:var(--surface2);border:1px solid var(--violet);color:var(--violet-light);font-size:0.76rem;" onclick="coCrearVariantes()">🎨 Este producto tiene colores/variantes — agregar</button>
+        </div>
         <div class="gasto-form-grid" style="margin-top:0.5rem;">
           <input class="gasto-input" id="co-cant" type="number" min="1" value="1" placeholder="Cantidad" oninput="coPreview()">
           <input class="gasto-input" id="co-costo" type="number" min="0" step="0.01" placeholder="Costo x unidad" oninput="coPreview()">
@@ -1344,7 +1351,7 @@ async function cargarCompras(){
   } catch(e){}
   // Productos para el buscador
   try {
-    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda,categoria,marca,ganancia,ganancia_mayorista,imp_e,precio_publico,precio_mayorista&order=nombre.asc`, {headers:hdrs})).json();
+    coProds = await (await fetch(`${SUPA_URL}/rest/v1/productos?select=codigo,nombre,costo_usd,costo_final,moneda,categoria,marca,ganancia,ganancia_mayorista,imp_e,precio_publico,precio_mayorista,variantes,stock,foto&order=nombre.asc`, {headers:hdrs})).json();
     const dl = document.getElementById('co-prods');
     if(dl) dl.innerHTML = (coProds||[]).map(p=>`<option value="${(p.nombre||'').replace(/"/g,'&quot;')} — ${p.codigo}">`).join('');
     // Datalists de categoría y marca (para producto nuevo)
@@ -1361,6 +1368,7 @@ function coToggleNuevo(){
   const on = document.getElementById('co-nuevo').checked;
   document.getElementById('co-nuevo-campos').style.display = on ? 'block' : 'none';
   const s = document.getElementById('co-prod-search'); s.disabled = on; if(on){ s.value=''; coProdSel=null; }
+  coActualizarVariantes();
   coPreview();
 }
 
@@ -1375,7 +1383,46 @@ function coProdElegido(val){
     if(moneda==='usd' && p.costo_usd) costoEl.value = p.costo_usd;
     else if(moneda==='pesos' && p.costo_final) costoEl.value = p.costo_final;
   }
+  coActualizarVariantes();
   coPreview();
+}
+
+// Muestra el selector de variante (si el producto tiene) o el botón para crearlas
+function coActualizarVariantes(){
+  const wrap = document.getElementById('co-variante-wrap');
+  const crear = document.getElementById('co-crear-var-wrap');
+  const sel = document.getElementById('co-variante');
+  if(!wrap || !crear || !sel) return;
+  const esNuevo = document.getElementById('co-nuevo') && document.getElementById('co-nuevo').checked;
+  const vs = (coProdSel && Array.isArray(coProdSel.variantes)) ? coProdSel.variantes : [];
+  if(!coProdSel || esNuevo){ wrap.style.display='none'; crear.style.display='none'; return; }
+  if(vs.length){
+    sel.innerHTML = vs.map(v=>`<option value="${(v.nombre||'').replace(/"/g,'&quot;')}">${v.nombre} (stock ${Number(v.stock||0)})</option>`).join('');
+    wrap.style.display='block'; crear.style.display='none';
+  } else {
+    wrap.style.display='none'; crear.style.display='block';
+  }
+}
+
+// Crea variantes (colores) para un producto que no las tiene, desde la compra
+async function coCrearVariantes(){
+  if(!coProdSel){ return; }
+  const nombres = prompt('Nombres de los colores/variantes separados por coma.\nEj: Negro, Rosa, Azul');
+  if(nombres===null) return;
+  const lista = nombres.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!lista.length){ toast('Escribí al menos un color','err'); return; }
+  const fotoBase = (coProdSel.foto||'').split(',')[0].trim();
+  const stockPrevio = Number(coProdSel.stock||0);
+  const variantes = lista.map((nom,idx)=>({ nombre: nom, foto: fotoBase, stock: idx===0 ? stockPrevio : 0 }));
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(coProdSel.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ variantes })});
+    if(!r.ok) throw new Error('patch');
+    coProdSel.variantes = variantes;
+    const idx = coProds.findIndex(x=>String(x.codigo)===String(coProdSel.codigo)); if(idx>=0) coProds[idx].variantes = variantes;
+    if(stockPrevio>0) toast(`Colores creados. El stock previo (${stockPrevio}) quedó asignado a "${lista[0]}".`,'ok');
+    else toast('Colores creados ✓','ok');
+    coActualizarVariantes();
+  }catch(e){ toast('No se pudieron crear las variantes','err'); }
 }
 
 function coCostoFinal(costoUnit){
@@ -1447,8 +1494,14 @@ function coAgregarItem(){
     if(!p){ toast('Elegí un producto de la lista o marcá "Producto nuevo"','err'); return; }
     codigo = p.codigo; nombre = p.nombre;
   }
+  // Variante/color: obligatoria si el producto tiene variantes
+  let variante = null;
+  if(!esNuevo && coProdSel && Array.isArray(coProdSel.variantes) && coProdSel.variantes.length){
+    variante = (document.getElementById('co-variante').value||'').trim();
+    if(!variante){ toast('Elegí a qué color/variante se suma','err'); return; }
+  }
   const final = coCostoFinal(costo);
-  coItems.push({ codigo, nombre, esNuevo, nuevo, cantidad:cant, costo_unitario:costo, costo_final:final, costo_total:final*cant });
+  coItems.push({ codigo, nombre, variante, esNuevo, nuevo, cantidad:cant, costo_unitario:costo, costo_final:final, costo_total:final*cant });
   // limpiar
   document.getElementById('co-cant').value='1';
   document.getElementById('co-costo').value='';
@@ -1457,6 +1510,7 @@ function coAgregarItem(){
   document.getElementById('co-prod-search').value='';
   ['co-n-nombre','co-n-codigo','co-n-categoria','co-n-marca'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
   if(document.getElementById('co-nuevo').checked){ document.getElementById('co-nuevo').checked=false; coToggleNuevo(); }
+  coProdSel=null; coActualizarVariantes();
   renderCoLista();
 }
 
@@ -1477,7 +1531,7 @@ function renderCoLista(){
       <th style="border-bottom:1px solid var(--border);"></th>
     </tr></thead><tbody>` +
     coItems.map((it,i)=>{ total+=it.costo_total; return `<tr>
-      <td style="padding:8px;border-bottom:1px solid var(--border);">${it.esNuevo?'🆕 ':''}${it.nombre}${it.codigo?` <span style="color:var(--text3);">(${it.codigo})</span>`:''}</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border);">${it.esNuevo?'🆕 ':''}${it.nombre}${it.variante?` <span style="color:var(--violet-light);font-weight:700;">· ${it.variante}</span>`:''}${it.codigo?` <span style="color:var(--text3);">(${it.codigo})</span>`:''}</td>
       <td style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">${it.cantidad}</td>
       <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);">${moneda==='usd'?'US$'+it.costo_unitario:_coMoney(it.costo_unitario)}</td>
       <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);">${_coMoney(it.costo_final)}</td>
@@ -1485,6 +1539,14 @@ function renderCoLista(){
       <td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);"><button onclick="quitarCoItem(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;">🗑️</button></td>
     </tr>`; }).join('') + `</tbody></table></div>`;
   document.getElementById('co-total').textContent = _coMoney(total);
+}
+
+// Devuelve una copia del array de variantes con +cant en la variante indicada
+function _coIncVariante(variantes, nombre, cant){
+  const arr = Array.isArray(variantes) ? variantes.map(v=>Object.assign({}, v)) : [];
+  const idx = arr.findIndex(v => (v.nombre||'') === nombre);
+  if(idx >= 0) arr[idx].stock = Number(arr[idx].stock||0) + Number(cant||0);
+  return arr;
 }
 
 async function confirmarCompra(){
@@ -1528,7 +1590,7 @@ async function confirmarCompra(){
 
     // 3) Items de la compra
     await fetch(`${SUPA_URL}/rest/v1/compra_items`, {method:'POST', headers:hdrs, body:JSON.stringify(
-      coItems.map(it=>({ compra_id: compra.id, codigo: it.codigo||null, producto: it.nombre, cantidad: it.cantidad, costo_unitario: it.costo_unitario, costo_final: it.costo_final, costo_total: it.costo_total }))
+      coItems.map(it=>({ compra_id: compra.id, codigo: it.codigo||null, producto: it.nombre, variante: it.variante||null, cantidad: it.cantidad, costo_unitario: it.costo_unitario, costo_final: it.costo_final, costo_total: it.costo_total }))
     )});
 
     // 4) Existentes: sumar stock + (opcional) COSTO PROMEDIO PONDERADO
@@ -1537,15 +1599,18 @@ async function confirmarCompra(){
     const cambiosPrecio = []; // productos cuyo precio de venta cambia por el nuevo costo
     for(const it of coItems){
       if(it.esNuevo) continue;
-      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,costo_usd,costo_final,moneda,imp_e,ganancia,ganancia_mayorista,precio_publico`, {headers:hdrs});
+      const pR = await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,costo_usd,costo_final,moneda,imp_e,ganancia,ganancia_mayorista,precio_publico,variantes`, {headers:hdrs});
       const ps = await pR.json();
       const cur = ps[0] || {};
       const stockActual = Number(cur.stock)||0;
       const total = stockActual + it.cantidad;
+      // Si el ítem es de una variante, el stock se suma a esa variante (no al general; el trigger recalcula el general)
+      const variantesInc = it.variante ? _coIncVariante(cur.variantes, it.variante, it.cantidad) : null;
 
       // Si NO se actualiza el costo: solo sumar stock y seguir (no toca costo ni precio)
       if(!actualizarCosto){
-        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ stock: total })});
+        const bodyStock = variantesInc ? { variantes: variantesInc } : { stock: total };
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(bodyStock)});
         continue;
       }
 
@@ -1564,6 +1629,8 @@ async function confirmarCompra(){
       } else {
         patch = { stock: total, costo_usd: moneda==='usd'?it.costo_unitario:null, costo_final: it.costo_final, moneda };
       }
+      // Variante: no tocar el stock general (lo maneja el trigger), sumar a la variante
+      if(variantesInc){ delete patch.stock; patch.variantes = variantesInc; }
       await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify(patch)});
 
       // Calcular nuevo precio de venta con el costo actualizado (misma fórmula que la web)
@@ -1620,9 +1687,16 @@ async function anularCompra(id){
     // 1) Revertir stock (restar lo que se había sumado)
     for(const it of (items||[])){
       if(!it.codigo) continue;
-      const ps = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock`, {headers:hdrs})).json();
-      const stockActual = (ps[0] && Number(ps[0].stock)) || 0;
-      await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ stock: Math.max(0, stockActual - Number(it.cantidad||0)) })});
+      const ps = await (await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}&select=stock,variantes`, {headers:hdrs})).json();
+      const cur = ps[0] || {};
+      if(it.variante){
+        // Restar de la variante (el trigger recalcula el stock general)
+        const nuevas = _coIncVariante(cur.variantes, it.variante, -Number(it.cantidad||0)).map(v=>Object.assign({}, v, { stock: Math.max(0, Number(v.stock||0)) }));
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ variantes: nuevas })});
+      } else {
+        const stockActual = Number(cur.stock)||0;
+        await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(it.codigo)}`, {method:'PATCH', headers:hdrs, body:JSON.stringify({ stock: Math.max(0, stockActual - Number(it.cantidad||0)) })});
+      }
     }
 
     // 2) Devolver la plata: borrar el gasto asociado
