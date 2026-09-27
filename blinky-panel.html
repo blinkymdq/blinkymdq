@@ -490,10 +490,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
             <datalist id="co-marcas"></datalist>
           </div>
         </div>
-        <div id="co-variante-wrap" style="display:none;margin-top:0.5rem;">
-          <label style="font-size:0.72rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Variante / color (¿a cuál se suma?)</label>
-          <select class="gasto-input" id="co-variante" style="width:100%;margin-top:3px;"></select>
-        </div>
+        <div id="co-variante-wrap" style="display:none;margin-top:0.5rem;"></div>
         <div id="co-crear-var-wrap" style="display:none;margin-top:0.4rem;">
           <button type="button" class="fc-btn" style="background:var(--surface2);border:1px solid var(--violet);color:var(--violet-light);font-size:0.76rem;" onclick="coCrearVariantes()">🎨 Este producto tiene colores/variantes — agregar</button>
         </div>
@@ -1387,20 +1384,27 @@ function coProdElegido(val){
   coPreview();
 }
 
-// Muestra el selector de variante (si el producto tiene) o el botón para crearlas
+// Muestra la cantidad por color (si el producto tiene variantes) o el botón para crearlas
 function coActualizarVariantes(){
   const wrap = document.getElementById('co-variante-wrap');
   const crear = document.getElementById('co-crear-var-wrap');
-  const sel = document.getElementById('co-variante');
-  if(!wrap || !crear || !sel) return;
+  const cantEl = document.getElementById('co-cant');
+  if(!wrap || !crear) return;
   const esNuevo = document.getElementById('co-nuevo') && document.getElementById('co-nuevo').checked;
   const vs = (coProdSel && Array.isArray(coProdSel.variantes)) ? coProdSel.variantes : [];
-  if(!coProdSel || esNuevo){ wrap.style.display='none'; crear.style.display='none'; return; }
+  if(!coProdSel || esNuevo){ wrap.style.display='none'; wrap.innerHTML=''; crear.style.display='none'; if(cantEl) cantEl.style.display=''; return; }
   if(vs.length){
-    sel.innerHTML = vs.map(v=>`<option value="${(v.nombre||'').replace(/"/g,'&quot;')}">${v.nombre} (stock ${Number(v.stock||0)})</option>`).join('');
+    wrap.innerHTML = `<label style="font-size:0.72rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Cantidad por color</label>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:5px;">` +
+      vs.map((v,idx)=>`<div style="display:flex;align-items:center;gap:10px;">
+        <span style="flex:1;font-size:0.85rem;color:var(--text);">${v.nombre} <span style="color:var(--text3);font-size:0.75rem;">(stock ${Number(v.stock||0)})</span></span>
+        <input type="number" min="0" value="0" id="co-varqty-${idx}" class="gasto-input" style="width:100px;text-align:center;" placeholder="0">
+      </div>`).join('') + `</div>`;
     wrap.style.display='block'; crear.style.display='none';
+    if(cantEl) cantEl.style.display='none';   // la cantidad se pone por color
   } else {
-    wrap.style.display='none'; crear.style.display='block';
+    wrap.style.display='none'; wrap.innerHTML=''; crear.style.display='block';
+    if(cantEl) cantEl.style.display='';
   }
 }
 
@@ -1477,9 +1481,7 @@ function coRecalc(){
 
 function coAgregarItem(){
   const esNuevo = document.getElementById('co-nuevo').checked;
-  const cant = parseInt(document.getElementById('co-cant').value)||0;
   const costo = parseFloat(document.getElementById('co-costo').value);
-  if(!cant || cant<1){ toast('Poné una cantidad válida','err'); return; }
   if(isNaN(costo) || costo<0){ toast('Poné el costo por unidad','err'); return; }
   let codigo='', nombre='', nuevo=null;
   if(esNuevo){
@@ -1494,14 +1496,27 @@ function coAgregarItem(){
     if(!p){ toast('Elegí un producto de la lista o marcá "Producto nuevo"','err'); return; }
     codigo = p.codigo; nombre = p.nombre;
   }
-  // Variante/color: obligatoria si el producto tiene variantes
-  let variante = null;
-  if(!esNuevo && coProdSel && Array.isArray(coProdSel.variantes) && coProdSel.variantes.length){
-    variante = (document.getElementById('co-variante').value||'').trim();
-    if(!variante){ toast('Elegí a qué color/variante se suma','err'); return; }
-  }
   const final = coCostoFinal(costo);
-  coItems.push({ codigo, nombre, variante, esNuevo, nuevo, cantidad:cant, costo_unitario:costo, costo_final:final, costo_total:final*cant });
+  const vs = (!esNuevo && coProdSel && Array.isArray(coProdSel.variantes)) ? coProdSel.variantes : [];
+
+  // Producto CON variantes: cargar cantidad por color (una línea por color con cantidad > 0)
+  if(vs.length){
+    let agregados = 0;
+    vs.forEach((v,idx)=>{
+      const el = document.getElementById('co-varqty-'+idx);
+      const q = el ? (parseInt(el.value)||0) : 0;
+      if(q > 0){
+        coItems.push({ codigo, nombre, variante: v.nombre, esNuevo:false, nuevo:null, cantidad:q, costo_unitario:costo, costo_final:final, costo_total:final*q });
+        agregados++;
+      }
+    });
+    if(!agregados){ toast('Poné la cantidad en al menos un color','err'); return; }
+  } else {
+    // Producto sin variantes (o nuevo): cantidad única
+    const cant = parseInt(document.getElementById('co-cant').value)||0;
+    if(!cant || cant<1){ toast('Poné una cantidad válida','err'); return; }
+    coItems.push({ codigo, nombre, variante:null, esNuevo, nuevo, cantidad:cant, costo_unitario:costo, costo_final:final, costo_total:final*cant });
+  }
   // limpiar
   document.getElementById('co-cant').value='1';
   document.getElementById('co-costo').value='';
