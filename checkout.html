@@ -1268,6 +1268,19 @@
                         🛒 Pagar con Mercado Pago
                     </button>
                 </div>
+                <div id="datos-transferencia" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:14px 16px;">
+                    <div style="font-size:12px;font-weight:900;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">🏦 Datos para transferir</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+                        <div><div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;">Alias</div><div id="transf-alias" style="font-size:15px;font-weight:900;color:#0f172a;">Blinkymdq</div></div>
+                        <button type="button" onclick="copiarAlias()" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">Copiar</button>
+                    </div>
+                    <div style="font-size:12.5px;color:#334155;line-height:1.7;">
+                        <div><b>Titular:</b> Monaco Maximiliano Javier</div>
+                        <div><b>Billetera:</b> Mercado Pago</div>
+                        <div><b>CUIT:</b> 20-33712219-2</div>
+                    </div>
+                    <div style="font-size:11.5px;color:#15803d;font-weight:700;margin-top:9px;">📲 Después de transferir, envianos el comprobante por WhatsApp para confirmar tu pedido.</div>
+                </div>
                 <div id="wrap-btn-enviar" style="display:none;">
                     <button id="btn-enviar" onclick="confirmarYEnviar()" class="w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider flex items-center justify-center gap-2.5 mt-5 transition-all hover:opacity-90 active:scale-[0.98]" style="background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37,211,102,0.35); font-size: 13px;">
                         Enviar Pedido
@@ -3202,6 +3215,18 @@
             document.getElementById('checkoutError').classList.add('hidden');
         }
 
+        function copiarAlias() {
+            var alias = (document.getElementById('transf-alias') || {}).textContent || 'Blinkymdq';
+            var done = function(){ try { toast('Alias copiado ✓'); } catch(e){} };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(alias.trim()).then(done).catch(function(){ done(); });
+            } else {
+                var t = document.createElement('textarea'); t.value = alias.trim(); document.body.appendChild(t); t.select();
+                try { document.execCommand('copy'); } catch(e){}
+                document.body.removeChild(t); done();
+            }
+        }
+
         function actualizarBotonesPago() {
             var pago = document.getElementById('checkout-pago').value;
             var esTarjeta = pago === 'Tarjeta de crédito/débito';
@@ -3210,6 +3235,7 @@
             document.getElementById('wrap-btn-tarjeta').style.display = esTarjeta ? 'block' : 'none';
             var mpw = document.getElementById('wrap-btn-mp'); if (mpw) mpw.style.display = esMP ? 'block' : 'none';
             document.getElementById('wrap-btn-enviar').style.display = (!esTarjeta && !esMP && pago) ? 'block' : 'none';
+            var boxTransf = document.getElementById('datos-transferencia'); if (boxTransf) boxTransf.style.display = (pago === 'Transferencia') ? 'block' : 'none';
 
             // Descuento 5% por transferencia/efectivo (solo minoristas)
             var aplicaDescTransf = !esMayorista && (pago === 'Efectivo' || pago === 'Transferencia');
