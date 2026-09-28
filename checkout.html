@@ -21,7 +21,13 @@
 </script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Preconexión a fuentes para acelerar su carga (mejora LCP) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Anti-parpadeo: ocultar el cuerpo hasta que Tailwind aplique los estilos (elimina el salto de layout / CLS). -->
+    <style id="tw-cloak-style">html.tw-cloak body{visibility:hidden!important}</style>
+    <script>(function(){var r=document.documentElement;r.classList.add('tw-cloak');function reveal(){r.classList.remove('tw-cloak');}setTimeout(reveal,2500);window.addEventListener('load',function(){setTimeout(reveal,30);});})();</script>
+    <script src="https://cdn.tailwindcss.com" onload="requestAnimationFrame(function(){requestAnimationFrame(function(){document.documentElement.classList.remove('tw-cloak');});});"></script>
     <!-- PapaParse para CSV robusto -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>Finalizar compra — Blinky MDQ</title>
