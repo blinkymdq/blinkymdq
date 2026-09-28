@@ -1229,6 +1229,14 @@ async function cargarProductos() {
     const res = await fetch(`${SUPA_URL}/rest/v1/productos?order=nombre.asc`, {headers:hdrs});
     todosLosProductos = await res.json();
 
+    // Stock que tienen los vendedores (por código) para mostrar el TOTAL
+    try {
+      const vR = await fetch(`${SUPA_URL}/rest/v1/rpc/stock_en_vendedores`, {method:'POST', headers:hdrs, body:'{}'});
+      const vRows = await vR.json();
+      window.stockVendedores = {};
+      (Array.isArray(vRows)?vRows:[]).forEach(x=>{ window.stockVendedores[String(x.codigo)] = Number(x.pend||0); });
+    } catch(e){ window.stockVendedores = {}; }
+
     // Poblar categorías
     const cats = [...new Set(todosLosProductos.map(p=>p.categoria).filter(Boolean))].sort();
     const sel = document.getElementById('filtro-cat');
@@ -1518,7 +1526,7 @@ function renderTabla(prods) {
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;"><select class="td-input" id="genero-${p.codigo}" style="width:96px;" oninput="marcarSinGuardar('${p.codigo}')" disabled><option value="" ${!p.genero?'selected':''}>—</option><option value="unisex" ${p.genero==='unisex'?'selected':''}>Unisex</option><option value="masculino" ${p.genero==='masculino'?'selected':''}>Masculino</option><option value="femenino" ${p.genero==='femenino'?'selected':''}>Femenino</option></select></td>
-            <td style="text-align:right;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:48px;padding:4px 6px;text-align:center;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
+            <td style="text-align:center;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:48px;padding:4px 6px;text-align:center;" oninput="marcarSinGuardar('${p.codigo}')" disabled>${ (window.stockVendedores && window.stockVendedores[p.codigo]) ? `<div style="font-size:0.6rem;color:var(--violet-light);font-weight:800;margin-top:2px;white-space:nowrap;" title="Depósito ${p.stock||0} + vendedores ${window.stockVendedores[p.codigo]}">Total ${Number(p.stock||0)+Number(window.stockVendedores[p.codigo])} (+${window.stockVendedores[p.codigo]})</div>` : '' }</td>
             <td style="text-align:center;"><select class="td-input" id="moneda-${p.codigo}" style="width:74px;" onchange="actualizarCalc('${p.codigo}')" disabled><option value="USD" ${(p.moneda||'USD')==='USD'?'selected':''}>USD</option><option value="ARS" ${p.moneda==='ARS'?'selected':''}>Pesos</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
