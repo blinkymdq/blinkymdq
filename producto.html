@@ -12,10 +12,9 @@
 <link rel="icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<style id="tw-cloak-style">html.tw-cloak body{visibility:hidden!important}</style>
-<script>(function(){var r=document.documentElement;r.classList.add('tw-cloak');function reveal(){r.classList.remove('tw-cloak');}setTimeout(reveal,2500);window.addEventListener('load',function(){setTimeout(reveal,30);});})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com" onload="requestAnimationFrame(function(){requestAnimationFrame(function(){document.documentElement.classList.remove('tw-cloak');});});"></script>
+<!-- Tailwind precompilado (CSS estático, sin runtime de JavaScript) — mejora LCP y elimina el parpadeo/CLS. -->
+<link rel="stylesheet" href="/tw.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @keyframes tickerScroll { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
