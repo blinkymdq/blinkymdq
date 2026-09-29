@@ -1319,7 +1319,7 @@ function filtrarTabla() {
 function cerrarModalQuien(){ document.getElementById('modal-quien').style.display = 'none'; }
 async function verQuienTiene(codigo) {
   const p = todosLosProductos.find(x => String(x.codigo) === String(codigo));
-  document.getElementById('quien-prod').textContent = (p ? p.nombre : '') + ' · Cód. ' + codigo + (p ? (' · Stock local: ' + (p.stock || 0)) : '');
+  document.getElementById('quien-prod').textContent = (p ? p.nombre : '') + ' · Cód. ' + codigo + (p ? (' · Stock total: ' + (p.stock || 0)) : '');
   const body = document.getElementById('quien-body');
   body.innerHTML = '<div class="loading-txt">Cargando...</div>';
   document.getElementById('modal-quien').style.display = 'flex';
@@ -1329,11 +1329,13 @@ async function verQuienTiene(codigo) {
     });
     const data = await r.json();
     const vendedores = Array.isArray(data) ? data : [];
-    const stockLocal = p ? Number(p.stock || 0) : 0;
+    // OJO: p.stock es el TOTAL poseído (depósito + lo que está en vendedores).
+    // El depósito real = stock total − lo que tienen los vendedores.
+    const stockTotal = p ? Number(p.stock || 0) : 0;
     const totalVend = vendedores.reduce((s, d) => s + Number(d.pendiente || 0), 0);
-    const totalGlobal = stockLocal + totalVend;
+    const enDeposito = Math.max(0, stockTotal - totalVend);
 
-    let html = `<div style="font-size:0.8rem;color:var(--text);margin-bottom:0.7rem;">Total: <b>${totalGlobal} u.</b> · 📦 Depósito ${stockLocal} · 🧑 Vendedores ${totalVend}</div>`;
+    let html = `<div style="font-size:0.8rem;color:var(--text);margin-bottom:0.7rem;">Total: <b>${stockTotal} u.</b> · 📦 Depósito ${enDeposito} · 🧑 Vendedores ${totalVend}</div>`;
     // Fila de Depósito (stock en el local)
     html += `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
@@ -1341,7 +1343,7 @@ async function verQuienTiene(codigo) {
           <div style="font-weight:700;color:var(--text);font-size:0.86rem;">📦 Depósito</div>
           <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">En el local, sin asignar a vendedores</div>
         </div>
-        <div style="font-size:1.1rem;font-weight:900;color:var(--green);white-space:nowrap;">${stockLocal} u.</div>
+        <div style="font-size:1.1rem;font-weight:900;color:var(--green);white-space:nowrap;">${enDeposito} u.</div>
       </div>`;
     // Vendedores que tienen unidades
     html += vendedores.map(d => `
@@ -1526,7 +1528,7 @@ function renderTabla(prods) {
             <td><input class="td-input" id="marca-${p.codigo}" type="text" value="${(p.marca||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td><input class="td-input" id="categoria-${p.codigo}" type="text" value="${(p.categoria||'').replace(/"/g,'&quot;')}" style="width:60px;text-align:left;" oninput="marcarSinGuardar('${p.codigo}')" disabled></td>
             <td style="text-align:center;"><select class="td-input" id="genero-${p.codigo}" style="width:96px;" oninput="marcarSinGuardar('${p.codigo}')" disabled><option value="" ${!p.genero?'selected':''}>—</option><option value="unisex" ${p.genero==='unisex'?'selected':''}>Unisex</option><option value="masculino" ${p.genero==='masculino'?'selected':''}>Masculino</option><option value="femenino" ${p.genero==='femenino'?'selected':''}>Femenino</option></select></td>
-            <td style="text-align:center;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:48px;padding:4px 6px;text-align:center;" oninput="marcarSinGuardar('${p.codigo}')" disabled>${ (window.stockVendedores && window.stockVendedores[p.codigo]) ? `<div style="font-size:0.6rem;color:var(--violet-light);font-weight:800;margin-top:2px;white-space:nowrap;" title="Depósito ${p.stock||0} + vendedores ${window.stockVendedores[p.codigo]}">Total ${Number(p.stock||0)+Number(window.stockVendedores[p.codigo])} (+${window.stockVendedores[p.codigo]})</div>` : '' }</td>
+            <td style="text-align:center;"><input class="td-input" id="stock-${p.codigo}" type="number" min="0" value="${p.stock||0}" style="width:48px;padding:4px 6px;text-align:center;" oninput="marcarSinGuardar('${p.codigo}')" disabled>${ (window.stockVendedores && window.stockVendedores[p.codigo]) ? `<div style="font-size:0.6rem;color:var(--violet-light);font-weight:800;margin-top:2px;white-space:nowrap;" title="Stock total ${p.stock||0} = depósito ${Math.max(0,Number(p.stock||0)-Number(window.stockVendedores[p.codigo]))} + en vendedores ${window.stockVendedores[p.codigo]}">📦 ${Math.max(0,Number(p.stock||0)-Number(window.stockVendedores[p.codigo]))} · 🧑 ${window.stockVendedores[p.codigo]}</div>` : '' }</td>
             <td style="text-align:center;"><select class="td-input" id="moneda-${p.codigo}" style="width:74px;" onchange="actualizarCalc('${p.codigo}')" disabled><option value="USD" ${(p.moneda||'USD')==='USD'?'selected':''}>USD</option><option value="ARS" ${p.moneda==='ARS'?'selected':''}>Pesos</option></select></td>
             <td style="text-align:right;"><input class="td-input" id="costoUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.costo_usd||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
             <td style="text-align:right;"><input class="td-input" id="envioUsd-${p.codigo}" type="number" min="0" step="0.01" value="${p.imp_e||''}" placeholder="0" oninput="actualizarCalc('${p.codigo}')" style="border-color:rgba(245,158,11,0.3);width:63px;" disabled></td>
