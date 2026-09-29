@@ -1759,17 +1759,27 @@ async function renderComprasRegistradas(){
   } catch(e){ cont.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>'; }
 }
 
+// Abrir la ficha de un cliente desde el dashboard (usa el mapa cacheado en cargarStats)
+function abrirFichaClientePorId(id){
+  const u = (window._dashUsuariosById||{})[id];
+  if(u) abrirFichaCliente(u);
+}
+
 // ── STATS ──────────────────────────────────────
 async function cargarStats() {
   try {
-    const [pR,iR,prR] = await Promise.all([
+    const [pR,iR,prR,pcR,uR] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/pedidos?select=*&order=created_at.desc`,{headers:hdrs}),
       fetch(`${SUPA_URL}/rest/v1/pedido_items?select=*`,{headers:hdrs}),
-      fetch(`${SUPA_URL}/rest/v1/productos?select=stock,precio_publico,precio_mayorista,estado`,{headers:hdrs})
+      fetch(`${SUPA_URL}/rest/v1/productos?select=stock,precio_publico,precio_mayorista,estado`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/pagos?numero_pedido=is.null&select=user_id,monto,exceso_acreditado`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/usuarios?select=*`,{headers:hdrs})
     ]);
     const pedidos = await pR.json();
     const items = await iR.json();
     const productos = await prR.json();
+    const pagosCuenta = await pcR.json();
+    const usuariosAll = await uR.json();
     if(!Array.isArray(pedidos)) return;
 
     const hoy=new Date(); hoy.setHours(0,0,0,0);
@@ -1779,8 +1789,55 @@ async function cargarStats() {
     const pedidosHoy=pedidos.filter(p=>new Date(p.created_at)>=hoy);
     const pedidosSem=pedidos.filter(p=>new Date(p.created_at)>=semana);
     const pedidosMes=pedidos.filter(p=>new Date(p.created_at)>=mes);
-    const pendientes=pedidos.filter(p=>p.estado==='pendiente').length;
-    const conSaldo=pedidos.filter(p=>Number(p.monto_pagado||0)<Number(p.total)).length;
+    // ── Pedidos pendientes de entrega (todo lo que no está entregado ni cancelado) ──
+    const pendientesEntrega = pedidos.filter(p=>{
+      const e=(p.estado||'').toLowerCase(); return e!=='entregado' && e!=='cancelado';
+    });
+    const pendientes = pendientesEntrega.length;
+
+    // ── Clientes con saldo (cuenta corriente, por cliente) ──
+    // Deuda de pedidos (no cancelados) menos pagos a cuenta. Mismo criterio que la pestaña Usuarios.
+    const _deudaById={}, _deudaByEmail={}, _pagoById={};
+    const _pedsSaldoById={}, _pedsSaldoByEmail={};
+    (pedidos||[]).forEach(p=>{
+      if((p.estado||'').toLowerCase()==='cancelado') return;
+      const pen = Number(p.total||0) - Number(p.monto_pagado||0);
+      if(pen<=0) return;
+      if(p.user_id){ _deudaById[p.user_id]=(_deudaById[p.user_id]||0)+pen; (_pedsSaldoById[p.user_id]=_pedsSaldoById[p.user_id]||[]).push(p.numero_pedido); }
+      else if(p.email){ const k=p.email.toLowerCase(); _deudaByEmail[k]=(_deudaByEmail[k]||0)+pen; (_pedsSaldoByEmail[k]=_pedsSaldoByEmail[k]||[]).push(p.numero_pedido); }
+    });
+    (Array.isArray(pagosCuenta)?pagosCuenta:[]).forEach(pg=>{ if(pg.user_id) _pagoById[pg.user_id]=(_pagoById[pg.user_id]||0)+(Number(pg.monto||0)-Number(pg.exceso_acreditado||0)); });
+
+    // Cruzar con la lista de clientes para poder abrir su ficha desde la tarjeta
+    window._dashUsuariosById = {};
+    const deudores = [];
+    (Array.isArray(usuariosAll)?usuariosAll:[]).forEach(u=>{
+      window._dashUsuariosById[u.id] = u;
+      const em = (u.email||'').toLowerCase();
+      const deuda = (_deudaById[u.id]||0) + (em?(_deudaByEmail[em]||0):0);
+      const neto = deuda - (_pagoById[u.id]||0);
+      if(neto>1){
+        const peds = [...(_pedsSaldoById[u.id]||[]), ...((em && _pedsSaldoByEmail[em])?_pedsSaldoByEmail[em]:[])];
+        deudores.push({ id:u.id, nombre:u.nombre||'Sin nombre', saldo:Math.round(neto), pedidos:peds });
+      }
+    });
+    deudores.sort((a,b)=>b.saldo-a.saldo);
+    const conSaldo = deudores.length;
+
+    // HTML de las listas de cada tarjeta (con links a pedido y a ficha)
+    const _lk='cursor:pointer;color:var(--violet-light);text-decoration:none;';
+    const pendHtml = pendientesEntrega.length
+      ? pendientesEntrega.slice(0,40).map(p=>`<div style="font-size:0.72rem;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a onclick="verPedido('${(p.numero_pedido||'').replace(/'/g,'')}')" style="${_lk}font-weight:700;">${p.numero_pedido||''}</a> <span style="color:var(--text3);">${(p.nombre||'').slice(0,18)}</span></div>`).join('')
+      : '<div style="font-size:0.72rem;color:var(--text3);">Sin pedidos pendientes</div>';
+    const saldoHtml = deudores.length
+      ? deudores.map(d=>`<div style="font-size:0.72rem;padding:3px 0;border-top:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;gap:6px;align-items:center;">
+            <a onclick="abrirFichaClientePorId('${d.id}')" style="${_lk}font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nombre}</a>
+            <span style="color:var(--red);font-weight:800;white-space:nowrap;">$${d.saldo.toLocaleString('es-AR')}</span>
+          </div>
+          <div style="color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.pedidos.map(n=>`<a onclick="verPedido('${(n||'').replace(/'/g,'')}')" style="${_lk}">${n}</a>`).join(' · ')||'—'}</div>
+        </div>`).join('')
+      : '<div style="font-size:0.72rem;color:var(--text3);">Nadie con saldo</div>';
 
     const productosActivos = Array.isArray(productos) ? productos.filter(p=>p.estado!=='inactivo') : [];
     const unidadesStock = productosActivos.reduce((s,p)=>s+Number(p.stock||0),0);
@@ -1791,8 +1848,8 @@ async function cargarStats() {
       <div class="stat-card violet"><div class="stat-label">Ventas hoy</div><div class="stat-val">$${pedidosHoy.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosHoy.length} pedidos</div></div>
       <div class="stat-card green"><div class="stat-label">Esta semana</div><div class="stat-val">$${pedidosSem.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosSem.length} pedidos</div></div>
       <div class="stat-card cyan"><div class="stat-label">Este mes</div><div class="stat-val">$${pedidosMes.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosMes.length} pedidos</div></div>
-      <div class="stat-card yellow"><div class="stat-label">Pendientes</div><div class="stat-val">${pendientes}</div><div class="stat-sub">sin confirmar</div></div>
-      <div class="stat-card red"><div class="stat-label">Con saldo</div><div class="stat-val">${conSaldo}</div><div class="stat-sub">pagos incompletos</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Pedidos pendientes de entrega</div><div class="stat-val">${pendientes}</div><div style="margin-top:6px;max-height:130px;overflow:auto;">${pendHtml}</div></div>
+      <div class="stat-card red"><div class="stat-label">Clientes con saldo</div><div class="stat-val">${conSaldo}</div><div style="margin-top:6px;max-height:130px;overflow:auto;">${saldoHtml}</div></div>
       <div class="stat-card" style="grid-column:span 2;border-color:rgba(6,182,212,0.3);display:flex;flex-direction:column;justify-content:center;gap:0.5rem;">
         <div style="font-size:0.82rem;color:var(--text2);">Artículos en stock: <strong style="color:var(--text);font-size:0.95rem;">${unidadesStock.toLocaleString('es-AR')}</strong></div>
         <div style="font-size:0.82rem;color:var(--text2);">Valor minorista: <strong style="color:var(--green);font-size:0.95rem;">$${valorMinorista.toLocaleString('es-AR')}</strong></div>
