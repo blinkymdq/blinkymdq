@@ -362,6 +362,15 @@
 <div id="modal-desc">
   <div class="modal-desc-card">
     <h3 id="modal-desc-titulo">Descripción del producto</h3>
+
+    <!-- Sección: Etiqueta / badge del producto -->
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <label for="desc-etiqueta" style="display:block;font-size:0.72rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">🏷️ Etiqueta / badge</label>
+      <input id="desc-etiqueta" type="text" maxlength="24" placeholder="🔥 Última unidad" class="td-input" style="width:100%;max-width:280px;">
+      <div style="font-size:0.68rem;color:var(--text3);margin-top:5px;">Aparece como badge en el listado y en la página del producto. Poné el emoji que quieras adelante (🔥 ⭐ 🎁 🆕). Dejalo vacío para no mostrar badge.</div>
+    </div>
+
+    <div style="font-size:0.72rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">📝 Descripción</div>
     <div class="desc-toolbar">
       <button type="button" title="Negrita" onmousedown="fmtDesc(event,'bold')"><b>B</b></button>
       <button type="button" title="Cursiva" onmousedown="fmtDesc(event,'italic')"><i>I</i></button>
@@ -383,7 +392,7 @@
     <div style="font-size:0.68rem;color:var(--text3);margin-top:6px;">Tip: también podés insertar emojis con el teclado (Windows: tecla Win + . / en el celular, el teclado de emojis). Enter deja espacio entre párrafos.</div>
     <div class="modal-desc-actions">
       <button class="btn-modal-cancelar" onclick="cerrarEditorDesc()">Cancelar</button>
-      <button class="btn-modal-guardar" onclick="guardarEditorDesc()">Guardar descripción</button>
+      <button class="btn-modal-guardar" onclick="guardarEditorDesc()">Guardar</button>
     </div>
   </div>
 </div>
@@ -879,6 +888,7 @@ function limpiarFormNuevo() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   nuevaDescHtml = '';
+  nuevaEtiqueta = '';
   const _npDescPrev = document.getElementById('np-desc-preview');
   if (_npDescPrev) _npDescPrev.innerHTML = '';
   const _mon = document.getElementById('np-moneda'); if (_mon) _mon.value = 'USD';
@@ -912,6 +922,7 @@ function agregarSimilar(codigo) {
   set('np-gan-may', p.ganancia_mayorista);
   // Descripción (se copia)
   nuevaDescHtml = p.descripcion || '';
+  nuevaEtiqueta = '';   // la etiqueta no se copia a un producto nuevo
   const dp = document.getElementById('np-desc-preview'); if (dp) dp.innerHTML = nuevaDescHtml;
   // SIN foto: se deja vacía a propósito
   fotosSeleccionadas = [];
@@ -970,6 +981,7 @@ async function crearProducto() {
       precio_publico: precioPublico,
       precio_mayorista: precioMayor,
       descripcion: nuevaDescHtml || null,
+      etiqueta: (nuevaEtiqueta || '').trim() || null,
       foto: fotoField || null
     };
 
@@ -1565,6 +1577,7 @@ function renderTabla(prods) {
 // ── EDITOR DE DESCRIPCIÓN (texto con formato) ──
 let descEditandoCodigo = null;   // '__nuevo__' para el formulario de alta
 let nuevaDescHtml = '';          // descripción del producto que se está creando
+let nuevaEtiqueta = '';          // etiqueta/badge del producto que se está creando
 
 function fmtDesc(e, cmd) {
   e.preventDefault();
@@ -1628,13 +1641,16 @@ function abrirEditorDesc(codigo) {
     });
   }
   const titulo = document.getElementById('modal-desc-titulo');
+  const etqInput = document.getElementById('desc-etiqueta');
   if (codigo === '__nuevo__') {
-    titulo.textContent = 'Descripción — producto nuevo';
+    titulo.textContent = 'Producto nuevo';
     editor.innerHTML = nuevaDescHtml || '';
+    if (etqInput) etqInput.value = nuevaEtiqueta || '';
   } else {
     const p = todosLosProductos.find(x => x.codigo === codigo);
-    titulo.textContent = 'Descripción — ' + (p ? p.nombre : codigo);
+    titulo.textContent = 'Editar — ' + (p ? p.nombre : codigo);
     editor.innerHTML = (p && p.descripcion) ? p.descripcion : '';
+    if (etqInput) etqInput.value = (p && p.etiqueta) ? p.etiqueta : '';
   }
   document.getElementById('modal-desc').classList.add('open');
   setTimeout(() => editor.focus(), 50);
@@ -1649,28 +1665,30 @@ document.addEventListener('keydown', function(e){
 });
 async function guardarEditorDesc() {
   const editor = document.getElementById('desc-editor');
+  const etiqueta = (document.getElementById('desc-etiqueta')?.value || '').trim();
   let html = limpiarHtmlDesc(editor.innerHTML).trim();
   if (!editor.textContent.trim()) html = '';
   if (descEditandoCodigo === '__nuevo__') {
     nuevaDescHtml = html;
+    nuevaEtiqueta = etiqueta;
     const prev = document.getElementById('np-desc-preview');
     if (prev) prev.innerHTML = html;
     cerrarEditorDesc();
-    toast('Descripción lista ✓', 'ok');
+    toast('Listo ✓', 'ok');
     return;
   }
   const codigo = descEditandoCodigo;
   try {
     await fetch(`${SUPA_URL}/rest/v1/productos?codigo=eq.${encodeURIComponent(codigo)}`, {
-      method:'PATCH', headers:hdrs, body:JSON.stringify({ descripcion: html || null })
+      method:'PATCH', headers:hdrs, body:JSON.stringify({ descripcion: html || null, etiqueta: etiqueta || null })
     });
     const p = todosLosProductos.find(x => x.codigo === codigo);
-    if (p) p.descripcion = html || null;
+    if (p) { p.descripcion = html || null; p.etiqueta = etiqueta || null; }
     const prev = document.getElementById(`desc-prev-${codigo}`);
     if (prev) prev.innerHTML = html;
     cerrarEditorDesc();
-    toast('Descripción guardada ✓', 'ok');
-  } catch(e) { toast('Error al guardar la descripción', 'err'); }
+    toast('Guardado ✓', 'ok');
+  } catch(e) { toast('Error al guardar', 'err'); }
 }
 
 function toast(msg, tipo) {

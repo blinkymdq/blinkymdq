@@ -1500,7 +1500,7 @@
         async function cargarDatos() {
             try {
                 const resP = await fetch(
-                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,desc_efectivo_pct,oferta,stock,estado,descripcion,variantes&estado=neq.inactivo&order=categoria.asc',
+                    SUPA_URL + '/rest/v1/productos?select=codigo,nombre,foto,categoria,marca,genero,precio_publico,precio_mayorista,descuento,desc_efectivo_pct,oferta,stock,estado,descripcion,variantes,etiqueta&estado=neq.inactivo&order=categoria.asc',
                     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
                 );
 
@@ -1531,6 +1531,7 @@
                     variantes:    variantes,
                     stock:        stockEfectivo,
                     sinStock:     stockEfectivo <= 0,
+                    etiqueta:     (p.etiqueta || ""),
                     oculto:       false
                     };
                 });
@@ -1654,6 +1655,14 @@
             // Mayorista sin precio mayorista: usa el precio de lista (sin el descuento minorista)
             if (!val || parseFloat(val) === 0) return p.precioLista || p.precioP || "0";
             return val;
+        }
+        // Etiqueta libre por producto (campo "etiqueta" en la base). Si tiene texto, muestra un badge 🔥.
+        function _etiquetaEsc(t){ return String(t).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function _ultimaUnidad(p) {
+            const t = (p.etiqueta || '').trim();
+            return t
+                ? `<div style="position:absolute;bottom:8px;left:8px;z-index:4;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:10px;font-weight:900;padding:3px 8px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;gap:3px;white-space:nowrap;">${_etiquetaEsc(t)}</div>`
+                : '';
         }
         // Badge de descuento (🔥) para la esquina de la imagen
         function _fuego(p) {
@@ -1798,6 +1807,7 @@
                 <div class="relative w-full overflow-hidden bg-white" style="height:160px;">
                     <img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" class="w-full h-full object-contain p-3">
                     ${_fuego(p)}
+                    ${_ultimaUnidad(p)}
                     ${p.sinStock ? '<div class="badge-sin-stock">Sin Stock</div>' : ''}
                 </div>
                 <div class="p-3 flex flex-col flex-1">
@@ -1913,7 +1923,7 @@
                     <div class="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm flex flex-col justify-between card-hover-violeta relative" style="padding-bottom:2.75rem;">
                         <div onclick="window.location.href=generarLink('${p.codigo}')" class="cursor-pointer">
                             <div class="relative overflow-hidden rounded-[1.5rem]">
-                                <div class="img-container">${_fuego(p)}${badgeSinStock}${badgeMerc}<img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" ></div>
+                                <div class="img-container">${_fuego(p)}${_ultimaUnidad(p)}${badgeSinStock}${badgeMerc}<img src="${img}" loading="lazy" onerror="this.onerror=null;this.src='sin-foto.png'" ></div>
                                 <button onclick="event.stopPropagation();compartirProducto('${p.codigo}', '${p.nombre.replace(/'/g,"\\'")}')"
                                     title="Compartir"
                                     class="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow-sm text-slate-700">
