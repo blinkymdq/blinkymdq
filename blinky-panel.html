@@ -342,6 +342,10 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
         </div>
       </div>
       <div class="chart-card" style="margin-bottom:1rem;">
+        <div class="chart-title">Últimos 10 vendidos</div>
+        <div id="chart-ultimos"></div>
+      </div>
+      <div class="chart-card" style="margin-bottom:1rem;">
         <div class="chart-title">Ventas por día (últimos 14 días)</div>
         <div id="chart-dias"></div>
       </div>
@@ -1857,15 +1861,46 @@ async function cargarStats() {
       </div>
     `;
 
+    // Link a la página pública del producto (siempre resuelve por ?cod=)
+    const prodUrl = c => 'https://blinkymdq.com/producto.html?cod=' + encodeURIComponent(c);
+    // Mapa nombre→código (primer código visto) para poder linkear por nombre
+    const codPorNombre = {};
+    items.forEach(i=>{ if(i.codigo && !codPorNombre[i.producto]) codPorNombre[i.producto]=i.codigo; });
+    const _nombreLink = (n, extra='') => {
+      const cod = codPorNombre[n];
+      const estilo = `max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;${extra}`;
+      return cod
+        ? `<a href="${prodUrl(cod)}" target="_blank" rel="noopener" style="${estilo}color:var(--violet-light);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${n}</a>`
+        : `<span style="${estilo}">${n}</span>`;
+    };
+
+    // ── Top 10 más vendidos ──
     const conteo={};
     items.forEach(i=>{conteo[i.producto]=(conteo[i.producto]||0)+i.cantidad;});
-    const top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,10);
     const maxQ=top[0]?top[0][1]:1;
     document.getElementById('chart-productos').innerHTML=top.length?top.map(([n,q])=>`
       <div class="bar-item">
-        <div class="bar-label"><span style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;">${n}</span><span style="font-weight:700;color:var(--text);">${q}</span></div>
+        <div class="bar-label">${_nombreLink(n)}<span style="font-weight:700;color:var(--text);">${q}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.round(q/maxQ*100)}%"></div></div>
       </div>`).join(''):'<div style="color:var(--text3);font-size:0.8rem;">Sin datos</div>';
+
+    // ── Últimos 10 vendidos (líneas de venta más recientes, sin pedidos cancelados) ──
+    const pedByNum={};
+    pedidos.forEach(p=>{ pedByNum[p.numero_pedido]=p; });
+    const ultimos=[...items]
+      .filter(i=>i.producto && pedByNum[i.numero_pedido] && (pedByNum[i.numero_pedido].estado||'').toLowerCase()!=='cancelado')
+      .sort((a,b)=> new Date(pedByNum[b.numero_pedido].created_at||0) - new Date(pedByNum[a.numero_pedido].created_at||0))
+      .slice(0,10);
+    document.getElementById('chart-ultimos').innerHTML = ultimos.length ? ultimos.map(i=>{
+      const ped = pedByNum[i.numero_pedido];
+      const f = new Date(ped.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+      const nom = i.producto + (i.variante?(' · '+i.variante):'');
+      return `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+        ${_nombreLink(nom,'flex:1;')}
+        <span style="color:var(--text3);font-size:0.72rem;white-space:nowrap;">${Number(i.cantidad)>1?('×'+i.cantidad+' · '):''}${f} · <a onclick="verPedido('${(i.numero_pedido||'').replace(/'/g,'')}')" style="color:var(--violet-light);cursor:pointer;text-decoration:none;">${i.numero_pedido}</a></span>
+      </div>`;
+    }).join('') : '<div style="color:var(--text3);font-size:0.8rem;">Sin datos</div>';
 
     const nMino=pedidos.filter(p=>p.tipo==='minorista').length;
     const nMayo=pedidos.filter(p=>p.tipo==='mayorista').length;
