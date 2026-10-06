@@ -2345,6 +2345,57 @@ async function imprimirPedido(num) {
   } catch(e){ toast('Error al abrir el comprobante','err'); }
 }
 
+// ── Reconciliar mercadería de vendedores desde el modal del pedido ──
+async function _recoEntregasVendedor(usuarioId, codigo){
+  const rows = await (await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?usuario_id=eq.${usuarioId}&codigo=eq.${encodeURIComponent(codigo)}&select=id,producto,entregado,vendido,devuelto&order=created_at.asc`,{headers:hdrs})).json();
+  return Array.isArray(rows)?rows:[];
+}
+// Comprador que es vendedor y tiene el producto → se registra como VENTA suya (vendido) y queda como su saldo (el pedido ya existe). No toca el stock (el pedido ya lo descontó).
+async function registrarVentaVendedorPedido(num, codigo, usuarioId, itemCant){
+  if(!confirm('¿Registrar esta venta en la cuenta del vendedor y descontarla de su consignación?\n(No modifica el stock: el pedido ya lo descontó.)')) return;
+  try{
+    const rows = await _recoEntregasVendedor(usuarioId, codigo);
+    let restante = Number(itemCant)||0; const movs=[]; let prodNom='';
+    for(const e of rows){
+      if(restante<=0) break;
+      const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
+      if(pend<=0) continue;
+      const tomar = Math.min(pend, restante);
+      await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({vendido:Number(e.vendido||0)+tomar})});
+      movs.push({usuario_id:usuarioId, codigo, producto:e.producto, tipo:'venta', cantidad:tomar, numero_pedido:num});
+      prodNom=e.producto; restante-=tomar;
+    }
+    if(!movs.length){ toast('El vendedor ya no tiene unidades pendientes de ese producto','err'); return; }
+    await logMov(movs);
+    logAct('venta', `Venta de consignación registrada en pedido ${num} — ${prodNom}`, num);
+    toast('Venta registrada en el vendedor ✓','ok');
+    verPedido(num,false);
+  }catch(e){ toast('Error al registrar la venta','err'); }
+}
+// Comprador es otro → el vendedor elegido DEVUELVE la unidad (queda neutro, la venta es de la tienda). No toca el stock.
+async function registrarDevolucionPedido(num, codigo, usuarioId, itemCant){
+  if(!usuarioId){ toast('Elegí un vendedor','err'); return; }
+  if(!confirm('¿Registrar la devolución de esta unidad del vendedor elegido?\n(Queda neutro, la venta es de la tienda. No modifica el stock.)')) return;
+  try{
+    const rows = await _recoEntregasVendedor(usuarioId, codigo);
+    let restante = Number(itemCant)||0; const movs=[]; let prodNom='';
+    for(const e of rows){
+      if(restante<=0) break;
+      const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
+      if(pend<=0) continue;
+      const tomar = Math.min(pend, restante);
+      await fetch(`${SUPA_URL}/rest/v1/entregas_vendedor?id=eq.${e.id}`,{method:'PATCH',headers:hdrs,body:JSON.stringify({devuelto:Number(e.devuelto||0)+tomar})});
+      movs.push({usuario_id:usuarioId, codigo, producto:e.producto, tipo:'devolucion', cantidad:tomar, numero_pedido:num});
+      prodNom=e.producto; restante-=tomar;
+    }
+    if(!movs.length){ toast('Ese vendedor ya no tiene unidades pendientes de ese producto','err'); return; }
+    await logMov(movs);
+    logAct('devolucion', `Devolución registrada desde pedido ${num} — ${prodNom}`, num);
+    toast('Devolución registrada ✓','ok');
+    verPedido(num,false);
+  }catch(e){ toast('Error al registrar la devolución','err'); }
+}
+
 async function verPedido(num, esEliminado) {
   document.getElementById('overlay').classList.add('open');
   document.getElementById('modal-title').textContent='Pedido '+num;
@@ -2376,6 +2427,8 @@ async function verPedido(num, esEliminado) {
 
     // Aviso admin (en vivo): qué vendedor tiene actualmente cada producto de este pedido
     let vendMap = {};
+    window._pedidoVendedores = {};   // codigo -> [{id, nombre, pend}] (para registrar venta/devolución)
+    window._pedidoCompradorId = p.user_id || (window._pedidoCliente && window._pedidoCliente.id) || null;
     if (!esEliminado) {
       try {
         const cods = [...new Set(items.map(i=>i.codigo).filter(Boolean))];
@@ -2393,10 +2446,18 @@ async function verPedido(num, esEliminado) {
             (us||[]).forEach(u=>nombres[u.id]=u.nombre);
           }
           const acc = {}, pendTot = {};
+          const _vb = {}; // codigo -> { usuario_id -> {id,nombre,pend} }
           (ev||[]).forEach(e=>{
             const pend = Math.max(0, Number(e.entregado||0)-Number(e.vendido||0)-Number(e.devuelto||0));
-            if (pend>0) { (acc[e.codigo]=acc[e.codigo]||[]).push(`${nombres[e.usuario_id]||'Vendedor'} (${pend})`); pendTot[e.codigo]=(pendTot[e.codigo]||0)+pend; }
+            if (pend>0) {
+              (acc[e.codigo]=acc[e.codigo]||[]).push(`${nombres[e.usuario_id]||'Vendedor'} (${pend})`);
+              pendTot[e.codigo]=(pendTot[e.codigo]||0)+pend;
+              const m=(_vb[e.codigo]=_vb[e.codigo]||{});
+              if(!m[e.usuario_id]) m[e.usuario_id]={id:e.usuario_id, nombre:nombres[e.usuario_id]||'Vendedor', pend:0};
+              m[e.usuario_id].pend += pend;
+            }
           });
+          Object.keys(_vb).forEach(c=>{ window._pedidoVendedores[c] = Object.values(_vb[c]); });
           // Solo avisar si en depósito no queda ninguno (stock central = stock - lo que tienen los vendedores <= 0)
           Object.keys(acc).forEach(c=>{
             const central = (stockMap[c]||0) - (pendTot[c]||0);
@@ -2406,12 +2467,13 @@ async function verPedido(num, esEliminado) {
       } catch(e){}
     }
 
-    // Productos que se descontaron de la mercadería del propio comprador (vendedor)
-    let descontadoSet = new Set();
+    // Movimientos ya registrados para este pedido (para no duplicar y mostrar "ya registrado")
+    let descontadoSet = new Set();   // ventas de consignación (para el aviso existente)
+    let reconciledSet = new Set();   // venta o devolución ya registrada por producto
     if (!esEliminado) {
       try {
-        const mv = await (await fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?numero_pedido=eq.${encodeURIComponent(num)}&tipo=eq.venta&select=codigo`,{headers:hdrs})).json();
-        (mv||[]).forEach(m=>descontadoSet.add(m.codigo));
+        const mv = await (await fetch(`${SUPA_URL}/rest/v1/movimientos_vendedor?numero_pedido=eq.${encodeURIComponent(num)}&tipo=in.(venta,devolucion)&select=codigo,tipo`,{headers:hdrs})).json();
+        (mv||[]).forEach(m=>{ reconciledSet.add(m.codigo); if(m.tipo==='venta') descontadoSet.add(m.codigo); });
       } catch(e){}
     }
 
@@ -2439,6 +2501,37 @@ async function verPedido(num, esEliminado) {
           ${!esEliminado?`<td style="text-align:right;"><button class="btn-del-item" title="Quitar producto" onclick="eliminarItem(${i.id},'${num}')">✕</button></td>`:''}
         </tr>`).join('')}</tbody>
       </table>
+
+      ${(function(){
+        if(esEliminado) return '';
+        const filas = items.map(i=>{
+          const c=i.codigo; if(!c) return '';
+          const vends=window._pedidoVendedores[c]; if(!vends||!vends.length) return '';
+          const nom=esc(i.producto||'');
+          if(reconciledSet.has(c)) return `<div style="font-size:0.78rem;color:var(--green);padding:4px 0;">✓ ${nom} — ya registrado</div>`;
+          const compV = vends.find(v=>String(v.id)===String(window._pedidoCompradorId));
+          if(compV){
+            return `<div style="padding:6px 0;border-top:1px solid var(--border);">
+              <div style="font-size:0.78rem;color:var(--text);margin-bottom:4px;">${nom} — lo tiene el comprador (<b>${esc(compV.nombre)}</b>)</div>
+              <button class="btn-refresh" style="background:var(--green);color:#06230f;font-weight:800;" onclick="registrarVentaVendedorPedido('${num}','${c}','${compV.id}',${Number(i.cantidad)||1})">Registrar venta de ${esc(compV.nombre)} y descontar</button>
+            </div>`;
+          }
+          if(!vendMap[c]) return '';   // depósito todavía tiene stock: la unidad pudo salir de ahí, no forzamos descuento a un vendedor
+          const opts = vends.map(v=>`<option value="${v.id}">${esc(v.nombre)} (${v.pend} u.)</option>`).join('');
+          return `<div style="padding:6px 0;border-top:1px solid var(--border);">
+            <div style="font-size:0.78rem;color:var(--text);margin-bottom:4px;">${nom} — ¿de quién lo sacás?</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <select id="reco-sel-${c}" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:4px 6px;">${opts}</select>
+              <button class="btn-refresh" style="background:var(--yellow);color:#1a1a26;font-weight:800;" onclick="registrarDevolucionPedido('${num}','${c}',document.getElementById('reco-sel-${c}').value,${Number(i.cantidad)||1})">Registrar devolución</button>
+            </div>
+          </div>`;
+        }).filter(Boolean).join('');
+        if(!filas) return '';
+        return `<div style="margin-top:0.8rem;padding:0.7rem 0.8rem;border:1px solid var(--border);border-radius:10px;background:var(--surface2);">
+          <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--yellow);margin-bottom:0.6rem;">📦 Mercadería en poder de vendedores</div>
+          ${filas}
+        </div>`;
+      })()}
 
       ${(function(){
         const _sub = items.reduce((a,i)=>a+Number(i.subtotal||0),0);
