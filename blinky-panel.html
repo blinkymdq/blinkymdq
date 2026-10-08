@@ -308,7 +308,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
   </header>
 
   <div class="nav">
-    <button class="nav-tab active" onclick="switchTab('stats',this)">Estadísticas</button>
+    <button class="nav-tab active" onclick="switchTab('stats',this)">Home</button>
     <button class="nav-tab" onclick="switchTab('cajas',this)">Cajas</button>
     <a class="nav-tab" href="productos-editor.html" style="text-decoration:none;display:inline-flex;align-items:center;">Productos</a>
     <button class="nav-tab" onclick="switchTab('pedidos',this)">Pedidos</button>
@@ -1831,8 +1831,8 @@ async function cargarStats() {
     // HTML de las listas de cada tarjeta (con links a pedido y a ficha)
     const _lk='cursor:pointer;color:var(--violet-light);text-decoration:none;';
     const pendHtml = pendientesEntrega.length
-      ? pendientesEntrega.slice(0,40).map(p=>`<div style="font-size:0.72rem;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><a onclick="verPedido('${(p.numero_pedido||'').replace(/'/g,'')}')" style="${_lk}font-weight:700;">${p.numero_pedido||''}</a> <span style="color:var(--text3);">${(p.nombre||'').slice(0,18)}</span></div>`).join('')
-      : '<div style="font-size:0.72rem;color:var(--text3);">Sin pedidos pendientes</div>';
+      ? pendientesEntrega.map(p=>`<a onclick="verPedido('${(p.numero_pedido||'').replace(/'/g,'')}')" title="${(p.nombre||'').replace(/"/g,'')}" style="${_lk}display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:5px 11px;font-size:0.74rem;white-space:nowrap;"><b>${p.numero_pedido||''}</b><span style="color:var(--text3);">${(p.nombre||'').slice(0,22)}</span></a>`).join('')
+      : '<div style="font-size:0.74rem;color:var(--text3);">Sin pedidos pendientes de entrega</div>';
     const saldoHtml = deudores.length
       ? deudores.map(d=>`<div style="font-size:0.72rem;padding:3px 0;border-top:1px solid var(--border);">
           <div style="display:flex;justify-content:space-between;gap:6px;align-items:center;">
@@ -1852,8 +1852,11 @@ async function cargarStats() {
       <div class="stat-card violet"><div class="stat-label">Ventas hoy</div><div class="stat-val">$${pedidosHoy.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosHoy.length} pedidos</div></div>
       <div class="stat-card green"><div class="stat-label">Esta semana</div><div class="stat-val">$${pedidosSem.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosSem.length} pedidos</div></div>
       <div class="stat-card cyan"><div class="stat-label">Este mes</div><div class="stat-val">$${pedidosMes.reduce((s,p)=>s+Number(p.total),0).toLocaleString('es-AR')}</div><div class="stat-sub">${pedidosMes.length} pedidos</div></div>
-      <div class="stat-card yellow"><div class="stat-label">Pedidos pendientes de entrega</div><div class="stat-val">${pendientes}</div><div style="margin-top:6px;max-height:130px;overflow:auto;">${pendHtml}</div></div>
       <div class="stat-card red"><div class="stat-label">Clientes con saldo</div><div class="stat-val">${conSaldo}</div><div style="margin-top:6px;max-height:130px;overflow:auto;">${saldoHtml}</div></div>
+      <div class="stat-card yellow" style="grid-column:1/-1;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><div class="stat-label">Pedidos pendientes de entrega</div><div class="stat-val" style="font-size:1.4rem;">${pendientes}</div></div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">${pendHtml}</div>
+      </div>
       <div class="stat-card" style="grid-column:span 2;border-color:rgba(6,182,212,0.3);display:flex;flex-direction:column;justify-content:center;gap:0.5rem;">
         <div style="font-size:0.82rem;color:var(--text2);">Artículos en stock: <strong style="color:var(--text);font-size:0.95rem;">${unidadesStock.toLocaleString('es-AR')}</strong></div>
         <div style="font-size:0.82rem;color:var(--text2);">Valor minorista: <strong style="color:var(--green);font-size:0.95rem;">$${valorMinorista.toLocaleString('es-AR')}</strong></div>
@@ -2516,10 +2519,10 @@ async function verPedido(num, esEliminado) {
               <button class="btn-refresh" style="background:var(--green);color:#06230f;font-weight:800;" onclick="registrarVentaVendedorPedido('${num}','${c}','${compV.id}',${Number(i.cantidad)||1})">Registrar venta de ${esc(compV.nombre)} y descontar</button>
             </div>`;
           }
-          if(!vendMap[c]) return '';   // depósito todavía tiene stock: la unidad pudo salir de ahí, no forzamos descuento a un vendedor
-          const opts = vends.map(v=>`<option value="${v.id}">${esc(v.nombre)} (${v.pend} u.)</option>`).join('');
+          if(!vendMap[c]) return '';   // depósito todavía tiene stock: la unidad salió de ahí, no se toca a ningún vendedor
+          const opts = '<option value="" selected disabled>Elegí vendedor…</option>' + vends.map(v=>`<option value="${v.id}">${esc(v.nombre)} (${v.pend})</option>`).join('');
           return `<div style="padding:6px 0;border-top:1px solid var(--border);">
-            <div style="font-size:0.78rem;color:var(--text);margin-bottom:4px;">${nom} — ¿de quién lo sacás?</div>
+            <div style="font-size:0.78rem;color:var(--text);margin-bottom:4px;">${nom} — sin stock en depósito · ¿de qué vendedor lo retirás?</div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
               <select id="reco-sel-${c}" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:4px 6px;">${opts}</select>
               <button class="btn-refresh" style="background:var(--yellow);color:#1a1a26;font-weight:800;" onclick="registrarDevolucionPedido('${num}','${c}',document.getElementById('reco-sel-${c}').value,${Number(i.cantidad)||1})">Registrar devolución</button>
