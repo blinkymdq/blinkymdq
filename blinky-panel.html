@@ -410,6 +410,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <option value="descuento">🏷️ Descuento</option>
           <option value="saldo_favor">💰 Saldo a favor</option>
         </select>
+        <input type="text" id="pago-cliente-filtro" class="filter-input" placeholder="🔎 Buscar cliente…" oninput="renderPagos()" style="min-width:180px;">
         <button class="btn-refresh" onclick="cargarPagos()">↻ Actualizar</button>
       </div>
       <div id="lista-pagos"><div class="loading-txt">Cargando...</div></div>
@@ -2175,7 +2176,6 @@ async function cargarPagos() {
     if(!Array.isArray(pagos)||!pagos.length){
       cont.innerHTML='<div class="empty"><div class="empty-icon">💳</div><p>No hay pagos</p></div>';return;
     }
-    const total=pagos.reduce((s,p)=>s+Number(p.monto),0);
     // Nombres de clientes para los pagos a cuenta (sin pedido)
     let nombresCta = {};
     const uids = [...new Set(pagos.filter(p=>!p.numero_pedido && p.user_id).map(p=>p.user_id))];
@@ -2185,24 +2185,54 @@ async function cargarPagos() {
         (us||[]).forEach(u=>{ nombresCta[u.id]=u.nombre; });
       } catch(e){}
     }
-    cont.innerHTML=`
+    // Nombres de clientes para los pagos ligados a un pedido
+    let pedNombre = {};
+    const nums = [...new Set(pagos.filter(p=>p.numero_pedido).map(p=>p.numero_pedido))];
+    if(nums.length){
+      try {
+        const inN = nums.map(n=>encodeURIComponent(n)).join(',');
+        const peds = await (await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=in.(${inN})&select=numero_pedido,nombre`,{headers:hdrs})).json();
+        (peds||[]).forEach(pp=>{ pedNombre[pp.numero_pedido]=pp.nombre; });
+      } catch(e){}
+    }
+    // Cache para el filtro por cliente (se filtra sin volver a pedir a la base)
+    window._pagosCache = pagos;
+    window._pagosNombresCta = nombresCta;
+    window._pagosNombreCliente = {};
+    pagos.forEach(p=>{ window._pagosNombreCliente[p.id] = p.numero_pedido ? (pedNombre[p.numero_pedido]||'') : (nombresCta[p.user_id]||''); });
+    renderPagos();
+  } catch(e){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';}
+}
+
+function renderPagos() {
+  const cont=document.getElementById('lista-pagos'); if(!cont) return;
+  const pagos = window._pagosCache || [];
+  const nombresCta = window._pagosNombresCta || {};
+  const nombreCli = window._pagosNombreCliente || {};
+  const q = sinAcentos((document.getElementById('pago-cliente-filtro')?.value||'').trim());
+  const lista = q ? pagos.filter(p=>sinAcentos(nombreCli[p.id]||'').includes(q)) : pagos;
+  if(!lista.length){
+    cont.innerHTML='<div class="empty"><div class="empty-icon">💳</div><p>'+(q?'Ningún pago para ese cliente':'No hay pagos')+'</p></div>';return;
+  }
+  const total=lista.reduce((s,p)=>s+Number(p.monto),0);
+  cont.innerHTML=`
       <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;align-items:center;gap:1rem;">
-        <span style="font-size:0.8rem;color:var(--text2);">${pagos.length} registro${pagos.length===1?'':'s'}</span>
+        <span style="font-size:0.8rem;color:var(--text2);">${lista.length} registro${lista.length===1?'':'s'}${q?` (de ${pagos.length})`:''}</span>
         <span style="font-size:1.1rem;font-weight:900;color:var(--green);">Total: $${total.toLocaleString('es-AR')}</span>
       </div>
       <div class="chart-card" style="padding:0;">
         <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
           <thead><tr>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Recibo</th>
-            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Pedido</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Pedido / Cliente</th>
             <th style="padding:10px 12px;text-align:left;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Forma</th>
             <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Monto</th>
             <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);">Fecha</th>
             <th style="padding:10px 12px;text-align:right;color:var(--text3);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--border);"></th>
           </tr></thead>
-          <tbody>${pagos.map(p=>`<tr${p.numero_pedido?` style="cursor:pointer;" onclick="verPedido('${p.numero_pedido}',false)"`:''}>
+          <tbody>${lista.map(p=>`<tr${p.numero_pedido?` style="cursor:pointer;" onclick="verPedido('${p.numero_pedido}',false)"`:''}>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:0.78rem;white-space:nowrap;">${p.token?`<a href="https://blinkymdq.github.io/blinkymdq/recibo-pago.html?t=${p.token}" target="_blank" onclick="event.stopPropagation()" style="color:var(--violet-light);text-decoration:none;font-weight:700;">🧾 ${p.numero_recibo||'Recibo'}</a>`:(p.numero_recibo||'—')}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid var(--border);">${p.numero_pedido?`<span style="color:var(--violet-light);font-weight:700;">${p.numero_pedido}</span>`:`<span style="color:var(--text2);font-weight:700;">A cuenta</span>${nombresCta[p.user_id]?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${esc(nombresCta[p.user_id])}</div>`:''}`}</td>
+            <td style="padding:9px 12px;border-bottom:1px solid var(--border);">${p.numero_pedido?`<span style="color:var(--violet-light);font-weight:700;">${p.numero_pedido}</span>${pedNombreCliHtml(p)}`:`<span style="color:var(--text2);font-weight:700;">A cuenta</span>${nombresCta[p.user_id]?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${esc(nombresCta[p.user_id])}</div>`:''}`}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);"><span class="pago-forma ${p.forma_pago}">${formaLabel(p.forma_pago)}</span>${p.descripcion?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${p.descripcion}</div>`:''}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--green);">$${Number(p.monto).toLocaleString('es-AR')}</td>
             <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;color:var(--text3);font-size:0.78rem;">${new Date(p.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
@@ -2210,7 +2240,10 @@ async function cargarPagos() {
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
-  } catch(e){cont.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>Error</p></div>';}
+}
+function pedNombreCliHtml(p){
+  const n = (window._pagosNombreCliente||{})[p.id];
+  return n ? `<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">${esc(n)}</div>` : '';
 }
 
 // ── HISTORIAL GASTOS ───────────────────────────
