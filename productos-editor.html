@@ -870,7 +870,14 @@ async function guardarFotosProducto() {
     }
 
     const p = todosLosProductos.find(x => x.codigo === mfCodigo);
-    if (p) { p.foto = fotoField; p.video = videoField; p.variantes = variantesLimpio; }
+    if (p) {
+      p.foto = fotoField; p.video = videoField; p.variantes = variantesLimpio;
+      // La base pone stock = suma de variantes (trigger). Reflejarlo en pantalla al instante.
+      if (variantesLimpio.length) {
+        p.stock = variantesLimpio.reduce((s,v)=>s+Math.max(0,Number(v.stock||0)),0);
+        const inp = document.getElementById(`stock-${p.codigo}`); if(inp) inp.value = p.stock;
+      }
+    }
 
     toast('Medios actualizados ✓', 'ok');
     cerrarModalFotos();
@@ -1129,6 +1136,13 @@ function editarProducto(codigo) {
     const el = document.getElementById(id);
     if(el) el.disabled = false;
   });
+  // Si el producto tiene variantes, el stock general = suma de variantes (lo maneja la base).
+  // Lo dejamos bloqueado para que no se desajuste: se cambia editando las variantes.
+  const _pv = todosLosProductos.find(x=>x.codigo===codigo);
+  if(_pv && Array.isArray(_pv.variantes) && _pv.variantes.length){
+    const se = document.getElementById(`stock-${codigo}`);
+    if(se){ se.disabled = true; se.title = 'Se calcula de las variantes (editá las variantes para cambiarlo)'; }
+  }
   const link = document.getElementById(`nombre-link-${codigo}`);
   const ta = document.getElementById(`nombre-${codigo}`);
   if(link) link.style.display = 'none';
