@@ -616,6 +616,7 @@ header { background:var(--surface);border-bottom:1px solid var(--border);padding
           <div id="fc-pendiente-badge" style="display:none;background:rgba(239,68,68,0.12);border:1px solid var(--red);border-radius:10px;padding:6px 12px;text-align:center;flex-shrink:0;">
             <div style="font-size:0.62rem;color:var(--red);text-transform:uppercase;font-weight:700;">Pendiente</div>
             <div id="fc-pendiente-val" style="font-size:1rem;font-weight:900;color:var(--red);"></div>
+            <button onclick="enviarRecordatorioSaldo(this)" title="Enviar recordatorio de saldo por mail" style="margin-top:5px;background:var(--violet);color:#fff;border:none;border-radius:6px;font-size:0.6rem;font-weight:800;padding:3px 8px;cursor:pointer;white-space:nowrap;">📧 Recordar</button>
           </div>
           <div id="fc-saldo-favor-badge" style="display:none;background:rgba(16,185,129,0.15);border:1px solid var(--green);border-radius:10px;padding:6px 12px;text-align:center;flex-shrink:0;">
             <div style="font-size:0.62rem;color:var(--green);text-transform:uppercase;font-weight:700;">Saldo a favor</div>
@@ -3464,6 +3465,39 @@ async function cargarMovimientosCliente(){
       </div>`;
     }).join('');
   } catch(e){ cont.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">Error al cargar los movimientos.</div>'; }
+}
+
+// Envía al cliente un mail cordial recordándole su saldo pendiente (calcula el saldo en el momento).
+async function enviarRecordatorioSaldo(btn){
+  const c = clienteActual;
+  if(!c){ toast('Abrí la ficha de un cliente','err'); return; }
+  if(!c.email){ toast('El cliente no tiene email cargado','err'); return; }
+  const _prev = btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="bk-spinner"></span>'; }
+  const _reset = ()=>{ if(btn){ btn.disabled=false; btn.innerHTML=_prev; } };
+  try{
+    const [pend, pc] = await Promise.all([_fetchPendientesCliente(), _fetchPagosCuentaCliente()]);
+    const deuda = pend.reduce((s,x)=>s+(Number(x.total||0)-Number(x.monto_pagado||0)),0);
+    const acred = pc.reduce((s,x)=>s+(Number(x.monto||0)-Number(x.exceso_acreditado||0)),0);
+    const saldo = Math.max(0, Math.round(deuda - acred));
+    if(!(saldo>0)){ toast('El cliente no tiene saldo pendiente','err'); _reset(); return; }
+    if(!confirm(`¿Enviar recordatorio de saldo a ${c.nombre}?\nMail: ${c.email}\nSaldo: $${saldo.toLocaleString('es-AR')}`)){ _reset(); return; }
+    const pedidos = pend
+      .map(p=>({ numero:p.numero_pedido, pendiente:Math.round(Number(p.total||0)-Number(p.monto_pagado||0)) }))
+      .filter(p=>p.pendiente>0);
+    const r = await fetch(`${SUPA_URL}/functions/v1/recordatorio-saldo`,{
+      method:'POST', headers:hdrs,
+      body:JSON.stringify({ cliente:{ nombre:c.nombre, email:c.email }, saldo, pedidos })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(j && j.ok){
+      toast('Recordatorio enviado ✓','ok');
+      try{ logAct('pago', `Recordatorio de saldo enviado a ${c.nombre||''} (${c.email}) — $${saldo.toLocaleString('es-AR')}`, ''); }catch(_){}
+    } else {
+      toast('No se pudo enviar'+(j&&j.motivo?': '+j.motivo:''),'err');
+    }
+  }catch(e){ toast('Error al enviar el recordatorio','err'); }
+  finally{ _reset(); }
 }
 
 async function _fetchPendientesCliente(){
