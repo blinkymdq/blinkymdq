@@ -3473,7 +3473,7 @@
                 totalNum2 = Math.max(0, totalNum2 - _descTarjeta);
 
                 var items = carrito.map(function(i) {
-                    return { nombre: i.variante ? (i.nombre + ' (' + i.variante + ')') : i.nombre, precio: i.precio, cantidad: i.cantidad };
+                    return { nombre: i.variante ? (i.nombre + ' (' + i.variante + ')') : i.nombre, codigo: i.codigo || null, precio: i.precio, cantidad: i.cantidad };
                 });
 
                 var res = await fetch(SUPA_URL + '/functions/v1/openpay-checkout', {

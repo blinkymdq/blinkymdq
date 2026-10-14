@@ -2981,6 +2981,7 @@ async function confirmarNuevoPedido() {
     const itemsBody = npCarrito.map(it => ({
       numero_pedido: numeroPedido,
       producto: it.producto,
+      codigo: it.codigo || null,
       cantidad: it.cantidad,
       precio_unitario: it.precio_unitario
     }));
