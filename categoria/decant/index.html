@@ -1453,8 +1453,18 @@
                 if(m3||m6) mpCol = `<div style="flex:1;min-width:120px;"><img src="/MERCADOPAGO.jpg" alt="Mercado Pago" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>Mercado Pago</b>'">${m3?`<div>${m3}</div>`:''}${m6?`<div>${m6}</div>`:''}</div>`;
             }
             const o3 = _cuotaLine(precio,3,_opCoef(3)), o6 = _cuotaLine(precio,6,_opCoef(6));
+            // Promo 6 cuotas SIN INTERÉS — solo la fecha indicada; ese día OpenPay muestra solo esa opción.
+            const PROMO_6SI_FECHA='2026-10-14';
+            const _h6=new Date(); const _pz=n=>String(n).padStart(2,'0');
+            const _hoyStr6=_h6.getFullYear()+'-'+_pz(_h6.getMonth()+1)+'-'+_pz(_h6.getDate());
+            const promoActiva6=(_hoyStr6===PROMO_6SI_FECHA && precio);
+            const _opHead=`<img src="/OPENPAY.jpg" alt="OpenPay" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">`;
             let opCol = '';
-            if(o3||o6) opCol = `<div style="flex:1;min-width:120px;"><img src="/OPENPAY.jpg" alt="OpenPay" style="height:32px;width:auto;display:block;margin-bottom:5px;" onerror="this.outerHTML='<b>OpenPay</b>'">${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+            if(promoActiva6){
+              opCol = `<div style="flex:1;min-width:120px;">${_opHead}<div style="font-size:12px;font-weight:800;color:#059669;line-height:1.3;">6 CUOTAS SIN INTERÉS<br>de ${_cuota2(Number(precio)/6)}</div><div style="font-size:9px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">🔥 Solo por hoy</div></div>`;
+            } else if(o3||o6){
+              opCol = `<div style="flex:1;min-width:120px;">${_opHead}${o3?`<div>${o3}</div>`:''}${o6?`<div>${o6}</div>`:''}</div>`;
+            }
             if(!mpCol && !opCol) return '';
             const divider = (mpCol && opCol) ? '<div style="width:1px;background:#e2e8f0;align-self:stretch;"></div>' : '';
             return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:700;color:#1e293b;">Formas de pago:</span><img src="/tarjetas.png" alt="Medios de pago" style="height:18px;width:auto;" onerror="this.style.display='none'"></div><div style="display:flex;gap:14px;align-items:flex-start;">${mpCol}${divider}${opCol}</div>`;
