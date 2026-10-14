@@ -1303,6 +1303,14 @@
         </div>
     </div>
 
+    <!-- Popup Día de la Madre -->
+    <div id="popupMama" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,20,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+        <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <img src="/mama.jpg" alt="Día de la Madre" style="width:100%;display:block;">
+            <button onclick="cerrarPopupMama()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.45);border:none;color:white;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);">✕</button>
+        </div>
+    </div>
+
     <!-- POPUP 3 CUOTAS SIN INTERÉS — viernes y sábados -->
     <div id="popupVierSab" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,20,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
         <div style="position:relative;width:100%;max-width:360px;border-radius:1.5rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
@@ -1323,6 +1331,10 @@
         var esVierSab = (diaSem === 5 || diaSem === 6); // viernes o sábado
 
         var target = new Date('2026-06-22T00:00:00-03:00').getTime(); // límite popup padre
+        // Popup Día de la Madre: SOLO el 14/10/2026 (hora Buenos Aires, -03:00), de 00:00 a 23:59
+        var mamaInicio = new Date('2026-10-14T00:00:00-03:00').getTime();
+        var mamaFin    = new Date('2026-10-14T23:59:59-03:00').getTime();
+        var mamaActivo = (Date.now() >= mamaInicio && Date.now() <= mamaFin);
         function pad(n) { return String(n).padStart(2,'0'); }
         var timer;
 
@@ -1374,6 +1386,13 @@
             ocultarPopup(document.getElementById('popupVierSab'));
         }
 
+        function cerrarPopupMama() {
+            ocultarPopup(document.getElementById('popupMama'), function() {
+                if (esVierSab) mostrarPopup(document.getElementById('popupVierSab'));
+            });
+        }
+
+        window.cerrarPopupMama = cerrarPopupMama;
         window.cerrarPopup1 = cerrarPopup1;
         window.cerrarPopup2 = cerrarPopup2;
         window.cerrarPopup3 = cerrarPopup3;
@@ -1381,7 +1400,9 @@
 
         // Mostrar popup al cargar
         setTimeout(function() {
-            if (target > Date.now()) {
+            if (mamaActivo) {
+                mostrarPopup(document.getElementById('popupMama'));
+            } else if (target > Date.now()) {
                 mostrarPopup(document.getElementById('popupPadre'));
                 tick();
                 timer = setInterval(tick, 1000);
