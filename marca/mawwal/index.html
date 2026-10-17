@@ -1332,9 +1332,9 @@
         var esVierSab = (diaSem === 5 || diaSem === 6); // viernes o sábado
 
         var target = new Date('2026-06-22T00:00:00-03:00').getTime(); // límite popup padre
-        // Popup Día de la Madre: SOLO el 14/10/2026 (hora Buenos Aires, -03:00), de 00:00 a 23:59
-        var mamaInicio = new Date('2026-10-14T00:00:00-03:00').getTime();
-        var mamaFin    = new Date('2026-10-14T23:59:59-03:00').getTime();
+        // Popup Día de la Madre: SOLO el 17/10/2026 (hora Buenos Aires, -03:00), de 00:00 a 23:59
+        var mamaInicio = new Date('2026-10-17T00:00:00-03:00').getTime();
+        var mamaFin    = new Date('2026-10-17T23:59:59-03:00').getTime();
         var mamaActivo = (Date.now() >= mamaInicio && Date.now() <= mamaFin);
         function pad(n) { return String(n).padStart(2,'0'); }
         var timer;
@@ -1388,9 +1388,8 @@
         }
 
         function cerrarPopupMama() {
-            ocultarPopup(document.getElementById('popupMama'), function() {
-                if (esVierSab) mostrarPopup(document.getElementById('popupVierSab'));
-            });
+            // Hoy el popup de mamá REEMPLAZA al normal: al cerrarlo no se muestra ningún otro.
+            ocultarPopup(document.getElementById('popupMama'));
         }
 
         window.cerrarPopupMama = cerrarPopupMama;
