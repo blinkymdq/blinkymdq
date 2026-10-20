@@ -3547,19 +3547,7 @@ async function cargarPendienteCliente(){
     const mEl = document.getElementById('fc-pg-monto'); if(mEl && !mEl.value && saldo>0) mEl.value = saldo;
     if(!pend.length && !pagosCuenta.length){ cont.innerHTML = '<div style="color:var(--green);font-size:0.9rem;font-weight:700;">✓ Sin movimientos. El cliente está al día.</div>'; return; }
     let html = '';
-    if(pend.length){
-      const disp = pend.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
-      html += '<div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin-bottom:.35rem;">Pedidos (suman a la deuda)</div>';
-      html += disp.map(p=>{
-        const total = Number(p.total||0), pagado = Number(p.monto_pagado||0), pen = total - pagado;
-        const f = new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-        return `<div class="pago-item">
-          <span style="min-width:0;flex:1;"><a onclick="verPedido('${p.numero_pedido}',false)" style="font-family:monospace;color:var(--violet-light);font-weight:800;cursor:pointer;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${p.numero_pedido}</a> · Total $${total.toLocaleString('es-AR')}${pagado>0?` · Pagado $${pagado.toLocaleString('es-AR')}`:''}
-          <br><span style="font-size:0.72rem;color:var(--text3);">${f} · ${estadoLabel(p.estado)}</span></span>
-          <span class="pago-monto" style="color:var(--red);font-weight:900;">+$${pen.toLocaleString('es-AR')}</span>
-        </div>`;
-      }).join('');
-    }
+    // (La lista de "Pedidos (suman a la deuda)" se quitó: la cuenta se maneja por cuenta corriente, no pedido por pedido.)
     if(pagosCuenta.length){
       html += '<div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin:.7rem 0 .35rem;">Pagos a cuenta (restan del total)</div>';
       html += pagosCuenta.map(pg=>{
