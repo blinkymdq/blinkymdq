@@ -19,6 +19,7 @@
 <style>
 @keyframes tickerScroll { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
 .search-wrapper { position: relative; flex-grow: 1; }
+input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .search-wrapper input { padding-right: 2.75rem; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Roboto',sans-serif; background:#f8f8fc; min-height:100vh; color:#1e293b; }
@@ -155,7 +156,7 @@
 
             <!-- Buscador grande -->
             <div class="flex-1 search-wrapper">
-                <input type="text" id="inputBusqueda" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" readonly
+                <input type="search" id="inputBusqueda" name="buscar-sitio" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
                     style="width:100%;height:44px;padding:0 3rem 0 1.25rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;outline:none;transition:border-color 0.15s,box-shadow 0.15s;color:#1e293b;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'"
                     onblur="this.style.borderColor='#7c3aed';this.style.boxShadow='none'">
@@ -287,7 +288,7 @@
                 <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:72px;width:auto;object-fit:contain;">
             </a>
             <div class="search-wrapper flex-1">
-                <input type="text" id="inputBusquedaMobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" readonly
+                <input type="search" id="inputBusquedaMobile" name="buscar-sitio-mobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
                     style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
                 <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusquedaMobile').value='';document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;right:44px;">
