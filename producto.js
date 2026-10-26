@@ -127,7 +127,7 @@ function renderPanelCarrito() {
   lista.innerHTML = carrito.map(function(i, idx){
     total += Number(i.precio) * Number(i.cantidad);
     return `<div style="display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #f8fafc;">
-      <img src="${i.img}" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'" style="width:48px;height:48px;object-fit:cover;border-radius:10px;background:#f8fafc;flex-shrink:0;">
+      <img src="${i.img}" alt="${(i.nombre||'').replace(/"/g,'&quot;')}" onerror="this.src='https://blinkymdq.com/blinkysinfondo.png'" style="width:48px;height:48px;object-fit:cover;border-radius:10px;background:#f8fafc;flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <p style="font-size:11px;font-weight:800;color:#1e293b;text-transform:uppercase;line-height:1.2;margin:0;">${i.nombre}</p>
         ${i.variante?`<p style="font-size:10px;color:#7c3aed;font-weight:700;margin:1px 0 0;">🎨 ${i.variante}</p>`:''}
@@ -374,7 +374,7 @@ function renderProducto(p) {
           <div class="thumbs">
             ${medios.map((m,i) => m.tipo==='video'
               ? `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})" style="position:relative;background:#000;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.1rem;">▶</span></div>`
-              : `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})"><img src="${getImgUrl(m.src)}" onerror="this.style.opacity='0.2'"></div>`
+              : `<div class="thumb ${i===0?'active':''}" onclick="mostrarFoto(${i})"><img src="${getImgUrl(m.src)}" alt="Ver otra foto del producto" onerror="this.style.opacity='0.2'"></div>`
             ).join('')}
           </div>
         ` : ''}
@@ -408,7 +408,7 @@ function renderProducto(p) {
             ${variantes.map((v,i)=>{
               const sin = v.stock <= 0;
               return `<button ${sin?'disabled':''} data-vi="${i}" onclick="seleccionarVarianteProd(${i})" class="var-chip" style="display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:${sin?'not-allowed':'pointer'};opacity:${sin?'0.45':'1'};font-size:13px;font-weight:400;color:#1e293b;font-family:Arial,sans-serif;">
-                <img src="${getImgUrl(v.foto,'200')}" style="width:30px;height:30px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity='0.2'">
+                <img src="${getImgUrl(v.foto,'200')}" alt="${(v.nombre||'').replace(/"/g,'&quot;')}" style="width:30px;height:30px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity='0.2'">
                 <span style="${sin?'text-decoration:line-through;':''}">${v.nombre}</span>${sin?' <span style="font-size:9px;color:#94a3b8;">sin stock</span>':''}
               </button>`;
             }).join('')}
@@ -561,3 +561,17 @@ function mostrarError(msg) {
 
 initAuth();
 cargarProducto();
+
+;
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('input, select, textarea').forEach(function(el){
+    if(el.type==='hidden') return;
+    var escId = (el.id && window.CSS && CSS.escape) ? CSS.escape(el.id) : el.id;
+    var tiene = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || (el.id && document.querySelector('label[for="'+escId+'"]')) || el.closest('label');
+    if(tiene) return;
+    var nombre = el.getAttribute('placeholder') || el.getAttribute('title') || (el.tagName==='SELECT' && el.options[0] ? el.options[0].text : '') || el.name || '';
+    nombre = (nombre||'').replace(/\s*\*\s*$/,'').trim();
+    if(nombre) el.setAttribute('aria-label', nombre);
+  });
+});

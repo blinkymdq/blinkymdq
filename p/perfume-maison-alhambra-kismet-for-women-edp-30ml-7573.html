@@ -26,9 +26,10 @@
 <!-- Tailwind precompilado (CSS estático, sin runtime de JavaScript) — mejora LCP y elimina el parpadeo/CLS. -->
 <link rel="stylesheet" href="/tw.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="../producto.css?v=202610260315">
+<link rel="stylesheet" href="../producto.css?v=202610260337">
 </head>
 <body>
+<a href="#contenido" class="sr-only sr-only-focusable">Saltar al contenido</a>
 
 
 
@@ -46,7 +47,7 @@
 
             <!-- Buscador grande -->
             <div class="flex-1 search-wrapper">
-                <input type="search" id="inputBusqueda" name="buscar-sitio" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
+                <input type="search" id="inputBusqueda" name="buscar-sitio" aria-label="Buscar producto" onkeydown="if(event.key==='Enter') irABuscarHeader()" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
                     style="width:100%;height:44px;padding:0 3rem 0 1.25rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:13px;font-weight:500;outline:none;transition:border-color 0.15s,box-shadow 0.15s;color:#1e293b;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'"
                     onblur="this.style.borderColor='#7c3aed';this.style.boxShadow='none'">
@@ -90,7 +91,7 @@
             </div>
 
             <!-- Carrito header -->
-            <button onclick="abrirCarrito()" id="btnCarritoHeader" class="flex-shrink-0 relative" style="background:none;border:none;cursor:pointer;padding:8px;">
+            <button onclick="abrirCarrito()" id="btnCarritoHeader" aria-label="Ver carrito" class="flex-shrink-0 relative" style="background:none;border:none;cursor:pointer;padding:8px;">
                 <svg style="width:26px;height:26px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
@@ -164,7 +165,7 @@
                 </button>
             </div>
             <!-- Carrito -->
-            <button onclick="abrirCarrito()" class="relative" style="background:none;border:none;cursor:pointer;padding:6px;">
+            <button onclick="abrirCarrito()" aria-label="Ver carrito" class="relative" style="background:none;border:none;cursor:pointer;padding:6px;">
                 <svg style="width:24px;height:24px;" fill="none" stroke="#ffffff" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
@@ -178,7 +179,7 @@
                 <img src="blinkysinfondo.png" alt="Blinky MDQ" class="logo-anim" style="height:72px;width:auto;object-fit:contain;">
             </a>
             <div class="search-wrapper flex-1">
-                <input type="search" id="inputBusquedaMobile" name="buscar-sitio-mobile" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
+                <input type="search" id="inputBusquedaMobile" name="buscar-sitio-mobile" aria-label="Buscar producto" oninput="document.getElementById('btnLimpiarMobile').classList.toggle('hidden', !this.value)" onkeydown="if(event.key==='Enter') { document.getElementById('inputBusqueda').value=this.value; irABuscarHeader(); }" placeholder="Buscar producto..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" data-lpignore="true" data-form-type="other" data-1p-ignore readonly
                     style="width:100%;height:40px;padding:0 2.5rem 0 1rem;background:white;border:2px solid #7c3aed;border-radius:999px;font-size:12px;outline:none;transition:border-color 0.15s;"
                     onfocus="this.removeAttribute('readonly');this.style.borderColor='#6d28d9'" onblur="this.style.borderColor='#7c3aed'">
                 <button id="btnLimpiarMobile" onclick="document.getElementById('inputBusquedaMobile').value='';document.getElementById('inputBusqueda').value='';this.classList.add('hidden')" class="hidden absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 flex items-center justify-center transition-colors" style="line-height:1;right:44px;">
@@ -343,7 +344,8 @@
     <button onclick="irACheckout()" style="width:100%;height:52px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-weight:900;text-transform:uppercase;font-size:14px;letter-spacing:.05em;cursor:pointer;box-shadow:0 4px 15px rgba(124,58,237,.35);">Confirmar pedido</button>
   </div>
 </div>
+
 <script>window.__COD__="7573";</script>
-<script src="../producto.js?v=202610260315"></script>
+<script src="../producto.js?v=202610260337"></script>
 </body>
 </html>
