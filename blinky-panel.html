@@ -4122,25 +4122,34 @@ function confirmarEliminar(num){mostrarConfirmEliminar();}
 async function eliminarItem(itemId, numPedido) {
   if(!confirm('¿Quitar este producto del pedido?')) return;
   try {
-    // Obtener el ítem para saber su subtotal
-    const iR = await fetch(`${SUPA_URL}/rest/v1/pedido_items?id=eq.${itemId}`,{headers:hdrs});
-    const items = await iR.json();
-    if(!items.length){toast('Ítem no encontrado','err');return;}
-    const subtotal = Number(items[0].subtotal);
+    // Traer el pedido y TODOS sus ítems para recalcular bien el total (respetando el descuento)
+    const [pR, iR] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{headers:hdrs}),
+      fetch(`${SUPA_URL}/rest/v1/pedido_items?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{headers:hdrs})
+    ]);
+    const ps = await pR.json();
+    const allItems = await iR.json();
+    const item = allItems.find(x=>Number(x.id)===Number(itemId));
+    if(!item){toast('Ítem no encontrado','err');return;}
+
+    // Tasa de descuento actual = total / subtotal bruto (1 si no había descuento).
+    // Así, al quitar un producto, el descuento se recalcula solo sobre lo que queda.
+    const subBruto = allItems.reduce((a,i)=>a+Number(i.subtotal||0),0);
+    const totalActual = Number(ps[0].total)||0;
+    const tasa = subBruto > 0 ? (totalActual / subBruto) : 1;
 
     // Eliminar el ítem
     await fetch(`${SUPA_URL}/rest/v1/pedido_items?id=eq.${itemId}`,{method:'DELETE',headers:hdrs});
 
-    // Actualizar el total del pedido
-    const pR = await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{headers:hdrs});
-    const ps = await pR.json();
-    const nuevoTotal = Math.max(0, Number(ps[0].total) - subtotal);
+    // Recalcular el total sobre los ítems restantes, manteniendo la misma tasa de descuento
+    const subRestante = allItems.filter(x=>Number(x.id)!==Number(itemId)).reduce((a,i)=>a+Number(i.subtotal||0),0);
+    const nuevoTotal = Math.max(0, Math.round(subRestante * tasa));
     await fetch(`${SUPA_URL}/rest/v1/pedidos?numero_pedido=eq.${encodeURIComponent(numPedido)}`,{
       method:'PATCH', headers:hdrs, body:JSON.stringify({total:nuevoTotal})
     });
 
     toast('Producto quitado ✓','ok');
-    await ajustarStock(items, +1); // devolver stock del ítem quitado
+    await ajustarStock([item], +1); // devolver stock del ítem quitado
     logAct('pedido', `Se quitó un producto del pedido ${numPedido}`, numPedido);
 
     // Avisar al cliente del cambio y reenviar el comprobante actualizado
